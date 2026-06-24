@@ -1,0 +1,14 @@
+{
+  "name": "ika-fashion",
+  "private": true,
+  "version": "1.0.0",
+  "description": "IKA Fashion — Website thời trang (Frontend Next.js + Backend Express)",
+  "scripts": {
+    "dev:fe": "cd frontend && npm run dev",
+    "dev:be": "cd backend && npm run dev",
+    "build:fe": "cd frontend && npm run build",
+    "install:fe": "cd frontend && npm install",
+    "install:be": "cd backend && npm install",
+    "install:all": "npm run install:fe && npm run install:be"
+  }
+}
