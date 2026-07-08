@@ -16,3 +16,25 @@ export function getCollectionBySlug(slug) {
   const items = [...products.values()].filter(p => p.collection === slug);
   return { ...collection, products: items };
 }
+
+export function createCollection({ name, slug, img }) {
+  const existing = collections.find(c => c.slug === slug);
+  if (existing) throw new AppError('Slug danh mục đã tồn tại', 409);
+  const newCol = { id: Date.now(), name, slug, img: img || '/products/ao-thun-trang.png' };
+  collections.push(newCol);
+  return newCol;
+}
+
+export function updateCollection(id, data) {
+  const idx = collections.findIndex(c => c.id === Number(id));
+  if (idx === -1) throw new AppError('Không tìm thấy danh mục', 404);
+  collections[idx] = { ...collections[idx], ...data };
+  return collections[idx];
+}
+
+export function deleteCollection(id) {
+  const idx = collections.findIndex(c => c.id === Number(id));
+  if (idx === -1) throw new AppError('Không tìm thấy danh mục', 404);
+  collections.splice(idx, 1);
+}
+

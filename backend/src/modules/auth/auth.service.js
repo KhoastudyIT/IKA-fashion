@@ -31,6 +31,7 @@ export async function register({ name, email, password }) {
     role: 'customer',
     phone: '',
     address: '',
+    isLocked: false,
     createdAt: new Date().toISOString(),
   };
   users.set(user.id, user);
@@ -41,6 +42,7 @@ export async function register({ name, email, password }) {
 export async function login({ email, password }) {
   const user = [...users.values()].find(u => u.email === email);
   if (!user) throw new AppError('Email hoặc mật khẩu không đúng', 401);
+  if (user.isLocked) throw new AppError('Tài khoản của bạn đã bị khóa bởi quản trị viên', 403);
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new AppError('Email hoặc mật khẩu không đúng', 401);

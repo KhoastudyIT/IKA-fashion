@@ -2,9 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShoppingBag, Heart, Search } from 'lucide-react'
-import { useState } from 'react'
+import { ShoppingBag, Heart, Search, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useSession, signOut } from '@/auth-client'
+
+const ANNOUNCEMENTS = [
+  '🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ',
+  '🔥 Flash Sale — Giảm đến 40% toàn bộ sản phẩm hôm nay!',
+  '📦 Đổi trả miễn phí trong 7 ngày — Cam kết chính hãng 100%',
+  '📞 Hotline hỗ trợ: 0123 456 789 · Thứ 2–6: 9AM–6PM',
+]
 
 export default function Navigation() {
   const pathname = usePathname()
@@ -12,6 +19,15 @@ export default function Navigation() {
   const { data: session } = useSession()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [announcementVisible, setAnnouncementVisible] = useState(true)
+  const [announcementIndex, setAnnouncementIndex] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setAnnouncementIndex(i => (i + 1) % ANNOUNCEMENTS.length)
+    }, 4000)
+    return () => clearInterval(id)
+  }, [])
 
   const isActive = (path: string) => pathname === path
 
@@ -23,7 +39,51 @@ export default function Navigation() {
   const dashboardHref = session?.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer'
 
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-border">
+    <div className="sticky top-0 z-50">
+      {/* Announcement Bar */}
+      {announcementVisible && (
+        <div style={{
+          background: 'linear-gradient(90deg, #1a1a1a 0%, #2C2C2C 50%, #1a1a1a 100%)',
+          color: '#FFFFFF',
+          padding: '9px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          <p style={{
+            fontSize: '12px',
+            letterSpacing: '0.5px',
+            margin: 0,
+            color: '#F5E6A3',
+            fontFamily: 'Inter, sans-serif',
+            transition: 'opacity 0.4s',
+            textAlign: 'center',
+          }}>
+            {ANNOUNCEMENTS[announcementIndex]}
+          </p>
+          <button
+            onClick={() => setAnnouncementVisible(false)}
+            aria-label="Đóng thông báo"
+            style={{
+              position: 'absolute',
+              right: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              color: '#9A9A9A',
+              cursor: 'pointer',
+              padding: '4px',
+              lineHeight: 0,
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+      <header className="bg-background border-b border-border">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -58,6 +118,24 @@ export default function Navigation() {
               }`}
             >
               LIÊN HỆ
+            </Link>
+            <Link
+              href="/khuyen-mai"
+              className={`font-sans text-sm tracking-wide transition-all relative group flex items-center gap-1 ${
+                isActive('/khuyen-mai')
+                  ? 'text-accent font-semibold'
+                  : 'text-foreground hover:text-accent'
+              }`}
+            >
+              <span className="relative">
+                ƯU ĐÃI - GIẢM GIÁ
+                <span className="absolute -top-2 -right-5 text-xs leading-none">🔥</span>
+              </span>
+              <span
+                className={`absolute -bottom-1 left-0 h-px bg-accent transition-all duration-300 ${
+                  isActive('/khuyen-mai') ? 'w-full' : 'w-0 group-hover:w-full'
+                }`}
+              />
             </Link>
           </div>
 
@@ -125,7 +203,9 @@ export default function Navigation() {
               onSubmit={(e) => {
                 e.preventDefault()
                 if (searchQuery.trim()) {
-                  window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`
+                  router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+                  setIsSearchOpen(false)
+                  setSearchQuery('')
                 }
               }}
               className="flex gap-2"
@@ -135,6 +215,7 @@ export default function Navigation() {
                 placeholder="Tìm kiếm sản phẩm..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
                 className="flex-1 px-4 py-2 bg-secondary text-foreground placeholder-muted-foreground border border-border rounded text-sm focus:outline-none focus:ring-1 focus:ring-accent"
               />
               <button
@@ -148,5 +229,6 @@ export default function Navigation() {
         )}
       </nav>
     </header>
+    </div>
   )
 }

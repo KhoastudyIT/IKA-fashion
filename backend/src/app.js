@@ -14,6 +14,7 @@ import { collectionRouter } from './modules/collections/collection.routes.js';
 import { cartRouter }       from './modules/cart/cart.routes.js';
 import { orderRouter }      from './modules/orders/order.routes.js';
 import { wishlistRouter }   from './modules/wishlist/wishlist.routes.js';
+import { messageRouter }    from './modules/messages/message.routes.js';
 
 export function createApp() {
   const app = express();
@@ -34,6 +35,7 @@ export function createApp() {
   app.use(`${v1}/cart`,        cartRouter);
   app.use(`${v1}/orders`,      orderRouter);
   app.use(`${v1}/wishlist`,    wishlistRouter);
+  app.use(`${v1}/messages`,    messageRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 

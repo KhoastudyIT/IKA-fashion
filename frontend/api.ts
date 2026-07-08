@@ -217,6 +217,55 @@ export function getMyOrders(): Promise<Order[]> {
   return getData('/orders', { auth: true })
 }
 
+// ---------- Admin API Endpoints ----------
+
+export interface ApiUser {
+  id: string
+  name: string
+  email: string
+  role: string
+  phone?: string
+  address?: string
+  isLocked?: boolean
+  createdAt: string
+}
+
+export function getAdminOrders(status?: string): Promise<Order[]> {
+  return getData(`/orders/all${status ? `?status=${status}` : ''}`, { auth: true })
+}
+
+export function updateOrderStatus(id: string, body: { status: string; paymentStatus?: string }): Promise<Order> {
+  return getData(`/orders/${id}/status`, { method: 'PUT', body, auth: true })
+}
+
+export function getAdminCustomers(): Promise<ApiUser[]> {
+  return getData('/auth/users', { auth: true })
+}
+
+export function deleteCustomer(id: string): Promise<void> {
+  return request(`/auth/users/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+}
+
+export function toggleLockCustomer(id: string): Promise<ApiUser> {
+  return getData(`/auth/users/${id}/toggle-lock`, { method: 'PUT', auth: true })
+}
+
+export function updateUserRole(id: string, role: string): Promise<ApiUser> {
+  return getData(`/auth/users/${id}/role`, { method: 'PUT', body: { role }, auth: true })
+}
+
+export function createCollection(body: { name: string; slug: string; img?: string }): Promise<Collection> {
+  return getData('/collections', { method: 'POST', body, auth: true })
+}
+
+export function updateCollection(id: number, body: Partial<{ name: string; slug: string; img: string }>): Promise<Collection> {
+  return getData(`/collections/${id}`, { method: 'PUT', body, auth: true })
+}
+
+export function deleteCollection(id: number): Promise<void> {
+  return request(`/collections/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+}
+
 // ---------- Auth (dùng bởi auth-client) ----------
 
 export function apiLogin(body: { email: string; password: string }) {
@@ -228,3 +277,67 @@ export function apiRegister(body: { name: string; email: string; password: strin
 export function apiLogout() {
   return request('/auth/logout', { method: 'POST', auth: true })
 }
+
+// ---------- Messages ----------
+
+export interface Message {
+  id: string
+  conversationId: string
+  senderId: string
+  senderRole: 'admin' | 'customer'
+  senderName: string
+  content: string
+  createdAt: string
+  isRead: boolean
+}
+
+export interface Conversation {
+  id: string
+  customerId: string
+  customerName: string
+  customerEmail: string
+  lastMessage: string
+  lastMessageAt: string
+  unreadByAdmin: number
+  unreadByCustomer: number
+  createdAt: string
+}
+
+/** Admin: lấy tất cả conversations */
+export function getAdminConversations(): Promise<Conversation[]> {
+  return getData('/messages/conversations', { auth: true })
+}
+
+/** Admin: lấy số tin nhắn chưa đọc */
+export function getUnreadMessageCount(): Promise<{ count: number }> {
+  return getData('/messages/unread-count', { auth: true })
+}
+
+/** Customer: lấy conversation của mình */
+export function getMyConversation(): Promise<Conversation | null> {
+  return getData('/messages/my', { auth: true })
+}
+
+/** Lấy tin nhắn của 1 conversation */
+export function getConversationMessages(conversationId: string): Promise<Message[]> {
+  return getData(`/messages/${conversationId}/messages`, { auth: true })
+}
+
+/** Gửi tin nhắn
+ * - Customer: chỉ cần { content }
+ * - Admin: cần { content, conversationId }
+ */
+export function sendMessage(body: { content: string; conversationId?: string }): Promise<{ message: Message; conversation: Conversation }> {
+  return getData('/messages', { method: 'POST', body, auth: true })
+}
+
+/** Đánh dấu conversation đã đọc */
+export function markConversationRead(conversationId: string): Promise<Conversation> {
+  return getData(`/messages/${conversationId}/read`, { method: 'PUT', auth: true })
+}
+
+/** Admin: xóa 1 tin nhắn */
+export function deleteMessage(messageId: string): Promise<void> {
+  return request(`/messages/${messageId}`, { method: 'DELETE', auth: true }).then(() => {})
+}
+
