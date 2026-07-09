@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react'
 
+// ─── SVG Social Icons ─────────────────────────────────────────────────────────
 const TikTokIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
     <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.78 1.52V7.25a4.85 4.85 0 0 1-1.01-.56z" />
@@ -28,6 +29,7 @@ const InstagramIcon = () => (
   </svg>
 )
 
+// ─── Data ─────────────────────────────────────────────────────────────────────
 const navLinks = [
   { label: 'Sản Phẩm', href: '/products' },
   { label: 'Ưu Đãi - Giảm Giá', href: '/khuyen-mai' },
@@ -52,6 +54,7 @@ const socialLinks = [
   { label: 'Instagram', href: 'https://instagram.com/ikafashion', icon: <InstagramIcon />, color: '#E1306C' },
 ]
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function Footer() {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
@@ -104,6 +107,7 @@ export default function Footer() {
       fontFamily: 'Inter, sans-serif',
     }}>
 
+      {/* ── Top Strip: USP bar ──────────────────────────────────────────── */}
       <div style={{ borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '20px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {[
@@ -123,6 +127,7 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* ── Main Footer ─────────────────────────────────────────────────── */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 24px 48px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
 
@@ -282,6 +287,7 @@ export default function Footer() {
         </div>
       </div>
 
+      {/* ── Bottom Bar ──────────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} IKA Fashion. Tất cả quyền được bảo lưu.</p>
@@ -301,6 +307,7 @@ export default function Footer() {
   )
 }
 
+// ─── Helper: Footer link với hover effect ─────────────────────────────────────
 function FooterLink({ href, label }: { href: string; label: string }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -320,6 +327,7 @@ function FooterLink({ href, label }: { href: string; label: string }) {
   )
 }
 
+// ─── Payment & App Badges ─────────────────────────────────────────────────────
 function PaymentBadge({ src, alt }: { src: string; alt: string }) {
   const [hovered, setHovered] = useState(false)
   return (
