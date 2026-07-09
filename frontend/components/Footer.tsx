@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react'
 
-// ─── SVG Social Icons ─────────────────────────────────────────────────────────
 const TikTokIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
     <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.17a8.16 8.16 0 0 0 4.78 1.52V7.25a4.85 4.85 0 0 1-1.01-.56z" />
@@ -29,7 +28,6 @@ const InstagramIcon = () => (
   </svg>
 )
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 const navLinks = [
   { label: 'Sản Phẩm', href: '/products' },
   { label: 'Ưu Đãi - Giảm Giá', href: '/khuyen-mai' },
@@ -48,46 +46,12 @@ const supportLinks = [
 ]
 
 const socialLinks = [
-  {
-    label: 'TikTok',
-    href: 'https://tiktok.com/@ikafashion',
-    icon: <TikTokIcon />,
-    color: '#010101',
-    hoverColor: '#69C9D0',
-  },
-  {
-    label: 'YouTube',
-    href: 'https://youtube.com/@ikafashion',
-    icon: <YouTubeIcon />,
-    color: '#FF0000',
-    hoverColor: '#FF4444',
-  },
-  {
-    label: 'Facebook',
-    href: 'https://facebook.com/ikafashion',
-    icon: <FacebookIcon />,
-    color: '#1877F2',
-    hoverColor: '#3B9AF2',
-  },
-  {
-    label: 'Instagram',
-    href: 'https://instagram.com/ikafashion',
-    icon: <InstagramIcon />,
-    color: '#E1306C',
-    hoverColor: '#F06292',
-  },
+  { label: 'TikTok', href: 'https://tiktok.com/@ikafashion', icon: <TikTokIcon />, color: '#010101' },
+  { label: 'YouTube', href: 'https://youtube.com/@ikafashion', icon: <YouTubeIcon />, color: '#FF0000' },
+  { label: 'Facebook', href: 'https://facebook.com/ikafashion', icon: <FacebookIcon />, color: '#1877F2' },
+  { label: 'Instagram', href: 'https://instagram.com/ikafashion', icon: <InstagramIcon />, color: '#E1306C' },
 ]
 
-const paymentMethods = [
-  { label: 'COD', icon: '💵' },
-  { label: 'MoMo', icon: '💜' },
-  { label: 'VNPay', icon: '🏦' },
-  { label: 'Visa', icon: '💳' },
-  { label: 'Mastercard', icon: '🔴' },
-  { label: 'ZaloPay', icon: '💙' },
-]
-
-// ─── Component ────────────────────────────────────────────────────────────────
 export default function Footer() {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
@@ -140,18 +104,8 @@ export default function Footer() {
       fontFamily: 'Inter, sans-serif',
     }}>
 
-      {/* ── Top Strip: USP bar ──────────────────────────────────────────── */}
-      <div style={{
-        borderBottom: '1px solid rgba(212,175,55,0.2)',
-        padding: '20px 24px',
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '16px',
-        }}>
+      <div style={{ borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '20px 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {[
             { icon: '🚚', title: 'Miễn phí vận chuyển', sub: 'Đơn hàng từ 500.000đ' },
             { icon: '🔄', title: 'Đổi trả dễ dàng', sub: 'Trong vòng 7 ngày' },
@@ -169,40 +123,19 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* ── Main Footer ─────────────────────────────────────────────────── */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 24px 48px' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '48px',
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
 
-          {/* Col 1: Brand */}
           <div>
             <Link href="/" style={{ textDecoration: 'none' }}>
-              <div style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: '32px',
-                fontWeight: 700,
-                color: '#D4AF37',
-                letterSpacing: '6px',
-                marginBottom: '16px',
-                display: 'inline-block',
-              }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '32px', fontWeight: 700, color: '#D4AF37', letterSpacing: '6px', marginBottom: '16px', display: 'inline-block' }}>
                 IKA
               </div>
             </Link>
-            <p style={{
-              fontSize: '13px',
-              lineHeight: 1.8,
-              color: '#9A9A9A',
-              marginBottom: '20px',
-              maxWidth: '240px',
-            }}>
+            <p style={{ fontSize: '13px', lineHeight: 1.8, color: '#9A9A9A', marginBottom: '20px', maxWidth: '240px' }}>
               Thương hiệu thời trang Việt Nam với cam kết chất lượng cao, công nghệ vải tiên tiến và phong cách hiện đại.
             </p>
 
-            {/* Contact Info */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
@@ -210,23 +143,16 @@ export default function Footer() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Phone size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
-                <a href={`tel:${storeSettings.hotline}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>
-                  {storeSettings.hotline}
-                </a>
+                <a href={`tel:${storeSettings.hotline}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.hotline}</a>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Mail size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
-                <a href={`mailto:${storeSettings.email}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>
-                  {storeSettings.email}
-                </a>
+                <a href={`mailto:${storeSettings.email}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.email}</a>
               </div>
             </div>
 
-            {/* Social Icons */}
             <div>
-              <p style={{ fontSize: '11px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
-                Theo dõi chúng tôi
-              </p>
+              <p style={{ fontSize: '11px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Theo dõi chúng tôi</p>
               <div style={{ display: 'flex', gap: '10px' }}>
                 {socialLinks.map((social) => (
                   <a
@@ -234,22 +160,14 @@ export default function Footer() {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={social.label}
-                    title={social.label}
                     onMouseEnter={() => setHoveredSocial(social.label)}
                     onMouseLeave={() => setHoveredSocial(null)}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '8px',
                       border: `1px solid ${hoveredSocial === social.label ? social.color : 'rgba(255,255,255,0.1)'}`,
                       background: hoveredSocial === social.label ? social.color : 'rgba(255,255,255,0.05)',
                       color: hoveredSocial === social.label ? '#fff' : '#9A9A9A',
-                      textDecoration: 'none',
-                      transition: 'all 0.25s',
+                      textDecoration: 'none', transition: 'all 0.25s',
                       transform: hoveredSocial === social.label ? 'translateY(-2px)' : 'none',
                     }}
                   >
@@ -260,19 +178,8 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Col 2: Navigation */}
           <div>
-            <h3 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#FFFFFF',
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              marginBottom: '24px',
-              paddingBottom: '12px',
-              borderBottom: '1px solid rgba(212,175,55,0.3)',
-            }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Điều Hướng
             </h3>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -281,11 +188,8 @@ export default function Footer() {
               ))}
             </nav>
 
-            {/* Business hours */}
             <div style={{ marginTop: '32px' }}>
-              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
-                Giờ Hoạt Động
-              </h4>
+              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Giờ Hoạt Động</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {[
                   { day: 'Thứ 2 – Thứ 6', time: '9:00 – 18:00' },
@@ -301,19 +205,8 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Col 3: Support */}
           <div>
-            <h3 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#FFFFFF',
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              marginBottom: '24px',
-              paddingBottom: '12px',
-              borderBottom: '1px solid rgba(212,175,55,0.3)',
-            }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Hỗ Trợ Khách Hàng
             </h3>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -322,49 +215,27 @@ export default function Footer() {
               ))}
             </nav>
 
-            {/* Payment methods */}
             <div style={{ marginTop: '32px' }}>
               <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
                 Phương Thức Thanh Toán
               </h4>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {paymentMethods.map((pm) => (
-                  <div
-                    key={pm.label}
-                    title={pm.label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '5px 10px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      color: '#CCCCCC',
-                    }}
-                  >
-                    <span style={{ fontSize: '14px' }}>{pm.icon}</span>
-                    <span>{pm.label}</span>
-                  </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                {[
+                  { id: 'cod', alt: 'Thanh toán COD', src: '/payments/cod.png' },
+                  { id: 'vnpay', alt: 'Thanh toán VNPay', src: '/payments/vnpay.png' },
+                  { id: 'momo', alt: 'Thanh toán MoMo', src: '/payments/momo.png' },
+                  { id: 'zalopay', alt: 'Thanh toán ZaloPay', src: '/payments/zalopay.png' },
+                  { id: 'visa', alt: 'Thanh toán Visa', src: '/payments/visa.png' },
+                  { id: 'mastercard', alt: 'Thanh toán Mastercard', src: '/payments/Mastercard.png' },
+                ].map((pm) => (
+                  <PaymentBadge key={pm.id} src={pm.src} alt={pm.alt} />
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Col 4: Newsletter */}
           <div>
-            <h3 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#FFFFFF',
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              marginBottom: '24px',
-              paddingBottom: '12px',
-              borderBottom: '1px solid rgba(212,175,55,0.3)',
-            }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Nhận Tin Ưu Đãi
             </h3>
             <p style={{ fontSize: '13px', color: '#9A9A9A', lineHeight: 1.7, marginBottom: '20px' }}>
@@ -372,15 +243,7 @@ export default function Footer() {
             </p>
 
             {subscribed ? (
-              <div style={{
-                padding: '14px 16px',
-                background: 'rgba(212,175,55,0.15)',
-                border: '1px solid rgba(212,175,55,0.4)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                color: '#D4AF37',
-                textAlign: 'center',
-              }}>
+              <div style={{ padding: '14px 16px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '8px', fontSize: '13px', color: '#D4AF37', textAlign: 'center' }}>
                 ✓ Đăng ký thành công! Cảm ơn bạn.
               </div>
             ) : (
@@ -392,127 +255,52 @@ export default function Footer() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Nhập email của bạn..."
                     required
-                    style={{
-                      width: '100%',
-                      padding: '12px 48px 12px 16px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '8px',
-                      color: '#FFFFFF',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
+                    style={{ width: '100%', padding: '12px 48px 12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#FFFFFF', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                     onFocus={(e) => (e.target.style.borderColor = '#D4AF37')}
                     onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
                   />
-                  <button
-                    type="submit"
-                    aria-label="Đăng ký"
-                    style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '32px',
-                      height: '32px',
-                      background: '#D4AF37',
-                      border: 'none',
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: '#1a1a1a',
-                    }}
-                  >
+                  <button type="submit" aria-label="Đăng ký" style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', background: '#D4AF37', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#1a1a1a' }}>
                     <ArrowRight size={16} />
                   </button>
                 </div>
                 <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.5 }}>
-                  Bằng cách đăng ký, bạn đồng ý với{' '}
-                  <Link href="/chinh-sach-bao-mat" style={{ color: '#D4AF37', textDecoration: 'none' }}>
-                    Chính sách bảo mật
-                  </Link>{' '}
-                  của chúng tôi.
+                  Bằng cách đăng ký, bạn đồng ý với <Link href="/chinh-sach-bao-mat" style={{ color: '#D4AF37', textDecoration: 'none' }}>Chính sách bảo mật</Link> của chúng tôi.
                 </p>
               </form>
             )}
 
-            {/* App badge (decorative) */}
             <div style={{ marginTop: '28px' }}>
-              <p style={{ fontSize: '11px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
+              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
                 Tải App IKA
-              </p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {['App Store', 'Google Play'].map((store) => (
-                  <div
-                    key={store}
-                    style={{
-                      padding: '8px 14px',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      color: '#CCCCCC',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <span style={{ fontSize: '16px' }}>{store === 'App Store' ? '🍎' : '▶️'}</span>
-                    <span>{store}</span>
-                  </div>
-                ))}
+              </h4>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <AppBadge src="/payments/app-store.png" alt="Tải trên App Store" />
+                <AppBadge src="/payments/google-play.png" alt="Tải trên Google Play" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Bottom Bar ──────────────────────────────────────────────────── */}
-      <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        padding: '20px 24px',
-      }}>
-        <div style={{
-          maxWidth: '1200px',
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}>
-          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>
-            © {new Date().getFullYear()} IKA Fashion. Tất cả quyền được bảo lưu.
-          </p>
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} IKA Fashion. Tất cả quyền được bảo lưu.</p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             {[
               { label: 'Bảo Mật', href: '/chinh-sach-bao-mat' },
               { label: 'Điều Khoản', href: '/dieu-khoan' },
               { label: 'Cookie', href: '/cookie' },
             ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}
-              >
-                {link.label}
-              </Link>
+              <Link key={link.href} href={link.href} style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}>{link.label}</Link>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: '#444', margin: 0 }}>
-            🇻🇳 Thương hiệu thuần Việt — Made with ❤️ in Vietnam
-          </p>
+          <p style={{ fontSize: '11px', color: '#444', margin: 0 }}>🇻🇳 Thương hiệu thuần Việt — Made with ❤️ in Vietnam</p>
         </div>
       </div>
     </footer>
   )
 }
 
-// ─── Helper: Footer link với hover effect ─────────────────────────────────────
 function FooterLink({ href, label }: { href: string; label: string }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -521,25 +309,79 @@ function FooterLink({ href, label }: { href: string; label: string }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '13px',
-        color: hovered ? '#D4AF37' : '#9A9A9A',
-        textDecoration: 'none',
-        transition: 'color 0.2s',
+        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+        color: hovered ? '#D4AF37' : '#9A9A9A', textDecoration: 'none', transition: 'color 0.2s',
         transform: hovered ? 'translateX(4px)' : 'translateX(0)',
       }}
     >
-      <span style={{
-        width: '5px',
-        height: '5px',
-        borderRadius: '50%',
-        background: hovered ? '#D4AF37' : '#444',
-        flexShrink: 0,
-        transition: 'background 0.2s',
-      }} />
+      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: hovered ? '#D4AF37' : '#444', flexShrink: 0, transition: 'background 0.2s' }} />
       {label}
     </Link>
+  )
+}
+
+function PaymentBadge({ src, alt }: { src: string; alt: string }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={alt}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '64px',
+        height: '36px',
+        transition: 'transform 0.3s ease',
+        cursor: 'pointer',
+        transform: hovered ? 'translateY(-2px)' : 'none'
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          maxWidth: '100%',
+          maxHeight: '100%',
+          objectFit: 'contain',
+          borderRadius: '6px',
+          filter: hovered ? 'none' : 'grayscale(100%) opacity(60%)',
+          transition: 'all 0.3s ease'
+        }}
+      />
+    </div>
+  )
+}
+
+function AppBadge({ src, alt }: { src: string; alt: string }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <a
+      href="#"
+      target="_blank"
+      rel="noopener noreferrer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'block',
+        transition: 'transform 0.3s ease',
+        cursor: 'pointer',
+        transform: hovered ? 'translateY(-2px)' : 'none'
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          height: '40px',
+          width: 'auto',
+          objectFit: 'contain',
+          borderRadius: '6px',
+          filter: hovered ? 'none' : 'grayscale(100%) opacity(50%)',
+          transition: 'all 0.3s ease'
+        }}
+      />
+    </a>
   )
 }
