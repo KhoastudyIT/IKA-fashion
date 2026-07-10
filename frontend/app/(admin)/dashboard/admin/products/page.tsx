@@ -36,7 +36,7 @@ export default function AdminProductsPage() {
 
   const load = () => {
     setLoading(true)
-    getProducts({ limit: 200 })
+    getProducts({ limit: 100 })
       .then((res) => setProducts(res.items))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
@@ -44,7 +44,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     load()
-    getCollections().then(setCollections).catch(() => {})
+    getCollections().then(setCollections).catch(() => { })
   }, [])
 
   const openCreate = () => {
@@ -247,11 +247,10 @@ export default function AdminProductsPage() {
                 <button
                   key={p}
                   onClick={() => setCurrentPage(p)}
-                  className={`w-7 h-7 flex items-center justify-center text-xs font-medium rounded transition-colors cursor-pointer ${
-                    currentPage === p
+                  className={`w-7 h-7 flex items-center justify-center text-xs font-medium rounded transition-colors cursor-pointer ${currentPage === p
                       ? 'bg-[#2C2C2C] text-white'
                       : 'bg-white border border-[#E5DFD8] text-[#2C2C2C] hover:bg-[#F9F5F0]'
-                  }`}
+                    }`}
                 >
                   {p}
                 </button>
