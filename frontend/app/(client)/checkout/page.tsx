@@ -16,9 +16,9 @@ const SHIPPING_OPTIONS = [
 ]
 
 const PAYMENT_OPTIONS = [
-  { id: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: '💵' },
-  { id: 'momo', label: 'Ví MoMo', icon: '💜' },
-  { id: 'vnpay', label: 'VNPay / Chuyển khoản', icon: '🏦' },
+  { id: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: '/payments/cod.png' },
+  { id: 'momo', label: 'Ví MoMo', icon: '/payments/momo.png' },
+  { id: 'vnpay', label: 'VNPay / Chuyển khoản', icon: '/payments/vnpay.png' },
 ]
 
 function StepIndicator({ current }: { current: Step }) {
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                         transition: 'all 0.2s',
                       }}>
                         <input type="radio" name="payment" value={opt.id} checked={payment === opt.id} onChange={() => setPayment(opt.id)} style={{ accentColor: '#D4AF37', width: '18px', height: '18px' }} />
-                        <span style={{ fontSize: '22px' }}>{opt.icon}</span>
+                        <img src={opt.icon} alt={opt.label} style={{ width: '44px', height: '28px', objectFit: 'contain', borderRadius: '4px' }} />
                         <span style={{ fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{opt.label}</span>
                       </label>
                     ))}
