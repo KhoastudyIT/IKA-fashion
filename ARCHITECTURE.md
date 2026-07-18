@@ -1,15 +1,13 @@
 # Kiến trúc — IKA Fashion
 
-Dự án gồm **2 phần tách biệt**, giao tiếp qua HTTP:
+Dự án gồm **2 phần tách biệt** + **1 database**, giao tiếp qua HTTP / SQL:
 
 ```
-┌─────────────────────────┐         HTTP /api/v1          ┌──────────────────────────┐
-│  FRONTEND (Next.js)      │  ───────────────────────────▶ │  BACKEND (Express)        │
-│  http://localhost:3000   │   Authorization: Bearer JWT   │  http://localhost:4000    │
-│  frontend/               │ ◀───────────────────────────  │  backend/                 │
-└─────────────────────────┘        JSON { success,... }    └──────────────────────────┘
-                                                                      │ in-memory store
-                                                                      ▼ (Map) + migration.sql
+┌─────────────────────────┐         HTTP /api/v1          ┌──────────────────────────┐        ┌──────────────────┐
+│  FRONTEND (Next.js)      │  ───────────────────────────▶ │  BACKEND (Express)        │  SQL   │  PostgreSQL       │
+│  http://localhost:3000   │   Authorization: Bearer JWT   │  http://localhost:4000    │ ─────▶ │  ika_fashion      │
+│  frontend/               │ ◀───────────────────────────  │  backend/  (pg Pool)      │ ◀───── │  (Docker/local)   │
+└─────────────────────────┘        JSON { success,... }    └──────────────────────────┘        └──────────────────┘
 ```
 
 > Hướng dẫn cài đặt & chạy: xem [README.md](README.md). Chi tiết endpoint: [backend/README.md](backend/README.md).
@@ -33,15 +31,15 @@ Mọi dữ liệu đều lấy từ API — frontend **không** chứa dữ li�
 
 ```
 backend/src/
-  server.js           # khởi động + seed admin
+  server.js           # chờ DB sẵn sàng + seed admin + khởi động
   app.js              # ráp router, middleware
-  config/             # đọc biến môi trường (có giá trị mặc định)
+  config/             # đọc biến môi trường (có DATABASE_URL)
   middleware/         # authenticate(JWT) · authorize(role) · validate(zod) · errorHandler
-  db/                 # store.js (in-memory Map + seed sản phẩm) · seed.js (admin)
+  db/                 # index.js (pg Pool) · seed.js (admin) · setup.js (tạo DB local)
   modules/<feature>/  # mỗi feature: routes → controller → service + schema
-    auth · products · collections · cart · orders · wishlist
+    auth · products · collections · cart · orders · wishlist · messages
   docs/openapi.js     # OpenAPI 3 (Scalar UI tại /api-docs)
-backend/database/migration.sql   # schema PostgreSQL (triển khai DB thật khi cần)
+backend/database/ika_database.sql  # schema + seed PostgreSQL (Postgres tự nạp lúc init)
 ```
 
 Chuẩn response: `{ success, message, data }` (và `meta` cho danh sách phân trang).
@@ -49,10 +47,11 @@ Chuẩn response: `{ success, message, data }` (và `meta` cho danh sách phân 
 ## Luồng dữ liệu (ví dụ: thêm vào giỏ)
 
 1. Người dùng bấm "Thêm vào giỏ" → `frontend/api.ts` gọi `POST /api/v1/cart/items` kèm `Bearer <token>`.
-2. `cart.routes` → `authenticate` (giải mã JWT) → `validate` (zod) → `cart.controller` → `cart.service` cập nhật Map.
+2. `cart.routes` → `authenticate` (giải mã JWT) → `validate` (zod) → `cart.controller` → `cart.service` chạy SQL (INSERT ... ON CONFLICT) trên PostgreSQL.
 3. Trả `{ success, data: cart }` → frontend cập nhật giao diện.
 
 ## Lưu ý
 
-- Store là **in-memory**: dữ liệu tạo lúc chạy sẽ reset khi khởi động lại backend.
+- Dữ liệu lưu trong **PostgreSQL** → bền qua khởi động lại (Docker: volume `ika_pgdata`). Schema + seed: `backend/database/ika_database.sql`.
+- Đặt hàng dùng **transaction** (trừ kho + tạo order_items + xoá giỏ, đảm bảo toàn vẹn).
 - Xác thực bằng **JWT**; token lưu ở `localStorage`, gửi qua header `Authorization`.

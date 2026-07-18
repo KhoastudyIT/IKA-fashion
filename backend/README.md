@@ -1,18 +1,22 @@
 # IKA Fashion — Backend API
 
 API thương mại điện tử thời trang, xây dựng bằng **Node.js + Express** theo
-kiến trúc module (controller / routes / service / schema). Dữ liệu chạy bằng
-**in-memory store** (`src/db/store.js`) nên chạy được ngay, không cần cài database.
-Schema PostgreSQL thật nằm ở `database/migration.sql` để triển khai về sau.
+kiến trúc module (controller / routes / service / schema). Dữ liệu lưu trong
+**PostgreSQL** (truy cập qua `pg` — `src/db/index.js`). Schema + seed nằm ở
+`database/ika_database.sql`.
 
-## Cài đặt & chạy
+## Cài đặt & chạy (local, cần PostgreSQL)
 
 ```bash
 cd backend
 npm install
-cp .env.example .env      # tùy chỉnh nếu cần
+cp .env.example .env      # sửa DATABASE_URL cho khớp Postgres của bạn
+npm run db:setup          # tạo DB ika_fashion + nạp schema/seed (chạy 1 lần)
 npm run dev               # http://localhost:4000  (node --watch)
 ```
+
+> Chạy bằng Docker thì không cần bước trên — Postgres tự nạp `database/ika_database.sql`.
+> Xem `../DOCKER.md`.
 
 - API docs (Scalar): http://localhost:4000/api-docs
 - Health check:       http://localhost:4000/api/health
@@ -22,11 +26,11 @@ npm run dev               # http://localhost:4000  (node --watch)
 
 ```
 backend/
-├── database/migration.sql        # schema PostgreSQL + seed (tham khảo)
+├── database/ika_database.sql     # schema PostgreSQL + seed (4 danh mục, 36 sản phẩm)
 └── src/
-    ├── server.js                 # khởi động server + seed admin
+    ├── server.js                 # chờ DB sẵn sàng, seed admin, khởi động server
     ├── app.js                    # tạo Express app, ráp router
-    ├── config/index.js           # đọc biến môi trường
+    ├── config/index.js           # đọc biến môi trường (có DATABASE_URL)
     ├── utils/response.js          # chuẩn response { success, message, data }
     ├── middleware/
     │   ├── authenticate.js        # xác thực JWT -> req.user
@@ -34,20 +38,22 @@ backend/
     │   ├── validate.js            # validate body/query bằng zod
     │   └── errorHandler.js        # AppError + xử lý lỗi tập trung
     ├── db/
-    │   ├── store.js               # in-memory store (Map) + seed sản phẩm
-    │   └── seed.js                # seed tài khoản admin
+    │   ├── index.js               # pg Pool + query()
+    │   ├── seed.js                # seed tài khoản admin (SQL)
+    │   └── setup.js               # tạo DB + nạp file .sql (local, `npm run db:setup`)
     ├── docs/openapi.js            # đặc tả OpenAPI 3 cho Scalar
     └── modules/
-        ├── auth/                  # đăng ký, đăng nhập, hồ sơ
+        ├── auth/                  # đăng ký, đăng nhập, hồ sơ, quản lý user (admin)
         ├── products/              # sản phẩm + lọc/sắp xếp/phân trang, CRUD admin
-        ├── collections/           # danh mục (áo thun, áo polo, quần)
+        ├── collections/           # danh mục (áo thun, áo polo, quần, ưu đãi)
         ├── cart/                  # giỏ hàng theo user
-        ├── orders/                # đặt hàng, quản lý đơn (admin)
-        └── wishlist/              # danh sách yêu thích
+        ├── orders/                # đặt hàng (transaction trừ kho), quản lý đơn (admin)
+        ├── wishlist/              # danh sách yêu thích
+        └── messages/             # chat khách hàng ↔ admin (hội thoại + tin nhắn)
 ```
 
 Mỗi module gồm: `*.routes.js` (định nghĩa endpoint) → `*.controller.js`
-(nhận req/res) → `*.service.js` (logic nghiệp vụ + truy cập store) và
+(nhận req/res) → `*.service.js` (logic nghiệp vụ + truy vấn SQL) và
 `*.schema.js` (zod validation).
 
 ## Chuẩn response
@@ -90,6 +96,13 @@ Mỗi module gồm: `*.routes.js` (định nghĩa endpoint) → `*.controller.js
 | GET    | `/api/v1/wishlist`                | user      | Yêu thích |
 | POST   | `/api/v1/wishlist`                | user      | Thêm yêu thích |
 | DELETE | `/api/v1/wishlist/:productId`     | user      | Xóa yêu thích |
+| GET    | `/api/v1/messages/my`             | user      | Hội thoại của tôi |
+| POST   | `/api/v1/messages`                | user      | Gửi tin nhắn |
+| GET    | `/api/v1/messages/:conversationId/messages` | user | Tin nhắn trong hội thoại |
+| PUT    | `/api/v1/messages/:conversationId/read` | user | Đánh dấu đã đọc |
+| GET    | `/api/v1/messages/conversations`  | admin     | Tất cả hội thoại |
+| GET    | `/api/v1/messages/unread-count`   | admin     | Tổng số chưa đọc |
+| DELETE | `/api/v1/messages/:id`            | admin     | Xóa tin nhắn |
 
 `key` của dòng giỏ hàng có dạng `productId|size|color`, cần `encodeURIComponent`
 khi đưa vào URL. Ví dụ: `1|M|Trắng` → `1%7CM%7CTr%E1%BA%AFng`.

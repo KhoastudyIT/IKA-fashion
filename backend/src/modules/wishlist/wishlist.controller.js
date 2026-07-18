@@ -1,16 +1,16 @@
 import * as wishlistService from './wishlist.service.js';
 import { ok } from '../../utils/response.js';
 
-export function list(req, res) {
-  ok(res, wishlistService.listWishlist(req.user.id));
+export async function list(req, res) {
+  ok(res, await wishlistService.listWishlist(req.user.id));
 }
 
-export function add(req, res) {
-  const items = wishlistService.addToWishlist(req.user.id, req.body.productId);
+export async function add(req, res) {
+  const items = await wishlistService.addToWishlist(req.user.id, req.body.productId);
   ok(res, items, 'Đã thêm vào danh sách yêu thích');
 }
 
-export function remove(req, res) {
-  const items = wishlistService.removeFromWishlist(req.user.id, req.params.productId);
+export async function remove(req, res) {
+  const items = await wishlistService.removeFromWishlist(req.user.id, req.params.productId);
   ok(res, items, 'Đã xóa khỏi danh sách yêu thích');
 }

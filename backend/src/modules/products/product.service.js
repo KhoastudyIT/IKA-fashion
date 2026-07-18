@@ -1,80 +1,145 @@
-import { products } from '../../db/store.js';
+import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
 
 // "M,L" -> ['M','L']; rỗng/undefined -> []
 const csv = (s) => (s ? s.split(',').map(v => v.trim()).filter(Boolean) : []);
 
-export function listProducts({
+// rating là NUMERIC → pg trả về string, cast ::float để client nhận number
+const PRODUCT_COLS =
+  `id, name, handle, collection, type, price, img, images, colors, sizes, features,
+   rating::float AS rating, sold, stock, description`;
+
+// Cột JSONB — khi ghi phải stringify
+const JSON_FIELDS = new Set(['images', 'colors', 'sizes', 'features']);
+
+export async function listProducts({
   collection, search, sort = 'newest', page = 1, limit = 12,
   priceMin, priceMax, colors, sizes,
 }) {
-  let items = [...products.values()];
+  page = Number(page) || 1;
+  limit = Number(limit) || 12;
 
-  if (collection) items = items.filter(p => p.collection === collection);
+  const params = [];
+  const where = [];
+
+  if (collection) {
+    params.push(collection);
+    where.push(`collection = $${params.length}`);
+  }
   if (search) {
-    const q = search.toLowerCase();
-    items = items.filter(p =>
-      p.name.toLowerCase().includes(q) || p.type.toLowerCase().includes(q),
-    );
+    params.push(`%${search.toLowerCase()}%`);
+    where.push(`(LOWER(name) LIKE $${params.length} OR LOWER(type) LIKE $${params.length})`);
+  }
+  if (priceMin != null) {
+    params.push(priceMin);
+    where.push(`price >= $${params.length}`);
+  }
+  if (priceMax != null) {
+    params.push(priceMax);
+    where.push(`price <= $${params.length}`);
+  }
+  // Facet đa lựa chọn trên JSONB: '?|' = mảng chứa BẤT KỲ phần tử nào
+  const fColors = csv(colors);
+  if (fColors.length) {
+    params.push(fColors);
+    where.push(`colors ?| $${params.length}`);
+  }
+  const fSizes = csv(sizes);
+  if (fSizes.length) {
+    params.push(fSizes);
+    where.push(`sizes ?| $${params.length}`);
   }
 
-  if (priceMin != null) items = items.filter(p => p.price >= priceMin);
-  if (priceMax != null) items = items.filter(p => p.price <= priceMax);
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  // Facet đa lựa chọn: OR trong cùng facet, AND giữa các facet.
-  const fColors = csv(colors);
-  if (fColors.length) items = items.filter(p => (p.colors || []).some(c => fColors.includes(c)));
-  const fSizes = csv(sizes);
-  if (fSizes.length)  items = items.filter(p => (p.sizes || []).some(s => fSizes.includes(s)));
-
-  const sortFns = {
-    price_asc:  (a, b) => a.price - b.price,
-    price_desc: (a, b) => b.price - a.price,
-    rating:     (a, b) => b.rating - a.rating,
-    sold:       (a, b) => b.sold - a.sold,
-    newest:     (a, b) => a.id - b.id,
+  const sortMap = {
+    price_asc:  'price ASC',
+    price_desc: 'price DESC',
+    rating:     'rating DESC',
+    sold:       'sold DESC',
+    newest:     'id ASC',
   };
-  items.sort(sortFns[sort] ?? sortFns.newest);
+  const orderSql = `ORDER BY ${sortMap[sort] ?? sortMap.newest}`;
 
-  const total = items.length;
+  const countRes = await db.query(`SELECT COUNT(*)::int AS total FROM products ${whereSql}`, params);
+  const total = countRes.rows[0].total;
   const totalPages = Math.ceil(total / limit) || 1;
-  const data = items.slice((page - 1) * limit, page * limit);
 
-  return { data, meta: { total, page, limit, totalPages } };
+  params.push(limit);
+  const limitIdx = params.length;
+  params.push((page - 1) * limit);
+  const offsetIdx = params.length;
+
+  const res = await db.query(
+    `SELECT ${PRODUCT_COLS} FROM products ${whereSql} ${orderSql} LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+    params,
+  );
+
+  return { data: res.rows, meta: { total, page, limit, totalPages } };
 }
 
-export function getProductById(id) {
-  const product = products.get(Number(id));
-  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
-  return product;
+export async function getProductById(id) {
+  const res = await db.query(`SELECT ${PRODUCT_COLS} FROM products WHERE id = $1`, [Number(id)]);
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+  return res.rows[0];
 }
 
-export function getProductByHandle(handle) {
-  const product = [...products.values()].find(p => p.handle === handle);
-  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
-  return product;
+export async function getProductByHandle(handle) {
+  const res = await db.query(`SELECT ${PRODUCT_COLS} FROM products WHERE handle = $1`, [handle]);
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+  return res.rows[0];
 }
 
-export function createProduct(data) {
-  const exists = [...products.values()].some(p => p.handle === data.handle);
-  if (exists) throw new AppError('Handle đã tồn tại', 409);
+export async function createProduct(data) {
+  const dup = await db.query('SELECT id FROM products WHERE handle = $1', [data.handle]);
+  if (dup.rows.length) throw new AppError('Handle đã tồn tại', 409);
 
-  const maxId = products.size > 0 ? Math.max(...products.keys()) : 0;
-  const id = maxId + 1;
-  const product = { id, ...data, rating: 5.0, sold: 0 };
-  products.set(id, product);
-  return product;
+  const res = await db.query(
+    `INSERT INTO products
+       (name, handle, collection, type, price, img, images, colors, sizes, features, stock, description)
+     VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12)
+     RETURNING ${PRODUCT_COLS}`,
+    [
+      data.name, data.handle, data.collection, data.type, data.price,
+      data.img ?? '/products/placeholder.png',
+      JSON.stringify(data.images ?? []),
+      JSON.stringify(data.colors ?? []),
+      JSON.stringify(data.sizes ?? []),
+      JSON.stringify(data.features ?? []),
+      data.stock ?? 0, data.description ?? '',
+    ],
+  );
+  return res.rows[0];
 }
 
-export function updateProduct(id, data) {
-  const product = products.get(Number(id));
-  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
-  const updated = { ...product, ...data };
-  products.set(Number(id), updated);
-  return updated;
+export async function updateProduct(id, data) {
+  const allowed = ['name', 'handle', 'collection', 'type', 'price', 'img',
+    'images', 'colors', 'sizes', 'features', 'rating', 'sold', 'stock', 'description'];
+
+  const sets = [];
+  const params = [Number(id)];
+  for (const key of allowed) {
+    if (data[key] === undefined) continue;
+    if (JSON_FIELDS.has(key)) {
+      params.push(JSON.stringify(data[key]));
+      sets.push(`${key} = $${params.length}::jsonb`);
+    } else {
+      params.push(data[key]);
+      sets.push(`${key} = $${params.length}`);
+    }
+  }
+  if (!sets.length) return getProductById(id);
+  sets.push('updated_at = NOW()');
+
+  const res = await db.query(
+    `UPDATE products SET ${sets.join(', ')} WHERE id = $1 RETURNING ${PRODUCT_COLS}`,
+    params,
+  );
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+  return res.rows[0];
 }
 
-export function deleteProduct(id) {
-  if (!products.has(Number(id))) throw new AppError('Không tìm thấy sản phẩm', 404);
-  products.delete(Number(id));
+export async function deleteProduct(id) {
+  const res = await db.query('DELETE FROM products WHERE id = $1 RETURNING id', [Number(id)]);
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
 }

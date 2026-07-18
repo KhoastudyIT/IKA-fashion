@@ -1,145 +1,155 @@
-import { randomUUID } from 'crypto';
-import { conversations, messages, users } from '../../db/store.js';
+import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Conversation join users để lấy tên/email khách (chuẩn hóa, không lưu trùng)
+const CONV_SELECT = `
+  SELECT c.id, c.customer_id AS "customerId",
+         u.name AS "customerName", u.email AS "customerEmail",
+         c.last_message AS "lastMessage", c.last_message_at AS "lastMessageAt",
+         c.unread_by_admin AS "unreadByAdmin", c.unread_by_customer AS "unreadByCustomer",
+         c.created_at AS "createdAt"
+  FROM conversations c JOIN users u ON u.id = c.customer_id
+`;
 
-function getOrCreateConversation(customerId) {
-  // Mỗi customer chỉ có 1 conversation với admin
-  const existing = [...conversations.values()].find(c => c.customerId === customerId);
-  if (existing) return existing;
+const MSG_SELECT = `
+  SELECT id, conversation_id AS "conversationId", sender_id AS "senderId",
+         sender_role AS "senderRole", sender_name AS "senderName",
+         content, is_read AS "isRead", created_at AS "createdAt"
+  FROM messages
+`;
 
-  const user = users.get(customerId);
-  const conv = {
-    id: randomUUID(),
-    customerId,
-    customerName: user?.name || 'Khách hàng',
-    customerEmail: user?.email || '',
-    lastMessage: '',
-    lastMessageAt: new Date().toISOString(),
-    unreadByAdmin: 0,
-    unreadByCustomer: 0,
-    createdAt: new Date().toISOString(),
-  };
-  conversations.set(conv.id, conv);
-  return conv;
+async function convById(id) {
+  const res = await db.query(`${CONV_SELECT} WHERE c.id = $1`, [id]);
+  return res.rows[0] ?? null;
 }
 
-function getConversationMessages(conversationId) {
-  return [...messages.values()]
-    .filter(m => m.conversationId === conversationId)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+async function convByCustomer(customerId) {
+  const res = await db.query(`${CONV_SELECT} WHERE c.customer_id = $1`, [customerId]);
+  return res.rows[0] ?? null;
+}
+
+async function getOrCreateConversation(customerId) {
+  await db.query(
+    `INSERT INTO conversations (customer_id) VALUES ($1) ON CONFLICT (customer_id) DO NOTHING`,
+    [customerId],
+  );
+  return convByCustomer(customerId);
 }
 
 // ─── Service Functions ─────────────────────────────────────────────────────────
 
-/** Admin: Lấy tất cả cuộc trò chuyện, sắp xếp mới nhất trước */
-export function listAllConversations() {
-  return [...conversations.values()].sort(
-    (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt)
-  );
+/** Admin: Lấy tất cả cuộc trò chuyện, mới nhất trước */
+export async function listAllConversations() {
+  const res = await db.query(`${CONV_SELECT} ORDER BY c.last_message_at DESC`);
+  return res.rows;
 }
 
-/** Customer: Lấy conversation của chính mình */
-export function getMyConversation(customerId) {
-  const conv = [...conversations.values()].find(c => c.customerId === customerId);
-  if (!conv) return null;
-  return conv;
+/** Customer: Lấy conversation của chính mình (hoặc null) */
+export async function getMyConversation(customerId) {
+  return convByCustomer(customerId);
 }
 
 /** Lấy tin nhắn của 1 cuộc trò chuyện */
-export function getMessages(conversationId, requesterId, requesterRole) {
-  const conv = conversations.get(conversationId);
+export async function getMessages(conversationId, requesterId, requesterRole) {
+  const conv = await convById(conversationId);
   if (!conv) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
-
-  // Phân quyền: customer chỉ xem conversation của mình
   if (requesterRole !== 'admin' && conv.customerId !== requesterId) {
     throw new AppError('Bạn không có quyền xem cuộc trò chuyện này', 403);
   }
-
-  return getConversationMessages(conversationId);
+  const res = await db.query(
+    `${MSG_SELECT} WHERE conversation_id = $1 ORDER BY created_at ASC`,
+    [conversationId],
+  );
+  return res.rows;
 }
 
 /** Gửi tin nhắn */
-export function sendMessage({ senderId, senderRole, senderName, content, conversationId }) {
+export async function sendMessage({ senderId, senderRole, content, conversationId }) {
   let conv;
-
   if (senderRole === 'admin') {
-    // Admin reply: phải có conversationId
     if (!conversationId) throw new AppError('Admin phải chỉ định cuộc trò chuyện', 400);
-    conv = conversations.get(conversationId);
+    conv = await convById(conversationId);
     if (!conv) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
   } else {
-    // Customer gửi: tạo hoặc lấy conversation của họ
-    conv = getOrCreateConversation(senderId);
+    conv = await getOrCreateConversation(senderId);
   }
 
-  const msg = {
-    id: randomUUID(),
-    conversationId: conv.id,
-    senderId,
-    senderRole,
-    senderName,
-    content,
-    createdAt: new Date().toISOString(),
-    isRead: false,
-  };
-  messages.set(msg.id, msg);
+  const nameRes = await db.query('SELECT name, email FROM users WHERE id = $1', [senderId]);
+  const senderName = nameRes.rows[0]?.name || nameRes.rows[0]?.email || 'Người dùng';
 
-  // Cập nhật conversation
-  const updated = {
-    ...conv,
-    lastMessage: content,
-    lastMessageAt: msg.createdAt,
-    unreadByAdmin: senderRole === 'customer' ? conv.unreadByAdmin + 1 : conv.unreadByAdmin,
-    unreadByCustomer: senderRole === 'admin' ? conv.unreadByCustomer + 1 : conv.unreadByCustomer,
-  };
-  conversations.set(conv.id, updated);
+  const ins = await db.query(
+    `INSERT INTO messages (conversation_id, sender_id, sender_role, sender_name, content)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, conversation_id AS "conversationId", sender_id AS "senderId",
+               sender_role AS "senderRole", sender_name AS "senderName",
+               content, is_read AS "isRead", created_at AS "createdAt"`,
+    [conv.id, senderId, senderRole, senderName, content],
+  );
+  const message = ins.rows[0];
 
-  return { message: msg, conversation: updated };
+  await db.query(
+    `UPDATE conversations SET
+       last_message = $2,
+       last_message_at = $3,
+       unread_by_admin = unread_by_admin + $4,
+       unread_by_customer = unread_by_customer + $5
+     WHERE id = $1`,
+    [
+      conv.id, content, message.createdAt,
+      senderRole === 'customer' ? 1 : 0,
+      senderRole === 'admin' ? 1 : 0,
+    ],
+  );
+
+  return { message, conversation: await convById(conv.id) };
 }
 
-/** Đánh dấu đã đọc (admin đọc thì reset unreadByAdmin, customer đọc thì reset unreadByCustomer) */
-export function markRead(conversationId, readerRole) {
-  const conv = conversations.get(conversationId);
+/** Đánh dấu đã đọc */
+export async function markRead(conversationId, readerRole) {
+  const conv = await convById(conversationId);
   if (!conv) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
 
-  const updated = {
-    ...conv,
-    unreadByAdmin: readerRole === 'admin' ? 0 : conv.unreadByAdmin,
-    unreadByCustomer: readerRole === 'customer' ? 0 : conv.unreadByCustomer,
-  };
-  conversations.set(conversationId, updated);
+  await db.query(
+    `UPDATE conversations SET
+       unread_by_admin = CASE WHEN $2 = 'admin' THEN 0 ELSE unread_by_admin END,
+       unread_by_customer = CASE WHEN $2 = 'customer' THEN 0 ELSE unread_by_customer END
+     WHERE id = $1`,
+    [conversationId, readerRole],
+  );
+  // Tin của phía bên kia -> đánh dấu đã đọc
+  await db.query(
+    `UPDATE messages SET is_read = true
+     WHERE conversation_id = $1 AND is_read = false AND sender_role <> $2`,
+    [conversationId, readerRole],
+  );
 
-  // Đánh dấu các tin nhắn chưa đọc là đã đọc
-  [...messages.values()]
-    .filter(m => m.conversationId === conversationId && !m.isRead && m.senderRole !== readerRole)
-    .forEach(m => messages.set(m.id, { ...m, isRead: true }));
-
-  return updated;
+  return convById(conversationId);
 }
 
 /** Admin: Xóa 1 tin nhắn */
-export function deleteMessage(messageId, requesterRole) {
+export async function deleteMessage(messageId, requesterRole) {
   if (requesterRole !== 'admin') throw new AppError('Chỉ admin mới có thể xóa tin nhắn', 403);
-  const msg = messages.get(messageId);
-  if (!msg) throw new AppError('Không tìm thấy tin nhắn', 404);
-  messages.delete(messageId);
+  const del = await db.query(
+    'DELETE FROM messages WHERE id = $1 RETURNING conversation_id',
+    [messageId],
+  );
+  if (!del.rows.length) throw new AppError('Không tìm thấy tin nhắn', 404);
 
-  // Cập nhật lastMessage của conversation nếu cần
-  const remaining = getConversationMessages(msg.conversationId);
-  const conv = conversations.get(msg.conversationId);
-  if (conv) {
-    const last = remaining[remaining.length - 1];
-    conversations.set(conv.id, {
-      ...conv,
-      lastMessage: last?.content || '',
-      lastMessageAt: last?.createdAt || conv.lastMessageAt,
-    });
-  }
+  // Cập nhật lastMessage theo tin còn lại (rỗng nếu đã xóa hết)
+  const convId = del.rows[0].conversation_id;
+  await db.query(
+    `UPDATE conversations SET
+       last_message = COALESCE(
+         (SELECT content FROM messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 1), ''),
+       last_message_at = COALESCE(
+         (SELECT created_at FROM messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 1), last_message_at)
+     WHERE id = $1`,
+    [convId],
+  );
 }
 
-/** Lấy tổng số unread cho admin (để hiển thị badge) */
-export function getTotalUnreadForAdmin() {
-  return [...conversations.values()].reduce((sum, c) => sum + c.unreadByAdmin, 0);
+/** Admin: tổng số unread (badge) */
+export async function getTotalUnreadForAdmin() {
+  const res = await db.query('SELECT COALESCE(SUM(unread_by_admin), 0)::int AS total FROM conversations');
+  return res.rows[0].total;
 }

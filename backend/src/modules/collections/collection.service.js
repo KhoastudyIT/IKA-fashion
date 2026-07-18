@@ -1,40 +1,61 @@
-import { collections, products } from '../../db/store.js';
+import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
 
-export function listCollections() {
+const PRODUCT_COLS =
+  `id, name, handle, collection, type, price, img, images, colors, sizes, features,
+   rating::float AS rating, sold, stock, description`;
+
+export async function listCollections() {
   // Kèm số lượng sản phẩm mỗi danh mục
-  const all = [...products.values()];
-  return collections.map(c => ({
-    ...c,
-    productCount: all.filter(p => p.collection === c.slug).length,
-  }));
+  const res = await db.query(`
+    SELECT c.id, c.slug, c.name, c.img,
+           COUNT(p.id)::int AS "productCount"
+    FROM collections c
+    LEFT JOIN products p ON p.collection = c.slug
+    GROUP BY c.id, c.slug, c.name, c.img
+    ORDER BY c.id
+  `);
+  return res.rows;
 }
 
-export function getCollectionBySlug(slug) {
-  const collection = collections.find(c => c.slug === slug);
-  if (!collection) throw new AppError('Không tìm thấy danh mục', 404);
-  const items = [...products.values()].filter(p => p.collection === slug);
-  return { ...collection, products: items };
+export async function getCollectionBySlug(slug) {
+  const col = await db.query('SELECT id, slug, name, img FROM collections WHERE slug = $1', [slug]);
+  if (!col.rows.length) throw new AppError('Không tìm thấy danh mục', 404);
+
+  const items = await db.query(
+    `SELECT ${PRODUCT_COLS} FROM products WHERE collection = $1 ORDER BY id`,
+    [slug],
+  );
+  return { ...col.rows[0], products: items.rows };
 }
 
-export function createCollection({ name, slug, img }) {
-  const existing = collections.find(c => c.slug === slug);
-  if (existing) throw new AppError('Slug danh mục đã tồn tại', 409);
-  const newCol = { id: Date.now(), name, slug, img: img || '/products/ao-thun-trang.png' };
-  collections.push(newCol);
-  return newCol;
+export async function createCollection({ name, slug, img }) {
+  const dup = await db.query('SELECT id FROM collections WHERE slug = $1', [slug]);
+  if (dup.rows.length) throw new AppError('Slug danh mục đã tồn tại', 409);
+
+  const res = await db.query(
+    `INSERT INTO collections (name, slug, img) VALUES ($1, $2, $3)
+     RETURNING id, slug, name, img`,
+    [name, slug, img || '/products/ao-thun-trang.png'],
+  );
+  return res.rows[0];
 }
 
-export function updateCollection(id, data) {
-  const idx = collections.findIndex(c => c.id === Number(id));
-  if (idx === -1) throw new AppError('Không tìm thấy danh mục', 404);
-  collections[idx] = { ...collections[idx], ...data };
-  return collections[idx];
+export async function updateCollection(id, data) {
+  const res = await db.query(
+    `UPDATE collections SET
+       name = COALESCE($2, name),
+       slug = COALESCE($3, slug),
+       img  = COALESCE($4, img)
+     WHERE id = $1
+     RETURNING id, slug, name, img`,
+    [Number(id), data.name ?? null, data.slug ?? null, data.img ?? null],
+  );
+  if (!res.rows.length) throw new AppError('Không tìm thấy danh mục', 404);
+  return res.rows[0];
 }
 
-export function deleteCollection(id) {
-  const idx = collections.findIndex(c => c.id === Number(id));
-  if (idx === -1) throw new AppError('Không tìm thấy danh mục', 404);
-  collections.splice(idx, 1);
+export async function deleteCollection(id) {
+  const res = await db.query('DELETE FROM collections WHERE id = $1 RETURNING id', [Number(id)]);
+  if (!res.rows.length) throw new AppError('Không tìm thấy danh mục', 404);
 }
-

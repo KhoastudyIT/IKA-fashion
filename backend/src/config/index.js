@@ -5,6 +5,7 @@ const config = {
   nodeEnv:        process.env.NODE_ENV               ?? 'development',
   openapiEnabled: process.env.OPENAPI_ENABLED        !== 'false',
   corsOrigin:     process.env.CORS_ORIGIN            ?? 'http://localhost:3000',
+  databaseUrl:    process.env.DATABASE_URL           ?? 'postgresql://postgres:postgres@localhost:5432/ika_fashion',
 };
 
 export default config;

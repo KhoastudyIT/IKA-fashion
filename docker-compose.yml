@@ -1,0 +1,78 @@
+# IKA FASHION — Docker Compose (dev/local)
+# Chạy:   docker compose up -d --build
+# Dừng:   docker compose down
+# Xoá cả dữ liệu DB:  docker compose down -v
+#
+# 3 service:
+#   postgres  : PostgreSQL 16, TỰ nạp backend/database/ika_database.sql lần đầu
+#   backend   : Express API (kết nối postgres qua DATABASE_URL)
+#   frontend  : Next.js (standalone) phục vụ giao diện
+#
+# Giá trị nhạy cảm có thể override qua file .env cùng cấp (xem .env.example).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ika_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ika_fashion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    # 5434 ở host để tránh đụng Postgres khác đang chạy (trong container vẫn là 5432)
+    ports:
+      - "5434:5432"
+    volumes:
+      - ika_pgdata:/var/lib/postgresql/data
+      # File .sql duy nhất — Postgres tự chạy khi KHỞI TẠO DB lần đầu
+      - ./backend/database/ika_database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ika_fashion"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    container_name: ika_backend
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-ika-fashion-dev-secret-change-in-prod}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ika.vn}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      OPENAPI_ENABLED: "true"
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ika_fashion
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:4000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # NEXT_PUBLIC_* được nhúng lúc build và chạy ở trình duyệt,
+        # nên phải trỏ tới backend qua URL của máy host.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
+    container_name: ika_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+volumes:
+  ika_pgdata:
