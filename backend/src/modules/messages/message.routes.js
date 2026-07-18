@@ -5,26 +5,20 @@ import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
 import { sendMessageSchema } from './message.schema.js';
 
-export const messageRouter = Router();
+// Khách hàng — mount tại /api/v1/customer/messages
+export const messageCustomerRouter = Router();
+messageCustomerRouter.use(authenticate);
+messageCustomerRouter.get('/my',                       ctrl.getMyConversation);
+messageCustomerRouter.post('/',                        validate(sendMessageSchema), ctrl.sendMessage);
+messageCustomerRouter.get('/:conversationId/messages', ctrl.getMessages);
+messageCustomerRouter.put('/:conversationId/read',     ctrl.markRead);
 
-// Tất cả route đều cần đăng nhập
-messageRouter.use(authenticate);
-
-// Admin only
-messageRouter.get('/conversations', authorize('admin'), ctrl.listConversations);
-messageRouter.get('/unread-count',  authorize('admin'), ctrl.getUnreadCount);
-
-// Customer: xem conversation của mình
-messageRouter.get('/my', ctrl.getMyConversation);
-
-// Shared: lấy tin nhắn theo conversation
-messageRouter.get('/:conversationId/messages', ctrl.getMessages);
-
-// Shared: gửi tin nhắn (customer tạo mới, admin reply)
-messageRouter.post('/', validate(sendMessageSchema), ctrl.sendMessage);
-
-// Shared: đánh dấu đã đọc
-messageRouter.put('/:conversationId/read', ctrl.markRead);
-
-// Admin: xóa tin nhắn
-messageRouter.delete('/:id', authorize('admin'), ctrl.deleteMessage);
+// Admin — mount tại /api/v1/admin/messages
+export const messageAdminRouter = Router();
+messageAdminRouter.use(authenticate, authorize('admin'));
+messageAdminRouter.get('/conversations',              ctrl.listConversations);
+messageAdminRouter.get('/unread-count',               ctrl.getUnreadCount);
+messageAdminRouter.post('/',                          validate(sendMessageSchema), ctrl.sendMessage);
+messageAdminRouter.get('/:conversationId/messages',   ctrl.getMessages);
+messageAdminRouter.put('/:conversationId/read',       ctrl.markRead);
+messageAdminRouter.delete('/:id',                     ctrl.deleteMessage);

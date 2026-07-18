@@ -1,5 +1,9 @@
 // =============================================================
 // Client gọi IKA Fashion Express API (http://localhost:4000/api/v1).
+// API tách theo vai trò:
+//   - Public   : /api/v1/...            (duyệt sản phẩm, danh mục, xem đánh giá, auth)
+//   - Customer : /api/v1/customer/...   (giỏ, đơn của tôi, wishlist, gửi đánh giá...)
+//   - Admin    : /api/v1/admin/...      (quản lý sản phẩm, đơn, user, mã, đánh giá...)
 // Token lưu ở localStorage, tự gắn header Authorization cho route cần auth.
 // =============================================================
 
@@ -115,6 +119,8 @@ export interface Order {
   userId: string
   items: Array<{ productId: number; name: string; img: string | null; price: number; size: string; color: string; quantity: number; lineTotal: number }>
   totalPrice: number
+  discount: number
+  couponCode: string
   status: string
   paymentStatus: string
   shippingAddress: string
@@ -132,7 +138,7 @@ function mapProduct(p: any): ApiProduct {
   return { ...p, title: p.name, image: p.img }
 }
 
-// ---------- Products ----------
+// ---------- Products (công khai) ----------
 
 export async function getProducts(query: ProductQuery = {}): Promise<{ items: ApiProduct[]; meta: any }> {
   const qs = new URLSearchParams()
@@ -151,7 +157,7 @@ export async function getCollections(): Promise<Collection[]> {
   return getData('/collections')
 }
 
-// ---------- Products: quản trị (cần token admin) ----------
+// ---------- Products: quản trị (admin) ----------
 
 export interface ProductInput {
   name: string
@@ -169,55 +175,55 @@ export interface ProductInput {
 }
 
 export async function createProduct(body: ProductInput): Promise<ApiProduct> {
-  return mapProduct(await getData('/products', { method: 'POST', body, auth: true }))
+  return mapProduct(await getData('/admin/products', { method: 'POST', body, auth: true }))
 }
 export async function updateProduct(id: number, body: Partial<ProductInput>): Promise<ApiProduct> {
-  return mapProduct(await getData(`/products/${id}`, { method: 'PUT', body, auth: true }))
+  return mapProduct(await getData(`/admin/products/${id}`, { method: 'PUT', body, auth: true }))
 }
 export async function deleteProduct(id: number): Promise<void> {
-  await request(`/products/${id}`, { method: 'DELETE', auth: true })
+  await request(`/admin/products/${id}`, { method: 'DELETE', auth: true })
 }
 
-// ---------- Cart (cần đăng nhập) ----------
+// ---------- Cart (khách hàng) ----------
 
 export function getCart(): Promise<Cart> {
-  return getData('/cart', { auth: true })
+  return getData('/customer/cart', { auth: true })
 }
 export function addToCart(item: { productId: number; size: string; color: string; quantity?: number }): Promise<Cart> {
-  return getData('/cart/items', { method: 'POST', body: item, auth: true })
+  return getData('/customer/cart/items', { method: 'POST', body: item, auth: true })
 }
 export function updateCartItem(key: string, quantity: number): Promise<Cart> {
-  return getData(`/cart/items/${encodeURIComponent(key)}`, { method: 'PUT', body: { quantity }, auth: true })
+  return getData(`/customer/cart/items/${encodeURIComponent(key)}`, { method: 'PUT', body: { quantity }, auth: true })
 }
 export function removeCartItem(key: string): Promise<Cart> {
-  return getData(`/cart/items/${encodeURIComponent(key)}`, { method: 'DELETE', auth: true })
+  return getData(`/customer/cart/items/${encodeURIComponent(key)}`, { method: 'DELETE', auth: true })
 }
 export function clearCart(): Promise<Cart> {
-  return getData('/cart', { method: 'DELETE', auth: true })
+  return getData('/customer/cart', { method: 'DELETE', auth: true })
 }
 
-// ---------- Wishlist (cần đăng nhập) ----------
+// ---------- Wishlist (khách hàng) ----------
 
 export function getWishlist(): Promise<ApiProduct[]> {
-  return getData('/wishlist', { auth: true }).then((arr: any[]) => arr.map(mapProduct))
+  return getData('/customer/wishlist', { auth: true }).then((arr: any[]) => arr.map(mapProduct))
 }
 export function addWishlist(productId: number): Promise<ApiProduct[]> {
-  return getData('/wishlist', { method: 'POST', body: { productId }, auth: true }).then((arr: any[]) => arr.map(mapProduct))
+  return getData('/customer/wishlist', { method: 'POST', body: { productId }, auth: true }).then((arr: any[]) => arr.map(mapProduct))
 }
 export function removeWishlist(productId: number): Promise<ApiProduct[]> {
-  return getData(`/wishlist/${productId}`, { method: 'DELETE', auth: true }).then((arr: any[]) => arr.map(mapProduct))
+  return getData(`/customer/wishlist/${productId}`, { method: 'DELETE', auth: true }).then((arr: any[]) => arr.map(mapProduct))
 }
 
-// ---------- Orders (cần đăng nhập) ----------
+// ---------- Orders (khách hàng) ----------
 
-export function createOrder(body: { shippingAddress: string; phone: string; notes?: string }): Promise<Order> {
-  return getData('/orders', { method: 'POST', body, auth: true })
+export function createOrder(body: { shippingAddress: string; phone: string; notes?: string; couponCode?: string }): Promise<Order> {
+  return getData('/customer/orders', { method: 'POST', body, auth: true })
 }
 export function getMyOrders(): Promise<Order[]> {
-  return getData('/orders', { auth: true })
+  return getData('/customer/orders', { auth: true })
 }
 
-// ---------- Admin API Endpoints ----------
+// ---------- Admin ----------
 
 export interface ApiUser {
   id: string
@@ -231,39 +237,39 @@ export interface ApiUser {
 }
 
 export function getAdminOrders(status?: string): Promise<Order[]> {
-  return getData(`/orders/all${status ? `?status=${status}` : ''}`, { auth: true })
+  return getData(`/admin/orders${status ? `?status=${status}` : ''}`, { auth: true })
 }
 
 export function updateOrderStatus(id: string, body: { status: string; paymentStatus?: string }): Promise<Order> {
-  return getData(`/orders/${id}/status`, { method: 'PUT', body, auth: true })
+  return getData(`/admin/orders/${id}/status`, { method: 'PUT', body, auth: true })
 }
 
 export function getAdminCustomers(): Promise<ApiUser[]> {
-  return getData('/auth/users', { auth: true })
+  return getData('/admin/users', { auth: true })
 }
 
 export function deleteCustomer(id: string): Promise<void> {
-  return request(`/auth/users/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/users/${id}`, { method: 'DELETE', auth: true }).then(() => {})
 }
 
 export function toggleLockCustomer(id: string): Promise<ApiUser> {
-  return getData(`/auth/users/${id}/toggle-lock`, { method: 'PUT', auth: true })
+  return getData(`/admin/users/${id}/toggle-lock`, { method: 'PUT', auth: true })
 }
 
 export function updateUserRole(id: string, role: string): Promise<ApiUser> {
-  return getData(`/auth/users/${id}/role`, { method: 'PUT', body: { role }, auth: true })
+  return getData(`/admin/users/${id}/role`, { method: 'PUT', body: { role }, auth: true })
 }
 
 export function createCollection(body: { name: string; slug: string; img?: string }): Promise<Collection> {
-  return getData('/collections', { method: 'POST', body, auth: true })
+  return getData('/admin/collections', { method: 'POST', body, auth: true })
 }
 
 export function updateCollection(id: number, body: Partial<{ name: string; slug: string; img: string }>): Promise<Collection> {
-  return getData(`/collections/${id}`, { method: 'PUT', body, auth: true })
+  return getData(`/admin/collections/${id}`, { method: 'PUT', body, auth: true })
 }
 
 export function deleteCollection(id: number): Promise<void> {
-  return request(`/collections/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/collections/${id}`, { method: 'DELETE', auth: true }).then(() => {})
 }
 
 // ---------- Auth (dùng bởi auth-client) ----------
@@ -303,41 +309,132 @@ export interface Conversation {
   createdAt: string
 }
 
+// Các thao tác dùng chung khách/admin gọi theo namespace tương ứng
+type MsgScope = 'customer' | 'admin'
+const msgBase = (scope: MsgScope) => `/${scope}/messages`
+
 /** Admin: lấy tất cả conversations */
 export function getAdminConversations(): Promise<Conversation[]> {
-  return getData('/messages/conversations', { auth: true })
+  return getData('/admin/messages/conversations', { auth: true })
 }
 
 /** Admin: lấy số tin nhắn chưa đọc */
 export function getUnreadMessageCount(): Promise<{ count: number }> {
-  return getData('/messages/unread-count', { auth: true })
+  return getData('/admin/messages/unread-count', { auth: true })
 }
 
 /** Customer: lấy conversation của mình */
 export function getMyConversation(): Promise<Conversation | null> {
-  return getData('/messages/my', { auth: true })
+  return getData('/customer/messages/my', { auth: true })
 }
 
-/** Lấy tin nhắn của 1 conversation */
-export function getConversationMessages(conversationId: string): Promise<Message[]> {
-  return getData(`/messages/${conversationId}/messages`, { auth: true })
+/** Lấy tin nhắn của 1 conversation (mặc định phía khách) */
+export function getConversationMessages(conversationId: string, scope: MsgScope = 'customer'): Promise<Message[]> {
+  return getData(`${msgBase(scope)}/${conversationId}/messages`, { auth: true })
 }
 
-/** Gửi tin nhắn
- * - Customer: chỉ cần { content }
- * - Admin: cần { content, conversationId }
- */
-export function sendMessage(body: { content: string; conversationId?: string }): Promise<{ message: Message; conversation: Conversation }> {
-  return getData('/messages', { method: 'POST', body, auth: true })
+/** Gửi tin nhắn — Customer: { content }; Admin: { content, conversationId } */
+export function sendMessage(body: { content: string; conversationId?: string }, scope: MsgScope = 'customer'): Promise<{ message: Message; conversation: Conversation }> {
+  return getData(msgBase(scope), { method: 'POST', body, auth: true })
 }
 
 /** Đánh dấu conversation đã đọc */
-export function markConversationRead(conversationId: string): Promise<Conversation> {
-  return getData(`/messages/${conversationId}/read`, { method: 'PUT', auth: true })
+export function markConversationRead(conversationId: string, scope: MsgScope = 'customer'): Promise<Conversation> {
+  return getData(`${msgBase(scope)}/${conversationId}/read`, { method: 'PUT', auth: true })
 }
 
 /** Admin: xóa 1 tin nhắn */
 export function deleteMessage(messageId: string): Promise<void> {
-  return request(`/messages/${messageId}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/messages/${messageId}`, { method: 'DELETE', auth: true }).then(() => {})
 }
 
+// ---------- Khuyến mãi / Coupon ----------
+
+export interface Coupon {
+  id: number
+  code: string
+  type: 'percentage' | 'fixed'
+  value: number
+  minOrder: number
+  quantity: number
+  used: number
+  active: boolean
+  expiryDate: string
+}
+export interface CouponInput {
+  code: string
+  type: 'percentage' | 'fixed'
+  value: number
+  minOrder?: number
+  quantity?: number
+  active?: boolean
+  expiryDate: string
+}
+export interface AppliedCoupon {
+  code: string
+  type: 'percentage' | 'fixed'
+  value: number
+  minOrder: number
+  discount: number
+}
+
+/** Khách: áp mã lúc checkout (xem trước số tiền giảm) */
+export function applyCoupon(code: string, subtotal: number): Promise<AppliedCoupon> {
+  return getData('/customer/coupons/apply', { method: 'POST', body: { code, subtotal }, auth: true })
+}
+/** Admin: danh sách mã giảm giá */
+export function getAdminCoupons(): Promise<Coupon[]> {
+  return getData('/admin/coupons', { auth: true })
+}
+export function createCoupon(body: CouponInput): Promise<Coupon> {
+  return getData('/admin/coupons', { method: 'POST', body, auth: true })
+}
+export function updateCoupon(id: number, body: Partial<CouponInput>): Promise<Coupon> {
+  return getData(`/admin/coupons/${id}`, { method: 'PUT', body, auth: true })
+}
+export function toggleCoupon(id: number): Promise<Coupon> {
+  return getData(`/admin/coupons/${id}/toggle`, { method: 'PUT', auth: true })
+}
+export function deleteCoupon(id: number): Promise<void> {
+  return request(`/admin/coupons/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+}
+
+// ---------- Đánh giá / Reviews ----------
+
+export interface Review {
+  id: number
+  productId?: number
+  userName: string
+  productName?: string
+  rating: number
+  comment: string
+  approved?: boolean
+  reply: string | null
+  createdAt: string
+}
+
+/** Công khai: đánh giá đã duyệt của 1 sản phẩm */
+export function getProductReviews(productId: number): Promise<Review[]> {
+  return getData(`/reviews/product/${productId}`)
+}
+/** Khách đã đăng nhập: có đủ điều kiện đánh giá không (đã mua + nhận hàng hoàn thành) */
+export function canReviewProduct(productId: number): Promise<{ canReview: boolean }> {
+  return getData(`/customer/reviews/eligibility/${productId}`, { auth: true })
+}
+/** Khách đã đăng nhập: gửi đánh giá */
+export function createReview(body: { productId: number; rating: number; comment?: string }): Promise<Review> {
+  return getData('/customer/reviews', { method: 'POST', body, auth: true })
+}
+/** Admin: tất cả đánh giá */
+export function getAdminReviews(): Promise<Review[]> {
+  return getData('/admin/reviews', { auth: true })
+}
+export function approveReview(id: number): Promise<{ id: number; approved: boolean }> {
+  return getData(`/admin/reviews/${id}/approve`, { method: 'PUT', auth: true })
+}
+export function replyReview(id: number, reply: string): Promise<{ id: number; reply: string | null }> {
+  return getData(`/admin/reviews/${id}/reply`, { method: 'PUT', body: { reply }, auth: true })
+}
+export function deleteReview(id: number): Promise<void> {
+  return request(`/admin/reviews/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+}

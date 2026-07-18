@@ -1,79 +1,69 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Star, Check, EyeOff, MessageSquare, Trash2, X, AlertCircle } from 'lucide-react'
-
-type Review = {
-  id: string
-  userName: string
-  productName: string
-  rating: number
-  comment: string
-  createdAt: string
-  approved: boolean
-  reply: string | null
-}
-
-const initialReviews: Review[] = [
-  { id: '1', userName: 'Trần Thị Mai', productName: 'Áo Thun Trắng Premium', rating: 5, comment: 'Chất vải siêu mát luôn, rất đáng tiền nha mọi người!', createdAt: '2026-06-20', approved: true, reply: 'Cảm ơn bạn đã tin tưởng ủng hộ IKA Fashion!' },
-  { id: '2', userName: 'Nguyễn Văn Hùng', productName: 'Quần Đen Slim Fit', rating: 4, comment: 'Quần vừa vặn, co giãn tốt, tuy nhiên giao hàng hơi lâu chút.', createdAt: '2026-06-18', approved: true, reply: null },
-  { id: '3', userName: 'Khách hàng ẩn danh', productName: 'Áo Polo Xanh Navy', rating: 2, comment: 'Màu sắc ngoài đời hơi tối so với ảnh, chất liệu cũng hơi dày.', createdAt: '2026-06-15', approved: true, reply: null },
-  { id: '4', userName: 'Hoàng Minh', productName: 'Áo Thun Đen Premium', rating: 5, comment: 'Giao hàng nhanh, áo thun đen mặc tôn dáng cực kì.', createdAt: '2026-06-14', approved: false, reply: null },
-]
+import { Star, Check, EyeOff, MessageSquare, Trash2, X } from 'lucide-react'
+import {
+  getAdminReviews, approveReview, replyReview, deleteReview,
+  type Review,
+} from '@/api'
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved'>('all')
 
   // Reply Modal
-  const [replyReview, setReplyReview] = useState<Review | null>(null)
+  const [replyTarget, setReplyTarget] = useState<Review | null>(null)
   const [replyText, setReplyText] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('ika_reviews')
-      if (raw) {
-        try {
-          setReviews(JSON.parse(raw))
-        } catch {
-          setReviews(initialReviews)
-        }
-      } else {
-        setReviews(initialReviews)
-        localStorage.setItem('ika_reviews', JSON.stringify(initialReviews))
-      }
-      setLoading(false)
+  const load = () => {
+    setLoading(true)
+    getAdminReviews()
+      .then(setReviews)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const handleToggleApprove = async (id: number) => {
+    try {
+      const { approved } = await approveReview(id)
+      setReviews((rs) => rs.map((r) => (r.id === id ? { ...r, approved } : r)))
+    } catch (e: any) {
+      setError(e.message)
     }
-  }, [])
-
-  const saveToStorage = (newReviews: Review[]) => {
-    setReviews(newReviews)
-    localStorage.setItem('ika_reviews', JSON.stringify(newReviews))
   }
 
-  const handleToggleApprove = (id: string) => {
-    const next = reviews.map((r) => (r.id === id ? { ...r, approved: !r.approved } : r))
-    saveToStorage(next)
-  }
-
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('Bạn chắc chắn muốn xóa đánh giá này?')) return
-    const next = reviews.filter((r) => r.id !== id)
-    saveToStorage(next)
+    try {
+      await deleteReview(id)
+      setReviews((rs) => rs.filter((r) => r.id !== id))
+    } catch (e: any) {
+      setError(e.message)
+    }
   }
 
   const openReply = (r: Review) => {
-    setReplyReview(r)
+    setReplyTarget(r)
     setReplyText(r.reply || '')
   }
 
-  const handleSaveReply = (e: React.FormEvent) => {
+  const handleSaveReply = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!replyReview) return
-    const next = reviews.map((r) => (r.id === replyReview.id ? { ...r, reply: replyText || null } : r))
-    saveToStorage(next)
-    setReplyReview(null)
+    if (!replyTarget) return
+    setSaving(true)
+    try {
+      const { reply } = await replyReview(replyTarget.id, replyText)
+      setReviews((rs) => rs.map((r) => (r.id === replyTarget.id ? { ...r, reply } : r)))
+      setReplyTarget(null)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Filter reviews
@@ -90,6 +80,8 @@ export default function AdminReviewsPage() {
         <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">Kiểm Duyệt Đánh Giá</h1>
         <p className="text-muted-foreground text-sm">Xem và kiểm duyệt các bình luận, phản hồi, xếp hạng sao của khách hàng gửi về các sản phẩm.</p>
       </div>
+
+      {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700 text-sm rounded">{error}</div>}
 
       {/* Tabs */}
       <div className="flex border-b border-[#E5DFD8]">
@@ -201,21 +193,21 @@ export default function AdminReviewsPage() {
       </div>
 
       {/* Reply Modal */}
-      {replyReview && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setReplyReview(null)}>
+      {replyTarget && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setReplyTarget(null)}>
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-heading font-semibold text-[#2C2C2C]">
                 Phản Hồi Đánh Giá
               </h2>
-              <button onClick={() => setReplyReview(null)} className="p-1.5 hover:bg-[#F9F5F0] rounded-full">
+              <button onClick={() => setReplyTarget(null)} className="p-1.5 hover:bg-[#F9F5F0] rounded-full">
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
             <div className="bg-[#F9F5F0] p-3 rounded mb-4 text-xs text-muted-foreground border border-[#E5DFD8]">
-              <p><strong>Khách hàng:</strong> {replyReview.userName}</p>
-              <p className="mt-1"><strong>Nội dung:</strong> "{replyReview.comment}"</p>
+              <p><strong>Khách hàng:</strong> {replyTarget.userName}</p>
+              <p className="mt-1"><strong>Nội dung:</strong> "{replyTarget.comment}"</p>
             </div>
 
             <form onSubmit={handleSaveReply} className="space-y-4">
@@ -234,13 +226,14 @@ export default function AdminReviewsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-semibold rounded transition-colors cursor-pointer text-sm"
+                  disabled={saving}
+                  className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-semibold rounded transition-colors cursor-pointer text-sm disabled:opacity-50"
                 >
-                  Lưu Phản Hồi
+                  {saving ? 'Đang lưu...' : 'Lưu Phản Hồi'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setReplyReview(null)}
+                  onClick={() => setReplyTarget(null)}
                   className="px-4 py-2.5 border border-[#E5DFD8] text-[#2C2C2C] font-semibold rounded hover:bg-[#F9F5F0] transition-colors cursor-pointer text-sm"
                 >
                   Hủy

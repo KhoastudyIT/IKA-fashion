@@ -1,10 +1,12 @@
 import pool from '../../db/index.js';
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
+import { assertUsable, computeDiscount } from '../coupons/coupon.service.js';
 
 // SELECT chung: 1 đơn kèm mảng items (json_agg), alias camelCase cho FE
 const ORDER_SELECT = `
   SELECT o.id, o.user_id AS "userId", o.total_price AS "totalPrice",
+         o.discount, o.coupon_code AS "couponCode",
          o.status, o.payment_status AS "paymentStatus",
          o.shipping_address AS "shippingAddress", o.phone, o.notes,
          o.created_at AS "createdAt", o.updated_at AS "updatedAt",
@@ -27,7 +29,7 @@ async function getOrderRow(id) {
   return res.rows[0] ?? null;
 }
 
-export async function createOrder(userId, { shippingAddress, phone, notes }) {
+export async function createOrder(userId, { shippingAddress, phone, notes, couponCode }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -51,12 +53,27 @@ export async function createOrder(userId, { shippingAddress, phone, notes }) {
       }
     }
 
-    const totalPrice = cart.rows.reduce((s, it) => s + it.price * it.quantity, 0);
+    const subtotal = cart.rows.reduce((s, it) => s + it.price * it.quantity, 0);
+
+    // Áp mã giảm giá (nếu có) — kiểm tra lại phía server + tăng lượt dùng
+    let discount = 0;
+    let appliedCode = '';
+    if (couponCode) {
+      const cr = await client.query(
+        'SELECT * FROM coupons WHERE UPPER(code) = UPPER($1) FOR UPDATE', [couponCode],
+      );
+      const coupon = assertUsable(cr.rows[0], subtotal);
+      discount = computeDiscount(coupon, subtotal);
+      appliedCode = coupon.code;
+      await client.query('UPDATE coupons SET used = used + 1 WHERE id = $1', [coupon.id]);
+    }
+
+    const totalPrice = subtotal - discount;
 
     const orderRes = await client.query(
-      `INSERT INTO orders (user_id, total_price, shipping_address, phone, notes)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [userId, totalPrice, shippingAddress, phone, notes ?? ''],
+      `INSERT INTO orders (user_id, total_price, discount, coupon_code, shipping_address, phone, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [userId, totalPrice, discount, appliedCode, shippingAddress, phone, notes ?? ''],
     );
     const orderId = orderRes.rows[0].id;
 

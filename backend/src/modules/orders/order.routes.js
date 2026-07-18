@@ -5,15 +5,16 @@ import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
 import { createOrderSchema, updateOrderStatusSchema } from './order.schema.js';
 
-export const orderRouter = Router();
+// Khách hàng — mount tại /api/v1/customer/orders
+export const orderCustomerRouter = Router();
+orderCustomerRouter.use(authenticate);
+orderCustomerRouter.post('/',    validate(createOrderSchema), orderController.create);
+orderCustomerRouter.get('/',     orderController.listMine);
+orderCustomerRouter.get('/:id',  orderController.getById);
 
-orderRouter.use(authenticate);
-
-// Admin (đặt trước /:id để không bị nuốt route)
-orderRouter.get('/all',          authorize('admin'), orderController.listAll);
-orderRouter.put('/:id/status',   authorize('admin'), validate(updateOrderStatusSchema), orderController.updateStatus);
-
-// Customer
-orderRouter.post('/',  validate(createOrderSchema), orderController.create);
-orderRouter.get('/',   orderController.listMine);
-orderRouter.get('/:id', orderController.getById);
+// Admin quản lý tất cả đơn — mount tại /api/v1/admin/orders
+export const orderAdminRouter = Router();
+orderAdminRouter.use(authenticate, authorize('admin'));
+orderAdminRouter.get('/',            orderController.listAll);
+orderAdminRouter.get('/:id',         orderController.getById);
+orderAdminRouter.put('/:id/status',  validate(updateOrderStatusSchema), orderController.updateStatus);

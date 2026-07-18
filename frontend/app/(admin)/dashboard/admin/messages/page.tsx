@@ -81,7 +81,7 @@ export default function AdminMessagesPage() {
   // Load messages for a conversation
   const loadMessages = useCallback(async (convId: string) => {
     try {
-      const data = await getConversationMessages(convId)
+      const data = await getConversationMessages(convId, 'admin')
       setMessages(data)
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     } catch (e) {
@@ -96,7 +96,7 @@ export default function AdminMessagesPage() {
     await loadMessages(conv.id)
     // Mark as read
     try {
-      const updated = await markConversationRead(conv.id)
+      const updated = await markConversationRead(conv.id, 'admin')
       setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadByAdmin: 0 } : c))
     } catch (e) {}
   }
@@ -108,7 +108,7 @@ export default function AdminMessagesPage() {
     const content = input.trim()
     setInput('')
     try {
-      const result = await sendMessage({ content, conversationId: selected.id })
+      const result = await sendMessage({ content, conversationId: selected.id }, 'admin')
       setMessages(prev => [...prev, result.message])
       setConversations(prev => prev.map(c =>
         c.id === selected.id ? { ...c, lastMessage: content, lastMessageAt: result.message.createdAt } : c

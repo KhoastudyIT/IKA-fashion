@@ -3,12 +3,14 @@ import * as collectionController from './collection.controller.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 
-export const collectionRouter = Router();
+// Công khai — mount tại /api/v1/collections
+export const collectionPublicRouter = Router();
+collectionPublicRouter.get('/',      collectionController.list);
+collectionPublicRouter.get('/:slug', collectionController.getBySlug);
 
-collectionRouter.get('/',       collectionController.list);
-collectionRouter.get('/:slug',  collectionController.getBySlug);
-
-collectionRouter.post('/',    authenticate, authorize('admin'), collectionController.create);
-collectionRouter.put('/:id',  authenticate, authorize('admin'), collectionController.update);
-collectionRouter.delete('/:id', authenticate, authorize('admin'), collectionController.remove);
-
+// Admin quản lý danh mục — mount tại /api/v1/admin/collections
+export const collectionAdminRouter = Router();
+collectionAdminRouter.use(authenticate, authorize('admin'));
+collectionAdminRouter.post('/',      collectionController.create);
+collectionAdminRouter.put('/:id',    collectionController.update);
+collectionAdminRouter.delete('/:id', collectionController.remove);

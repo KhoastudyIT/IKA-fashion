@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/auth-client'
-import { getCart, createOrder, Cart } from '@/api'
+import { getCart, createOrder, applyCoupon, Cart, AppliedCoupon } from '@/api'
 import { Check, ChevronRight, MapPin, Phone, CreditCard, Package, Truck } from 'lucide-react'
 
 type Step = 1 | 2 | 3
@@ -73,6 +73,12 @@ export default function CheckoutPage() {
   const [shipping, setShipping] = useState('standard')
   const [payment, setPayment] = useState('cod')
 
+  // Mã giảm giá
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const [applyingCoupon, setApplyingCoupon] = useState(false)
+
   useEffect(() => {
     if (isPending) return
     if (!session) { router.push('/auth/login'); return }
@@ -101,7 +107,30 @@ export default function CheckoutPage() {
 
   const shippingFee = SHIPPING_OPTIONS.find(s => s.id === shipping)?.price ?? 0
   const subtotal = cart?.subtotal ?? 0
-  const total = subtotal + shippingFee
+  const discount = appliedCoupon?.discount ?? 0
+  const total = Math.max(0, subtotal + shippingFee - discount)
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase()
+    if (!code) return
+    setApplyingCoupon(true)
+    setCouponError('')
+    try {
+      const result = await applyCoupon(code, subtotal)
+      setAppliedCoupon(result)
+    } catch (e: any) {
+      setAppliedCoupon(null)
+      setCouponError(e.message || 'Mã giảm giá không hợp lệ')
+    } finally {
+      setApplyingCoupon(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponInput('')
+    setCouponError('')
+  }
 
   const handlePlaceOrder = async () => {
     if (!cart) return
@@ -112,6 +141,7 @@ export default function CheckoutPage() {
         shippingAddress: `${address}, ${city}`,
         phone,
         notes: `Vận chuyển: ${shipping} | Thanh toán: ${payment}${notes ? ' | Ghi chú: ' + notes : ''}`,
+        couponCode: appliedCoupon?.code,
       })
       router.push(`/order-success?orderId=${order.id}&total=${total}`)
     } catch (e: any) {
@@ -331,10 +361,47 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
+                {/* Mã giảm giá */}
+                <div style={{ borderTop: '1px solid #E5DFD8', paddingTop: '16px', marginBottom: '4px' }}>
+                  {appliedCoupon ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '10px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>
+                        ✓ Đã áp mã <strong style={{ fontFamily: 'monospace' }}>{appliedCoupon.code}</strong>
+                      </span>
+                      <button onClick={handleRemoveCoupon} style={{ background: 'transparent', border: 'none', color: '#7A7A7A', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>Bỏ</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          value={couponInput}
+                          onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError('') }}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyCoupon() } }}
+                          placeholder="Nhập mã giảm giá"
+                          style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '13px', color: '#2C2C2C', background: '#FFFFFF', outline: 'none', textTransform: 'uppercase', fontFamily: 'monospace' }}
+                        />
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={applyingCoupon || !couponInput.trim()}
+                          style={{ padding: '10px 16px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: (applyingCoupon || !couponInput.trim()) ? 0.5 : 1 }}
+                        >
+                          {applyingCoupon ? '...' : 'Áp dụng'}
+                        </button>
+                      </div>
+                      {couponError && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '6px', marginBottom: 0 }}>{couponError}</p>}
+                    </>
+                  )}
+                </div>
+
                 <div style={{ borderTop: '1px solid #E5DFD8', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#7A7A7A' }}>
                     <span>Tạm tính</span><span style={{ color: '#2C2C2C' }}>{subtotal.toLocaleString('vi-VN')}đ</span>
                   </div>
+                  {discount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#16a34a' }}>
+                      <span>Giảm giá ({appliedCoupon?.code})</span><span>−{discount.toLocaleString('vi-VN')}đ</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#7A7A7A' }}>
                     <span>Phí vận chuyển</span>
                     <span style={{ color: shippingFee === 0 ? '#22c55e' : '#2C2C2C' }}>

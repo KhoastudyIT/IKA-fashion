@@ -8,13 +8,15 @@ import config from './config/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { setupDocs } from './docs/openapi.js';
 
-import { authRouter }       from './modules/auth/auth.routes.js';
-import { productRouter }    from './modules/products/product.routes.js';
-import { collectionRouter } from './modules/collections/collection.routes.js';
-import { cartRouter }       from './modules/cart/cart.routes.js';
-import { orderRouter }      from './modules/orders/order.routes.js';
-import { wishlistRouter }   from './modules/wishlist/wishlist.routes.js';
-import { messageRouter }    from './modules/messages/message.routes.js';
+import { authRouter, userAdminRouter }               from './modules/auth/auth.routes.js';
+import { productPublicRouter, productAdminRouter }    from './modules/products/product.routes.js';
+import { collectionPublicRouter, collectionAdminRouter } from './modules/collections/collection.routes.js';
+import { cartRouter }                                 from './modules/cart/cart.routes.js';
+import { orderCustomerRouter, orderAdminRouter }      from './modules/orders/order.routes.js';
+import { wishlistRouter }                             from './modules/wishlist/wishlist.routes.js';
+import { messageCustomerRouter, messageAdminRouter }  from './modules/messages/message.routes.js';
+import { couponCustomerRouter, couponAdminRouter }    from './modules/coupons/coupon.routes.js';
+import { reviewPublicRouter, reviewCustomerRouter, reviewAdminRouter } from './modules/reviews/review.routes.js';
 
 export function createApp() {
   const app = express();
@@ -29,13 +31,29 @@ export function createApp() {
   );
 
   const v1 = '/api/v1';
+
+  // ── Public (không cần đăng nhập) ──────────────────────────
   app.use(`${v1}/auth`,        authRouter);
-  app.use(`${v1}/products`,    productRouter);
-  app.use(`${v1}/collections`, collectionRouter);
-  app.use(`${v1}/cart`,        cartRouter);
-  app.use(`${v1}/orders`,      orderRouter);
-  app.use(`${v1}/wishlist`,    wishlistRouter);
-  app.use(`${v1}/messages`,    messageRouter);
+  app.use(`${v1}/products`,    productPublicRouter);
+  app.use(`${v1}/collections`, collectionPublicRouter);
+  app.use(`${v1}/reviews`,     reviewPublicRouter);
+
+  // ── Customer (khách hàng đã đăng nhập) ────────────────────
+  app.use(`${v1}/customer/cart`,     cartRouter);
+  app.use(`${v1}/customer/orders`,   orderCustomerRouter);
+  app.use(`${v1}/customer/wishlist`, wishlistRouter);
+  app.use(`${v1}/customer/coupons`,  couponCustomerRouter);
+  app.use(`${v1}/customer/reviews`,  reviewCustomerRouter);
+  app.use(`${v1}/customer/messages`, messageCustomerRouter);
+
+  // ── Admin (quản trị) ──────────────────────────────────────
+  app.use(`${v1}/admin/products`,    productAdminRouter);
+  app.use(`${v1}/admin/collections`, collectionAdminRouter);
+  app.use(`${v1}/admin/orders`,      orderAdminRouter);
+  app.use(`${v1}/admin/users`,       userAdminRouter);
+  app.use(`${v1}/admin/coupons`,     couponAdminRouter);
+  app.use(`${v1}/admin/reviews`,     reviewAdminRouter);
+  app.use(`${v1}/admin/messages`,    messageAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 

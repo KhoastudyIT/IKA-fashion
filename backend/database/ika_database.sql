@@ -73,6 +73,8 @@ CREATE TABLE IF NOT EXISTS orders (
   id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          UUID         NOT NULL REFERENCES users(id),
   total_price      INTEGER      NOT NULL CHECK (total_price >= 0),
+  discount         INTEGER      NOT NULL DEFAULT 0 CHECK (discount >= 0),
+  coupon_code      VARCHAR(50)  NOT NULL DEFAULT '',
   status           VARCHAR(20)  NOT NULL DEFAULT 'pending'
                    CHECK (status IN ('pending', 'confirmed', 'shipped', 'completed', 'cancelled')),
   payment_status   VARCHAR(20)  NOT NULL DEFAULT 'unpaid'
@@ -189,3 +191,56 @@ INSERT INTO products (id, name, handle, collection, type, price, img, images, co
   (36, 'Quần Âu Đen Trơn Slim Fit', 'sale-quan-8', 'sale', 'Quần', 384000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp"]'::jsonb, '["Đen"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.7, 421, 45, 'Quần âu đen slim fit thanh lịch, vải cao cấp kháng nhăn suốt ngày — đang giảm 40%.')
 ON CONFLICT (handle) DO NOTHING;
 SELECT setval('products_id_seq', (SELECT MAX(id) FROM products));
+
+-- =============================================================
+-- KHUYẾN MÃI (coupons)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS coupons (
+  id          SERIAL       PRIMARY KEY,
+  code        VARCHAR(50)  NOT NULL UNIQUE,
+  type        VARCHAR(20)  NOT NULL CHECK (type IN ('percentage', 'fixed')),
+  value       INTEGER      NOT NULL CHECK (value > 0),           -- % hoặc VND
+  min_order   INTEGER      NOT NULL DEFAULT 0 CHECK (min_order >= 0),
+  quantity    INTEGER      NOT NULL DEFAULT 100 CHECK (quantity >= 0),
+  used        INTEGER      NOT NULL DEFAULT 0 CHECK (used >= 0),
+  active      BOOLEAN      NOT NULL DEFAULT true,
+  expiry_date DATE         NOT NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO coupons (code, type, value, min_order, quantity, used, active, expiry_date) VALUES
+  ('IKANEW10',  'percentage', 10,  200000,  100, 12, true,  '2026-12-31'),
+  ('IKALUXURY', 'fixed',      100000, 1000000, 50,  5,  true,  '2026-10-15'),
+  ('FREESHIP',  'fixed',      30000,  500000,  200, 89, true,  '2026-08-30'),
+  ('MIDYEAR30', 'percentage', 30,  400000,  30,  30, false, '2026-06-30')
+ON CONFLICT (code) DO NOTHING;
+
+-- =============================================================
+-- ĐÁNH GIÁ (reviews)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS reviews (
+  id          SERIAL        PRIMARY KEY,
+  product_id  INTEGER       NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  user_id     UUID          REFERENCES users(id) ON DELETE SET NULL,
+  user_name   VARCHAR(100)  NOT NULL,
+  rating      INTEGER       NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment     VARCHAR(2000) NOT NULL DEFAULT '',
+  approved    BOOLEAN       NOT NULL DEFAULT false,
+  reply       VARCHAR(2000),
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
+
+INSERT INTO reviews (product_id, user_name, rating, comment, approved, reply) VALUES
+  (1, 'Trần Thị Mai',       5, 'Chất vải siêu mát luôn, rất đáng tiền nha mọi người!', true,  'Cảm ơn bạn đã tin tưởng ủng hộ IKA Fashion!'),
+  (9, 'Nguyễn Văn Hùng',    4, 'Quần vừa vặn, co giãn tốt, tuy nhiên giao hàng hơi lâu chút.', true,  NULL),
+  (6, 'Khách hàng ẩn danh', 2, 'Màu sắc ngoài đời hơi tối so với ảnh, chất liệu cũng hơi dày.', true,  NULL),
+  (2, 'Hoàng Minh',         5, 'Giao hàng nhanh, áo thun đen mặc tôn dáng cực kì.', false, NULL)
+ON CONFLICT DO NOTHING;
+
+-- rating của sản phẩm = trung bình đánh giá ĐÃ DUYỆT (5.0 nếu chưa có đánh giá nào)
+UPDATE products p SET rating = COALESCE(
+  (SELECT ROUND(AVG(r.rating)::numeric, 1) FROM reviews r WHERE r.product_id = p.id AND r.approved),
+  5.0
+);

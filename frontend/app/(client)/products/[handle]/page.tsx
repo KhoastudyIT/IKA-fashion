@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { getProductByHandle, getProducts, addToCart, addWishlist, ApiProduct } from '@/api'
+import { getProductByHandle, getProducts, addToCart, addWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
 
 export default function ProductDetailPage() {
   const params = useParams<{ handle: string }>()
@@ -282,24 +282,15 @@ export default function ProductDetailPage() {
           )}
 
           {/* ── Reviews & Q&A Section ───────────────────────────────────────────── */}
-          <InteractiveTabs productRating={product.rating} productSold={product.sold} />
+          <InteractiveTabs productId={product.id} productRating={product.rating} productSold={product.sold} />
         </div>
       </main>
     </>
   )
 }
 
-// ─── Sample reviews data ──────────────────────────────────────────────────────
-const SAMPLE_REVIEWS = [
-  { id: 1, name: 'Nguyễn Minh Anh', initials: 'NMA', rating: 5, date: '20/06/2026', verified: true,
-    body: 'Sản phẩm chất lượng tuyệt vời! Vải mềm mịn, thoáng khí, mặc cả ngày không bị nóng. Form áo đẹp, đúng size. Sẽ mua thêm các màu khác!', helpful: 24, color: '#D4AF37' },
-  { id: 2, name: 'Trần Thị Bích', initials: 'TTB', rating: 5, date: '18/06/2026', verified: true,
-    body: 'Mua lần đầu mà ưng lắm. Giao hàng nhanh, đóng gói cẩn thận. Áo mặc vào rất thoải mái, không bị nhàu. Màu sắc y hình. Sẽ ủng hộ IKA dài dài!', helpful: 18, color: '#22c55e' },
-  { id: 3, name: 'Lê Hoàng Nam', initials: 'LHN', rating: 4, date: '15/06/2026', verified: false,
-    body: 'Áo đẹp, chất ổn. Trừ 1 sao vì giao hơi chậm một chút nhưng bù lại sản phẩm rất ưng. Vải co giãn tốt, không bị bai.', helpful: 9, color: '#3b82f6' },
-  { id: 4, name: 'Phạm Thu Hà', initials: 'PTH', rating: 5, date: '12/06/2026', verified: true,
-    body: 'Đây là lần thứ 3 mình mua hàng IKA. Lần nào cũng hài lòng. Sản phẩm này đặc biệt ấn tượng về độ bền và khả năng chống nhăn. Recommend 100%!', helpful: 31, color: '#ec4899' },
-]
+// Màu avatar theo thứ tự hiển thị
+const AVATAR_COLORS = ['#D4AF37', '#22c55e', '#3b82f6', '#ec4899', '#8b5cf6', '#f97316']
 
 function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
@@ -311,7 +302,7 @@ function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   )
 }
 
-function InteractiveTabs({ productRating, productSold }: { productRating: number; productSold: number }) {
+function InteractiveTabs({ productId, productRating, productSold }: { productId: number; productRating: number; productSold: number }) {
   const [activeTab, setActiveTab] = useState<'reviews' | 'qa'>('reviews')
 
   return (
@@ -344,7 +335,7 @@ function InteractiveTabs({ productRating, productSold }: { productRating: number
       </div>
 
       {activeTab === 'reviews' ? (
-        <ReviewsSection productRating={productRating} productSold={productSold} />
+        <ReviewsSection productId={productId} productRating={productRating} productSold={productSold} />
       ) : (
         <QASection />
       )}
@@ -442,33 +433,47 @@ function QASection() {
   )
 }
 
-function ReviewsSection({ productRating, productSold }: { productRating: number; productSold: number }) {
+function ReviewsSection({ productId, productRating, productSold }: { productId: number; productRating: number; productSold: number }) {
   const { data: session } = useSession()
-  const [reviews, setReviews] = useState(SAMPLE_REVIEWS)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [myRating, setMyRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [myReview, setMyReview] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [canReview, setCanReview] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    getProductReviews(productId).then(setReviews).catch(() => setReviews([]))
+  }, [productId])
+
+  useEffect(() => {
+    if (!session) { setCanReview(false); return }
+    canReviewProduct(productId).then(r => setCanReview(r.canReview)).catch(() => setCanReview(false))
+  }, [productId, session])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!myRating || !myReview.trim()) return
-    const newReview = {
-      id: Date.now(), name: session?.user.name ?? 'Khách hàng',
-      initials: (session?.user.name ?? 'KH').slice(0, 2).toUpperCase(),
-      rating: myRating, date: new Date().toLocaleDateString('vi-VN'),
-      verified: true, body: myReview, helpful: 0, color: '#D4AF37',
+    setSaving(true)
+    setError('')
+    try {
+      await createReview({ productId, rating: myRating, comment: myReview })
+      setSubmitted(true)
+      setMyReview('')
+      setMyRating(0)
+    } catch (err: any) {
+      setError(err.message || 'Gửi đánh giá thất bại')
+    } finally {
+      setSaving(false)
     }
-    setReviews(prev => [newReview, ...prev])
-    setSubmitted(true)
-    setMyReview('')
-    setMyRating(0)
   }
 
   const ratingDist = [5,4,3,2,1].map(star => ({
     star,
     count: reviews.filter(r => r.rating === star).length,
-    pct: Math.round((reviews.filter(r => r.rating === star).length / reviews.length) * 100),
+    pct: reviews.length ? Math.round((reviews.filter(r => r.rating === star).length / reviews.length) * 100) : 0,
   }))
 
   return (
@@ -496,29 +501,36 @@ function ReviewsSection({ productRating, productSold }: { productRating: number;
 
       {/* Review cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '48px' }}>
-        {reviews.map(review => (
+        {reviews.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#9A9A9A', fontSize: '14px', padding: '24px 0' }}>
+            Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên đánh giá!
+          </p>
+        ) : reviews.map((review, idx) => (
           <div key={review.id} style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: review.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
-                  {review.initials}
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: AVATAR_COLORS[idx % AVATAR_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
+                  {review.userName.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{review.name}</p>
-                    {review.verified && <span style={{ fontSize: '10px', padding: '2px 8px', background: '#d1fae5', color: '#065f46', borderRadius: '10px', fontWeight: 600 }}>✓ Đã mua</span>}
-                  </div>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{review.userName}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                     <StarRow rating={review.rating} size={13} />
-                    <span style={{ fontSize: '12px', color: '#9A9A9A' }}>{review.date}</span>
+                    <span style={{ fontSize: '12px', color: '#9A9A9A' }}>{new Date(review.createdAt).toLocaleDateString('vi-VN')}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <p style={{ fontSize: '14px', color: '#4A4A4A', lineHeight: 1.7, margin: '0 0 12px' }}>{review.body}</p>
-            <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: '1px solid #E5DFD8', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', color: '#7A7A7A', cursor: 'pointer' }}>
-              <ThumbsUp size={12} /> Hữu ích ({review.helpful})
-            </button>
+            <p style={{ fontSize: '14px', color: '#4A4A4A', lineHeight: 1.7, margin: '0 0 12px' }}>{review.comment}</p>
+            {review.reply && (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: '#F9F5F0', padding: '14px', borderRadius: '8px', borderLeft: '2px solid #D4AF37' }}>
+                <MessageCircle size={16} style={{ color: '#D4AF37', marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#2C2C2C', fontSize: '12px' }}>Phản hồi từ IKA Fashion</p>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#4A4A4A', lineHeight: 1.6 }}>{review.reply}</p>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -533,13 +545,21 @@ function ReviewsSection({ productRating, productSold }: { productRating: number;
             <p style={{ color: '#7A7A7A', marginBottom: '12px', fontSize: '14px' }}>Đăng nhập để viết đánh giá</p>
             <Link href="/auth/login" style={{ padding: '10px 24px', background: '#D4AF37', color: '#1a1a1a', borderRadius: '6px', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Đăng nhập</Link>
           </div>
+        ) : !canReview ? (
+          <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
+            <p style={{ color: '#7A7A7A', fontSize: '14px', margin: 0, lineHeight: 1.6 }}>
+              🛍️ Chỉ khách đã <strong>mua và nhận hàng thành công</strong> sản phẩm này mới có thể viết đánh giá.
+              <br />Bạn vẫn có thể xem các đánh giá ở trên.
+            </p>
+          </div>
         ) : submitted ? (
           <div style={{ background: '#d1fae5', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <p style={{ color: '#065f46', fontWeight: 600 }}>✓ Cảm ơn bạn đã đánh giá!</p>
+            <p style={{ color: '#065f46', fontWeight: 600 }}>✓ Cảm ơn bạn! Đánh giá sẽ hiển thị sau khi được quản trị viên duyệt.</p>
             <button onClick={() => setSubmitted(false)} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}>Viết thêm đánh giá</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            {error && <p style={{ color: '#DC2626', fontSize: '13px', marginBottom: '16px' }}>{error}</p>}
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>Đánh giá của bạn *</label>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -564,9 +584,9 @@ function ReviewsSection({ productRating, productSold }: { productRating: number;
                 onBlur={e => e.target.style.borderColor = '#E5DFD8'}
               />
             </div>
-            <button type="submit" disabled={!myRating || !myReview.trim()}
-              style={{ padding: '12px 32px', background: '#D4AF37', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: (!myRating || !myReview.trim()) ? 0.5 : 1 }}>
-              Gửi Đánh Giá
+            <button type="submit" disabled={!myRating || !myReview.trim() || saving}
+              style={{ padding: '12px 32px', background: '#D4AF37', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: (!myRating || !myReview.trim() || saving) ? 0.5 : 1 }}>
+              {saving ? 'Đang gửi...' : 'Gửi Đánh Giá'}
             </button>
           </form>
         )}

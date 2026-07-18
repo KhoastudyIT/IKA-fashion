@@ -1,26 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, X, Percent, DollarSign, Check, Calendar } from 'lucide-react'
-
-type Coupon = {
-  id: string
-  code: string
-  type: 'percentage' | 'fixed'
-  value: number
-  minOrder: number
-  quantity: number
-  used: number
-  active: boolean
-  expiryDate: string
-}
-
-const initialCoupons: Coupon[] = [
-  { id: '1', code: 'IKANEW10', type: 'percentage', value: 10, minOrder: 200000, quantity: 100, used: 12, active: true, expiryDate: '2026-12-31' },
-  { id: '2', code: 'IKALUXURY', type: 'fixed', value: 100000, minOrder: 1000000, quantity: 50, used: 5, active: true, expiryDate: '2026-10-15' },
-  { id: '3', code: 'FREESHIP', type: 'fixed', value: 30000, minOrder: 500000, quantity: 200, used: 89, active: true, expiryDate: '2026-08-30' },
-  { id: '4', code: 'MIDYEAR30', type: 'percentage', value: 30, minOrder: 400000, quantity: 30, used: 30, active: false, expiryDate: '2026-06-30' },
-]
+import { Plus, X, Percent, DollarSign } from 'lucide-react'
+import {
+  getAdminCoupons, createCoupon, updateCoupon, toggleCoupon, deleteCoupon,
+  type Coupon,
+} from '@/api'
 
 export default function AdminPromotionsPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
@@ -28,7 +13,7 @@ export default function AdminPromotionsPage() {
   const [error, setError] = useState('')
 
   const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({
     code: '',
     type: 'percentage' as 'percentage' | 'fixed',
@@ -40,38 +25,20 @@ export default function AdminPromotionsPage() {
   })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const raw = localStorage.getItem('ika_coupons')
-      if (raw) {
-        try {
-          setCoupons(JSON.parse(raw))
-        } catch {
-          setCoupons(initialCoupons)
-        }
-      } else {
-        setCoupons(initialCoupons)
-        localStorage.setItem('ika_coupons', JSON.stringify(initialCoupons))
-      }
-      setLoading(false)
-    }
-  }, [])
-
-  const saveToStorage = (newCoupons: Coupon[]) => {
-    setCoupons(newCoupons)
-    localStorage.setItem('ika_coupons', JSON.stringify(newCoupons))
+  const load = () => {
+    setLoading(true)
+    getAdminCoupons()
+      .then(setCoupons)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
   }
+  useEffect(load, [])
 
   const openCreate = () => {
     setEditingId(null)
     setForm({
-      code: '',
-      type: 'percentage',
-      value: '',
-      minOrder: '',
-      quantity: '',
-      active: true,
-      expiryDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0], // default 30 days
+      code: '', type: 'percentage', value: '', minOrder: '', quantity: '', active: true,
+      expiryDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().split('T')[0],
     })
     setError('')
     setShowForm(true)
@@ -80,82 +47,63 @@ export default function AdminPromotionsPage() {
   const openEdit = (c: Coupon) => {
     setEditingId(c.id)
     setForm({
-      code: c.code,
-      type: c.type,
-      value: String(c.value),
-      minOrder: String(c.minOrder),
-      quantity: String(c.quantity),
-      active: c.active,
-      expiryDate: c.expiryDate,
+      code: c.code, type: c.type, value: String(c.value), minOrder: String(c.minOrder),
+      quantity: String(c.quantity), active: c.active, expiryDate: c.expiryDate,
     })
     setError('')
     setShowForm(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true)
     setError('')
 
     const codeUpper = form.code.toUpperCase().replace(/\s+/g, '')
-    if (!codeUpper) {
-      setError('Mã giảm giá không được để trống')
-      setSaving(false)
-      return
-    }
-
     const valueNum = Number(form.value)
-    if (isNaN(valueNum) || valueNum <= 0) {
-      setError('Mức giảm giá phải lớn hơn 0')
-      setSaving(false)
-      return
-    }
+    if (!codeUpper) return setError('Mã giảm giá không được để trống')
+    if (isNaN(valueNum) || valueNum <= 0) return setError('Mức giảm giá phải lớn hơn 0')
+    if (form.type === 'percentage' && valueNum > 100) return setError('Mức giảm phần trăm không thể vượt quá 100%')
 
-    if (form.type === 'percentage' && valueNum > 100) {
-      setError('Mức giảm phần trăm không thể vượt quá 100%')
-      setSaving(false)
-      return
-    }
-
-    const payload: Coupon = {
-      id: editingId || String(Date.now()),
+    const payload = {
       code: codeUpper,
       type: form.type,
       value: valueNum,
       minOrder: Number(form.minOrder) || 0,
       quantity: Number(form.quantity) || 100,
-      used: editingId ? (coupons.find(c => c.id === editingId)?.used || 0) : 0,
       active: form.active,
       expiryDate: form.expiryDate,
     }
 
-    let nextCoupons = []
-    if (editingId) {
-      nextCoupons = coupons.map(c => (c.id === editingId ? payload : c))
-    } else {
-      // Check duplicate code
-      if (coupons.some(c => c.code === codeUpper)) {
-        setError('Mã giảm giá này đã tồn tại')
-        setSaving(false)
-        return
-      }
-      nextCoupons = [...coupons, payload]
+    setSaving(true)
+    try {
+      if (editingId) await updateCoupon(editingId, payload)
+      else await createCoupon(payload)
+      setShowForm(false)
+      load()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
     }
-
-    saveToStorage(nextCoupons)
-    setShowForm(false)
-    setSaving(false)
   }
 
-  const handleDelete = (id: string, code: string) => {
+  const handleDelete = async (id: number, code: string) => {
     if (!confirm(`Xóa mã giảm giá "${code}"?`)) return
-    const next = coupons.filter(c => c.id !== id)
-    saveToStorage(next)
+    try {
+      await deleteCoupon(id)
+      load()
+    } catch (err: any) {
+      setError(err.message)
+    }
   }
 
-  const handleToggleActive = (id: string) => {
-    const next = coupons.map(c => (c.id === id ? { ...c, active: !c.active } : c))
-    saveToStorage(next)
+  const handleToggleActive = async (id: number) => {
+    try {
+      const updated = await toggleCoupon(id)
+      setCoupons((cs) => cs.map((c) => (c.id === id ? updated : c)))
+    } catch (err: any) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -367,7 +315,7 @@ export default function AdminPromotionsPage() {
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                   className="accent-[#D4AF37] w-4 h-4"
                 />
-                <label htmlFor="active" className="text-sm font-medium text-[#2C2C2C] cursor-pointerSelect">Kích hoạt coupon ngay lập tức</label>
+                <label htmlFor="active" className="text-sm font-medium text-[#2C2C2C] cursor-pointer">Kích hoạt coupon ngay lập tức</label>
               </div>
 
               <div className="flex gap-3 pt-2">
