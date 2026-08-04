@@ -22,7 +22,7 @@ export function clearToken() {
 }
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   auth?: boolean
 }
@@ -249,7 +249,7 @@ export function getAdminCustomers(): Promise<ApiUser[]> {
 }
 
 export function deleteCustomer(id: string): Promise<void> {
-  return request(`/admin/users/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/users/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
 export function toggleLockCustomer(id: string): Promise<ApiUser> {
@@ -269,7 +269,7 @@ export function updateCollection(id: number, body: Partial<{ name: string; slug:
 }
 
 export function deleteCollection(id: number): Promise<void> {
-  return request(`/admin/collections/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/collections/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
 // ---------- Auth (dùng bởi auth-client) ----------
@@ -286,13 +286,26 @@ export function apiLogout() {
 
 // ---------- Messages ----------
 
+/** Thẻ sản phẩm bot đính kèm câu trả lời */
+export interface ProductSuggestion {
+  id: number
+  name: string
+  handle: string
+  price: number
+  img: string
+}
+
 export interface Message {
   id: string
   conversationId: string
-  senderId: string
-  senderRole: 'admin' | 'customer'
+  senderId: string | null
+  senderRole: 'admin' | 'customer' | 'ai'
   senderName: string
   content: string
+  productId: number | null
+  product: ProductSuggestion | null
+  suggestions: ProductSuggestion[]
+  intent: string
   createdAt: string
   isRead: boolean
 }
@@ -306,10 +319,11 @@ export interface Conversation {
   lastMessageAt: string
   unreadByAdmin: number
   unreadByCustomer: number
+  aiEnabled: boolean
+  lastProductId: number | null
+  lastProduct: ProductSuggestion | null
   createdAt: string
 }
-
-// Các thao tác dùng chung khách/admin gọi theo namespace tương ứng
 type MsgScope = 'customer' | 'admin'
 const msgBase = (scope: MsgScope) => `/${scope}/messages`
 
@@ -323,9 +337,13 @@ export function getUnreadMessageCount(): Promise<{ count: number }> {
   return getData('/admin/messages/unread-count', { auth: true })
 }
 
-/** Customer: lấy conversation của mình */
-export function getMyConversation(): Promise<Conversation | null> {
-  return getData('/customer/messages/my', { auth: true })
+/**
+ * Customer: lấy conversation của mình.
+ * `ensure` = khách vừa mở khung chat → tạo hội thoại kèm lời chào của bot.
+ * Khi chỉ poll badge thì để mặc định, tránh đẻ hội thoại rỗng cho mọi khách.
+ */
+export function getMyConversation(ensure = false): Promise<Conversation | null> {
+  return getData(`/customer/messages/my${ensure ? '?ensure=1' : ''}`, { auth: true })
 }
 
 /** Lấy tin nhắn của 1 conversation (mặc định phía khách) */
@@ -333,8 +351,14 @@ export function getConversationMessages(conversationId: string, scope: MsgScope 
   return getData(`${msgBase(scope)}/${conversationId}/messages`, { auth: true })
 }
 
-/** Gửi tin nhắn — Customer: { content }; Admin: { content, conversationId } */
-export function sendMessage(body: { content: string; conversationId?: string }, scope: MsgScope = 'customer'): Promise<{ message: Message; conversation: Conversation }> {
+/**
+ * Gửi tin nhắn — Customer: { content, productId? }; Admin: { content, conversationId }.
+ * `botMessage` là câu trả lời tự động, null khi bot đang tắt hoặc admin gửi.
+ */
+export function sendMessage(
+  body: { content: string; conversationId?: string; productId?: number | null },
+  scope: MsgScope = 'customer',
+): Promise<{ message: Message; botMessage: Message | null; conversation: Conversation }> {
   return getData(msgBase(scope), { method: 'POST', body, auth: true })
 }
 
@@ -343,9 +367,14 @@ export function markConversationRead(conversationId: string, scope: MsgScope = '
   return getData(`${msgBase(scope)}/${conversationId}/read`, { method: 'PUT', auth: true })
 }
 
+/** Admin: bật/tắt bot cho 1 conversation */
+export function toggleConversationBot(conversationId: string, aiEnabled: boolean): Promise<Conversation> {
+  return getData(`/admin/messages/${conversationId}/bot`, { method: 'PATCH', body: { aiEnabled }, auth: true })
+}
+
 /** Admin: xóa 1 tin nhắn */
 export function deleteMessage(messageId: string): Promise<void> {
-  return request(`/admin/messages/${messageId}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/messages/${messageId}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
 // ---------- Khuyến mãi / Coupon ----------
@@ -396,7 +425,7 @@ export function toggleCoupon(id: number): Promise<Coupon> {
   return getData(`/admin/coupons/${id}/toggle`, { method: 'PUT', auth: true })
 }
 export function deleteCoupon(id: number): Promise<void> {
-  return request(`/admin/coupons/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/coupons/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
 // ---------- Đánh giá / Reviews ----------
@@ -436,5 +465,5 @@ export function replyReview(id: number, reply: string): Promise<{ id: number; re
   return getData(`/admin/reviews/${id}/reply`, { method: 'PUT', body: { reply }, auth: true })
 }
 export function deleteReview(id: number): Promise<void> {
-  return request(`/admin/reviews/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+  return request(`/admin/reviews/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }

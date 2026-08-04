@@ -6,12 +6,14 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { getProductByHandle, getProducts, addToCart, addWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
+import { useChat } from '@/components/ChatContext'
 
 export default function ProductDetailPage() {
   const params = useParams<{ handle: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
+  const chat = useChat()
 
   // Đọc thông tin khuyến mãi từ URL (nếu vào từ trang Ưu Đãi)
   const saleOldPrice = searchParams.get('oldPrice') ? Number(searchParams.get('oldPrice')) : null
@@ -253,6 +255,16 @@ export default function ProductDetailPage() {
                   Mua Ngay
                 </button>
               </div>
+
+              {chat && (
+                <button
+                  onClick={() => chat.openChat({ id: product.id, name: product.name, img: product.img })}
+                  className="w-full px-6 py-3.5 border border-accent text-accent font-semibold rounded flex items-center justify-center gap-2 hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <MessageCircle size={18} />
+                  Hỏi Tư Vấn Về Sản Phẩm Này
+                </button>
+              )}
 
               <div className="bg-secondary rounded-lg p-4 text-sm space-y-2">
                 <p className="font-medium text-foreground">✓ Miễn phí vận chuyển toàn quốc</p>

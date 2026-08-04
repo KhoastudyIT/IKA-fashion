@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import config from './config/index.js';
 import db from './db/index.js';
 import { seedAdmin } from './db/seed.js';
+import { runMigrations } from './db/migrate.js';
 
 // Chờ Postgres sẵn sàng (container DB có thể khởi động chậm hơn backend)
 async function waitForDb(retries = 15, delayMs = 2000) {
@@ -21,6 +22,7 @@ async function waitForDb(retries = 15, delayMs = 2000) {
 const app = createApp();
 
 await waitForDb();
+await runMigrations();
 await seedAdmin();
 
 const server = app.listen(config.port, () => {

@@ -3,7 +3,7 @@ import * as ctrl from './message.controller.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
-import { sendMessageSchema } from './message.schema.js';
+import { sendMessageSchema, toggleBotSchema } from './message.schema.js';
 
 // Khách hàng — mount tại /api/v1/customer/messages
 export const messageCustomerRouter = Router();
@@ -21,4 +21,5 @@ messageAdminRouter.get('/unread-count',               ctrl.getUnreadCount);
 messageAdminRouter.post('/',                          validate(sendMessageSchema), ctrl.sendMessage);
 messageAdminRouter.get('/:conversationId/messages',   ctrl.getMessages);
 messageAdminRouter.put('/:conversationId/read',       ctrl.markRead);
+messageAdminRouter.patch('/:conversationId/bot',      validate(toggleBotSchema), ctrl.toggleBot);
 messageAdminRouter.delete('/:id',                     ctrl.deleteMessage);

@@ -12,7 +12,8 @@ import {
   Conversation,
   Message,
 } from '@/api'
-import { MessageSquare, Send, ArrowLeft, CheckCheck, Check, RefreshCw } from 'lucide-react'
+import { RichText, SuggestionCards } from '@/components/ChatMessageBody'
+import { MessageSquare, Send, ArrowLeft, CheckCheck, Check, RefreshCw, Sparkles } from 'lucide-react'
 
 function formatTime(iso: string) {
   const d = new Date(iso)
@@ -39,7 +40,7 @@ export default function CustomerMessagesPage() {
 
   const loadConversation = useCallback(async () => {
     try {
-      const conv = await getMyConversation()
+      const conv = await getMyConversation(true)
       setConversation(conv)
       if (conv) {
         const msgs = await getConversationMessages(conv.id)
@@ -68,7 +69,7 @@ export default function CustomerMessagesPage() {
         setMessages(msgs)
         await markConversationRead(conversation.id)
         setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-      } catch (e) {}
+      } catch (e) { }
     }, 10000)
     return () => clearInterval(interval)
   }, [session]) // eslint-disable-line
@@ -83,12 +84,8 @@ export default function CustomerMessagesPage() {
         content,
         conversationId: conversation?.id,
       })
-      if (!conversation) {
-        setConversation(result.conversation)
-      } else {
-        setConversation(result.conversation)
-      }
-      setMessages(prev => [...prev, result.message])
+      setConversation(result.conversation)
+      setMessages(prev => [...prev, result.message, ...(result.botMessage ? [result.botMessage] : [])])
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     } catch (e) {
       setInput(content)
@@ -118,7 +115,7 @@ export default function CustomerMessagesPage() {
           <div className="flex-1">
             <h1 className="text-xl font-heading font-semibold text-foreground flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-accent" />
-              Tin Nhắn 
+              Tin Nhắn
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {conversation
@@ -158,21 +155,25 @@ export default function CustomerMessagesPage() {
               </div>
             ) : (
               messages.map(msg => {
-                const isMe = msg.senderId === session.user.id
+                const isMe = msg.senderRole === 'customer'
+                const isBot = msg.senderRole === 'ai'
                 return (
                   <div key={msg.id} className={`flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                     {!isMe && (
-                      <div className="w-8 h-8 rounded-full bg-[#2C2C2C] flex items-center justify-center text-xs font-bold text-[#D4AF37] shrink-0 self-end">
-                        A
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 self-end ${isBot ? 'bg-[#D4AF37]' : 'bg-[#2C2C2C]'
+                        }`}>
+                        {isBot
+                          ? <Sparkles className="w-4 h-4 text-white" />
+                          : <span className="text-xs font-bold text-[#D4AF37]">A</span>}
                       </div>
                     )}
                     <div className={`max-w-[75%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                        isMe
+                      <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMe
                           ? 'bg-[#2C2C2C] text-white rounded-br-sm'
                           : 'bg-white text-[#2C2C2C] border border-border rounded-bl-sm shadow-sm'
-                      }`}>
-                        {msg.content}
+                        }`}>
+                        <RichText text={msg.content} />
+                        {msg.suggestions?.length > 0 && <SuggestionCards items={msg.suggestions} />}
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                         <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
@@ -182,7 +183,9 @@ export default function CustomerMessagesPage() {
                             : <Check className="w-3 h-3 text-muted-foreground" />
                         )}
                         {!isMe && (
-                          <span className="text-[10px] text-muted-foreground">· Admin IKA</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            · {isBot ? 'Trợ lý IKA' : 'Admin IKA'}
+                          </span>
                         )}
                       </div>
                     </div>

@@ -120,10 +120,10 @@ Token nhận được từ \`POST /api/v1/auth/login\` hoặc \`POST /api/v1/aut
       post: { tags: ['Customer'], summary: 'Gửi đánh giá (chỉ khách đã mua + nhận hàng)', security: bearer, requestBody: { content: { 'application/json': { example: { productId: 1, rating: 5, comment: 'Sản phẩm rất đẹp!' } } } }, responses: { 201: { description: 'Created — chờ admin duyệt' }, 403: { description: 'Chưa mua/nhận hàng sản phẩm này' } } },
     },
     '/api/v1/customer/messages/my': {
-      get: { tags: ['Customer'], summary: 'Hội thoại của tôi', security: bearer, responses: { 200: { description: 'OK' } } },
+      get: { tags: ['Customer'], summary: 'Hội thoại của tôi (ensure=1 để tạo mới kèm lời chào của bot)', security: bearer, parameters: [{ name: 'ensure', in: 'query', schema: { type: 'string', enum: ['1'] } }], responses: { 200: { description: 'OK — null nếu chưa có hội thoại và không truyền ensure' } } },
     },
     '/api/v1/customer/messages': {
-      post: { tags: ['Customer'], summary: 'Gửi tin nhắn tới shop', security: bearer, requestBody: { content: { 'application/json': { example: { content: 'Cho mình hỏi size L còn không ạ?' } } } }, responses: { 201: { description: 'Created' } } },
+      post: { tags: ['Customer'], summary: 'Gửi tin nhắn tới shop (bot trả lời ngay trong response qua trường botMessage)', security: bearer, requestBody: { content: { 'application/json': { example: { content: 'Cho mình hỏi size L còn không ạ?', productId: 5 } } } }, responses: { 201: { description: 'Created — { message, botMessage, conversation }' } } },
     },
     '/api/v1/customer/messages/{conversationId}/messages': {
       get: { tags: ['Customer'], summary: 'Tin nhắn trong hội thoại của tôi', security: bearer, parameters: [{ name: 'conversationId', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
@@ -205,6 +205,9 @@ Token nhận được từ \`POST /api/v1/auth/login\` hoặc \`POST /api/v1/aut
     },
     '/api/v1/admin/messages/{conversationId}/read': {
       put: { tags: ['Admin'], summary: 'Đánh dấu đã đọc', security: bearer, parameters: [{ name: 'conversationId', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+    },
+    '/api/v1/admin/messages/{conversationId}/bot': {
+      patch: { tags: ['Admin'], summary: 'Bật/tắt bot cho 1 hội thoại (bot tự tắt khi admin trả lời)', security: bearer, parameters: [{ name: 'conversationId', in: 'path', required: true, schema: { type: 'string' } }], requestBody: { content: { 'application/json': { example: { aiEnabled: true } } } }, responses: { 200: { description: 'OK' } } },
     },
     '/api/v1/admin/messages/{id}': {
       delete: { tags: ['Admin'], summary: 'Xóa tin nhắn', security: bearer, parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },

@@ -8,6 +8,7 @@ import {
   sendMessage,
   markConversationRead,
   deleteMessage,
+  toggleConversationBot,
   Conversation,
   Message,
 } from '@/api'
@@ -22,7 +23,24 @@ import {
   CheckCheck,
   Check,
   ChevronLeft,
+  Sparkles,
+  Headset,
+  Plus,
+  X,
+  ShoppingBag,
 } from 'lucide-react'
+
+const STAFF_QUICK = [
+  { label: 'Chào hỏi', text: 'Dạ em chào anh/chị, em là tư vấn viên của IKA Fashion. Em có thể hỗ trợ gì cho mình ạ?' },
+  { label: 'Xin số điện thoại', text: 'Anh/chị để lại giúp em số điện thoại và khung giờ tiện nghe máy, em sẽ gọi tư vấn chi tiết hơn ạ.' },
+  { label: 'Đang kiểm tra', text: 'Em đang kiểm tra thông tin này giúp anh/chị, mình đợi em một chút nhé ạ.' },
+  { label: 'Còn hàng', text: 'Dạ sản phẩm này bên em còn hàng ạ. Anh/chị cho em xin size và màu muốn lấy để em giữ hàng nhé.' },
+  { label: 'Hết size', text: 'Dạ size này hiện đã hết ạ. Em xin phép gợi ý anh/chị vài mẫu tương tự cùng tầm giá nhé?' },
+  { label: 'Tư vấn size', text: 'Anh/chị cho em xin chiều cao và cân nặng, em tư vấn size vừa nhất ạ.' },
+  { label: 'Đổi size', text: 'Dạ bên em hỗ trợ đổi size miễn phí trong 7 ngày nếu sản phẩm còn nguyên tem mác và chưa giặt ạ. Anh/chị cho em xin mã đơn để em kiểm tra nhé.' },
+  { label: 'Phí giao hàng', text: 'Dạ đơn từ 500.000 đ bên em miễn phí giao hàng toàn quốc, dưới mức đó phí đồng giá 30.000 đ ạ.' },
+  { label: 'Cảm ơn / kết thúc', text: 'Em cảm ơn anh/chị đã quan tâm tới IKA Fashion ạ. Có gì cần hỗ trợ thêm mình cứ nhắn em nhé!' },
+]
 
 function formatTime(iso: string) {
   const d = new Date(iso)
@@ -54,6 +72,7 @@ export default function AdminMessagesPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
   const [mobileShowChat, setMobileShowChat] = useState(false)
+  const [showQuick, setShowQuick] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
@@ -98,7 +117,7 @@ export default function AdminMessagesPage() {
     try {
       const updated = await markConversationRead(conv.id, 'admin')
       setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unreadByAdmin: 0 } : c))
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Send reply
@@ -129,12 +148,23 @@ export default function AdminMessagesPage() {
     }
   }
 
+  // Bot tự tắt khi admin trả lời; nút này để bật lại thủ công.
+  const handleToggleBot = async () => {
+    if (!selected) return
+    const next = !selected.aiEnabled
+    try {
+      const updated = await toggleConversationBot(selected.id, next)
+      setSelected(updated)
+      setConversations(prev => prev.map(c => c.id === updated.id ? updated : c))
+    } catch (e) { }
+  }
+
   const handleDelete = async (msgId: string) => {
     if (!confirm('Xóa tin nhắn này?')) return
     try {
       await deleteMessage(msgId)
       setMessages(prev => prev.filter(m => m.id !== msgId))
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // Auto-polling
@@ -226,14 +256,12 @@ export default function AdminMessagesPage() {
                   <button
                     key={conv.id}
                     onClick={() => selectConversation(conv)}
-                    className={`w-full text-left px-4 py-3.5 flex gap-3 items-start transition-colors ${
-                      isActive ? 'bg-[#D4AF37]/10 border-l-4 border-l-[#D4AF37]' : 'hover:bg-[#F9F5F0] border-l-4 border-l-transparent'
-                    }`}
+                    className={`w-full text-left px-4 py-3.5 flex gap-3 items-start transition-colors ${isActive ? 'bg-[#D4AF37]/10 border-l-4 border-l-[#D4AF37]' : 'hover:bg-[#F9F5F0] border-l-4 border-l-transparent'
+                      }`}
                   >
                     {/* Avatar */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
-                      isActive ? 'bg-[#D4AF37] text-white' : 'bg-[#F0EBE5] text-[#7A7A7A]'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${isActive ? 'bg-[#D4AF37] text-white' : 'bg-[#F0EBE5] text-[#7A7A7A]'
+                      }`}>
                       {conv.customerName.charAt(0).toUpperCase()}
                     </div>
 
@@ -245,6 +273,11 @@ export default function AdminMessagesPage() {
                         <span className="text-[10px] text-[#7A7A7A] shrink-0">{formatTime(conv.lastMessageAt)}</span>
                       </div>
                       <p className="text-xs text-[#7A7A7A] truncate mt-0.5">{conv.customerEmail}</p>
+                      {!conv.aiEnabled && (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                          <Headset className="w-2.5 h-2.5" /> Chờ nhân viên
+                        </span>
+                      )}
                       <div className="flex items-center justify-between mt-1">
                         <p className={`text-xs truncate flex-1 ${hasUnread ? 'text-[#2C2C2C] font-medium' : 'text-[#7A7A7A]'}`}>
                           {conv.lastMessage || 'Chưa có tin nhắn'}
@@ -278,14 +311,42 @@ export default function AdminMessagesPage() {
                 <div className="w-9 h-9 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-sm font-bold text-[#D4AF37]">
                   {selected.customerName.charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#2C2C2C]">{selected.customerName}</p>
-                  <p className="text-xs text-[#7A7A7A]">{selected.customerEmail}</p>
+                  <p className="text-xs text-[#7A7A7A] truncate">{selected.customerEmail}</p>
+                  {/* Nhân viên tiếp nhận giữa chừng cần biết ngay đang nói về mẫu nào. */}
+                  {selected.lastProduct && (
+                    <a
+                      href={`/products/${selected.lastProduct.handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1 text-[11px] text-[#8A7020] hover:underline"
+                    >
+                      <ShoppingBag className="w-3 h-3" />
+                      Đang quan tâm: <span className="font-medium">{selected.lastProduct.name}</span>
+                    </a>
+                  )}
                 </div>
-                <span className="ml-auto text-xs text-[#7A7A7A] flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatFullTime(selected.lastMessageAt)}
-                </span>
+                <div className="ml-auto flex items-center gap-3">
+                  <button
+                    onClick={handleToggleBot}
+                    title={selected.aiEnabled
+                      ? 'Bot đang tự trả lời khách — bấm để tắt'
+                      : 'Bot đang tắt, khách đang chờ nhân viên — bấm để bật lại'}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${selected.aiEnabled
+                        ? 'bg-[#D4AF37]/10 border-[#D4AF37]/40 text-[#8A7020]'
+                        : 'bg-red-50 border-red-200 text-red-600'
+                      }`}
+                  >
+                    {selected.aiEnabled
+                      ? <><Sparkles className="w-3.5 h-3.5" /> Bot đang bật</>
+                      : <><Headset className="w-3.5 h-3.5" /> Chờ nhân viên</>}
+                  </button>
+                  <span className="text-xs text-[#7A7A7A] flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatFullTime(selected.lastMessageAt)}
+                  </span>
+                </div>
               </div>
 
               {/* Messages */}
@@ -298,22 +359,67 @@ export default function AdminMessagesPage() {
                 ) : (
                   messages.map(msg => {
                     const isAdmin = msg.senderRole === 'admin'
+                    // Tin của bot xếp cùng bên với admin (đều là "phía shop"),
+                    // nhưng đổi màu để admin nhìn ra ngay câu nào máy tự trả lời.
+                    const isBot = msg.senderRole === 'ai'
+                    const onRight = isAdmin || isBot
                     return (
-                      <div key={msg.id} className={`flex gap-2 group ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                        {!isAdmin && (
+                      <div key={msg.id} className={`flex gap-2 group ${onRight ? 'justify-end' : 'justify-start'}`}>
+                        {!onRight && (
                           <div className="w-7 h-7 rounded-full bg-[#F0EBE5] flex items-center justify-center text-xs font-bold text-[#7A7A7A] shrink-0 self-end">
                             {msg.senderName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className={`max-w-[70%] ${isAdmin ? 'items-end' : 'items-start'} flex flex-col`}>
-                          <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                            isAdmin
-                              ? 'bg-[#2C2C2C] text-white rounded-br-sm'
-                              : 'bg-white text-[#2C2C2C] border border-[#E5DFD8] rounded-bl-sm shadow-sm'
-                          }`}>
+                        <div className={`max-w-[70%] ${onRight ? 'items-end' : 'items-start'} flex flex-col`}>
+                          {isBot && (
+                            <span className="text-[10px] text-[#8A7020] font-medium mb-0.5 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" /> Trợ lý tự động
+                            </span>
+                          )}
+                          {/* Không có nhãn này thì nhân viên chỉ thấy câu "Còn size
+                              nào?" trống trơn, không biết khách hỏi mẫu gì. */}
+                          {!onRight && msg.product && (
+                            <a
+                              href={`/products/${msg.product.handle}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 mb-1 px-2 py-1 bg-[#FDF8E9] border border-[#D4AF37]/40 rounded-lg hover:border-[#D4AF37] transition-colors max-w-full"
+                            >
+                              <ShoppingBag className="w-3 h-3 text-[#D4AF37] shrink-0" />
+                              <span className="text-[11px] text-[#2C2C2C] font-medium truncate">{msg.product.name}</span>
+                              <span className="text-[11px] text-[#D4AF37] shrink-0">
+                                {msg.product.price.toLocaleString('vi-VN')} đ
+                              </span>
+                            </a>
+                          )}
+                          <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${isBot
+                              ? 'bg-[#FDF8E9] text-[#2C2C2C] border border-[#D4AF37]/40 rounded-br-sm'
+                              : isAdmin
+                                ? 'bg-[#2C2C2C] text-white rounded-br-sm'
+                                : 'bg-white text-[#2C2C2C] border border-[#E5DFD8] rounded-bl-sm shadow-sm'
+                            }`}>
                             {msg.content}
+                            {msg.suggestions?.length > 0 && (
+                              <div className="mt-2 space-y-1.5">
+                                {msg.suggestions.map(p => (
+                                  <a
+                                    key={p.id}
+                                    href={`/products/${p.handle}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 bg-white border border-[#E5DFD8] rounded-lg p-1.5 hover:border-[#D4AF37] transition-colors"
+                                  >
+                                    <img src={p.img} alt={p.name} className="w-9 h-9 rounded object-cover shrink-0 bg-[#F9F5F0]" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-[11px] font-medium text-[#2C2C2C] truncate">{p.name}</p>
+                                      <p className="text-[11px] text-[#D4AF37] font-semibold">{p.price.toLocaleString('vi-VN')} đ</p>
+                                    </div>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <div className={`flex items-center gap-1 mt-1 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                          <div className={`flex items-center gap-1 mt-1 ${onRight ? 'flex-row-reverse' : 'flex-row'}`}>
                             <span className="text-[10px] text-[#7A7A7A]">{formatTime(msg.createdAt)}</span>
                             {isAdmin && (
                               msg.isRead
@@ -331,9 +437,10 @@ export default function AdminMessagesPage() {
                             )}
                           </div>
                         </div>
-                        {isAdmin && (
-                          <div className="w-7 h-7 rounded-full bg-[#D4AF37] flex items-center justify-center text-xs font-bold text-white shrink-0 self-end">
-                            A
+                        {onRight && (
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 self-end ${isBot ? 'bg-[#D4AF37]/70' : 'bg-[#D4AF37]'
+                            }`}>
+                            {isBot ? <Sparkles className="w-3.5 h-3.5" /> : 'A'}
                           </div>
                         )}
                       </div>
@@ -343,9 +450,41 @@ export default function AdminMessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
+              {showQuick && (
+                <div className="px-4 py-2 border-t border-[#E5DFD8] bg-[#FFFBF7] flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                  {STAFF_QUICK.map(q => (
+                    <button
+                      key={q.label}
+                      title={q.text}
+                      onClick={() => {
+                        // Nối tiếp nội dung đang gõ dở thay vì ghi đè.
+                        setInput(d => (d.trim() ? `${d.trim()} ${q.text}` : q.text))
+                        setShowQuick(false)
+                        inputRef.current?.focus()
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full border border-[#D4AF37]/50 text-[#2C2C2C] bg-white hover:bg-[#D4AF37] hover:text-white transition-colors cursor-pointer"
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Input */}
               <div className="px-4 py-3 bg-white border-t border-[#E5DFD8]">
                 <div className="flex gap-2 items-end">
+                  <button
+                    onClick={() => setShowQuick(v => !v)}
+                    title="Câu trả lời mẫu"
+                    aria-label="Câu trả lời mẫu"
+                    aria-expanded={showQuick}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 border ${showQuick
+                        ? 'bg-[#D4AF37] border-[#D4AF37] text-white'
+                        : 'bg-[#F9F5F0] border-[#E5DFD8] text-[#7A7A7A] hover:text-[#2C2C2C]'
+                      }`}
+                  >
+                    {showQuick ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  </button>
                   <textarea
                     ref={inputRef}
                     rows={1}

@@ -6,9 +6,9 @@ export async function listConversations(_req, res) {
   res.json({ success: true, data: list });
 }
 
-/** GET /messages/my — Customer xem conversation của mình */
+/** GET /messages/my?ensure=1 — Customer xem conversation của mình (ensure: tạo nếu chưa có) */
 export async function getMyConversation(req, res) {
-  const conv = await svc.getMyConversation(req.user.id);
+  const conv = await svc.getMyConversation(req.user.id, { ensure: req.query.ensure === '1' });
   res.json({ success: true, data: conv || null });
 }
 
@@ -18,16 +18,23 @@ export async function getMessages(req, res) {
   res.json({ success: true, data: msgs });
 }
 
-/** POST /messages — Gửi tin nhắn */
+/** POST /messages — Gửi tin nhắn (khách gửi thì bot trả lời ngay trong response) */
 export async function sendMessage(req, res) {
-  const { content, conversationId } = req.body;
+  const { content, conversationId, productId } = req.body;
   const result = await svc.sendMessage({
     senderId: req.user.id,
     senderRole: req.user.role,
     content,
     conversationId,
+    productId,
   });
   res.status(201).json({ success: true, data: result });
+}
+
+/** PATCH /messages/:conversationId/bot — Admin bật/tắt bot cho hội thoại */
+export async function toggleBot(req, res) {
+  const conv = await svc.setAiEnabled(req.params.conversationId, req.body.aiEnabled);
+  res.json({ success: true, data: conv });
 }
 
 /** PUT /messages/:conversationId/read — Đánh dấu đã đọc */

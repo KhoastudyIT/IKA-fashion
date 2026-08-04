@@ -108,10 +108,11 @@ CREATE TABLE IF NOT EXISTS wishlist (
   UNIQUE (user_id, product_id)
 );
 
--- Hội thoại chăm sóc khách hàng (mỗi customer 1 hội thoại với admin)
 CREATE TABLE IF NOT EXISTS conversations (
   id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id        UUID          NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  ai_enabled         BOOLEAN       NOT NULL DEFAULT true,
+  last_product_id    INTEGER       REFERENCES products(id) ON DELETE SET NULL,
   last_message       VARCHAR(1000) NOT NULL DEFAULT '',
   last_message_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   unread_by_admin    INTEGER       NOT NULL DEFAULT 0,
@@ -119,14 +120,17 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at         TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
--- Tin nhắn
+-- Tin nhắn (sender_id NULL = tin của bot)
 CREATE TABLE IF NOT EXISTS messages (
   id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID          NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-  sender_id       UUID          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  sender_role     VARCHAR(20)   NOT NULL CHECK (sender_role IN ('customer', 'admin')),
+  sender_id       UUID          REFERENCES users(id) ON DELETE CASCADE,
+  sender_role     VARCHAR(20)   NOT NULL CHECK (sender_role IN ('customer', 'admin', 'ai')),
   sender_name     VARCHAR(100)  NOT NULL DEFAULT '',
   content         VARCHAR(2000) NOT NULL,
+  product_id      INTEGER       REFERENCES products(id) ON DELETE SET NULL,
+  suggestions     JSONB         NOT NULL DEFAULT '[]'::jsonb,
+  intent          VARCHAR(40)   NOT NULL DEFAULT '',
   is_read         BOOLEAN       NOT NULL DEFAULT false,
   created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
