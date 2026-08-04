@@ -1,41 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
-
-// Dữ liệu mẫu (Dummy data)
-const blogPosts = [
-    {
-        id: 'xu-huong-mua-thu-2026',
-        title: 'Xu Hướng Thời Trang Mùa Thu 2026',
-        category: 'XU HƯỚNG',
-        excerpt: 'Khám phá những gam màu ấm áp và chất liệu len lên ngôi trong mùa thu năm nay cùng IKA Fashion.',
-        date: '06/07/2026',
-        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-        id: 'phoi-do-cong-so',
-        title: 'Cách Phối Đồ Công Sở Trẻ Trung',
-        category: 'MIX & MATCH',
-        excerpt: 'Phá vỡ sự nhàm chán của đồ công sở với 5 mẹo mix & match cực kỳ đơn giản nhưng hiệu quả.',
-        date: '01/07/2026',
-        image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-        id: 'bao-quan-ao-thun',
-        title: 'Bảo Quản Áo Thun Đúng Cách',
-        category: 'MẸO VẶT',
-        excerpt: 'Giữ cho những chiếc áo thun yêu thích của bạn luôn như mới với hướng dẫn giặt ủi chuẩn từ chuyên gia.',
-        date: '25/06/2026',
-        image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
-    }
-];
+import { blogPosts } from './posts';
 
 export default function BlogPage() {
     return (
-        <div className="container mx-auto py-16 px-4 md:px-6 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 min-h-screen">
 
             {/* Tiêu đề trang */}
             <div className="text-center mb-16 space-y-4">
-                <h1 className="text-4xl md:text-5xl font-heading font-bold text-foreground">
+                <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase">Tạp Chí</p>
+                <h1 className="text-3xl md:text-4xl font-heading font-bold text-foreground">
                     Tạp Chí Thời Trang
                 </h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto font-sans">
@@ -43,13 +17,43 @@ export default function BlogPage() {
                 </p>
             </div>
 
-            {/* Danh sách bài viết */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-                {blogPosts.map((post) => (
+            {/* Bài viết nổi bật (bài đầu tiên) */}
+            {blogPosts.length > 0 && (
+                <Link href={`/blog/${blogPosts[0].id}`} className="group block mb-16">
+                    <div className="relative rounded-xl overflow-hidden">
+                        <div className="aspect-[21/9] bg-secondary overflow-hidden">
+                            <img
+                                src={blogPosts[0].image}
+                                alt={blogPosts[0].title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="text-[11px] font-semibold tracking-widest text-accent uppercase">
+                                    {blogPosts[0].category}
+                                </span>
+                                <span className="text-xs text-white/60">{blogPosts[0].date}</span>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-heading font-bold text-white mb-3 group-hover:text-accent transition-colors">
+                                {blogPosts[0].title}
+                            </h2>
+                            <p className="text-sm sm:text-base text-white/70 font-light max-w-2xl line-clamp-2">
+                                {blogPosts[0].excerpt}
+                            </p>
+                        </div>
+                    </div>
+                </Link>
+            )}
+
+            {/* Các bài viết còn lại */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
+                {blogPosts.slice(1).map((post) => (
                     <Link href={`/blog/${post.id}`} key={post.id} className="group cursor-pointer flex flex-col h-full">
 
                         {/* Khung ảnh */}
-                        <div className="relative bg-secondary rounded overflow-hidden mb-5 h-72 w-full shrink-0">
+                        <div className="relative bg-secondary rounded-xl overflow-hidden mb-5 aspect-[16/10] w-full shrink-0">
                             <img
                                 src={post.image}
                                 alt={post.title}

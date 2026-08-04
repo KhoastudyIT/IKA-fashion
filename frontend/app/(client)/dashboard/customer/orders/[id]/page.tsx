@@ -43,19 +43,19 @@ export default function OrderDetailPage() {
 
   if (isPending || loading) {
     return (
-      <main style={{ minHeight: '100vh', background: '#FFFBF7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '40px', height: '40px', border: '3px solid #E5DFD8', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ color: '#7A7A7A', fontSize: '14px' }}>Đang tải...</p>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
-      </main>
+      </div>
     )
   }
 
   if (!order) {
     return (
-      <main style={{ minHeight: '100vh', background: '#FFFBF7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '48px', marginBottom: '16px' }}>📦</p>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', color: '#2C2C2C', marginBottom: '8px' }}>Không tìm thấy đơn hàng</h1>
@@ -63,7 +63,7 @@ export default function OrderDetailPage() {
             ← Quay lại danh sách đơn hàng
           </Link>
         </div>
-      </main>
+      </div>
     )
   }
 
@@ -71,26 +71,23 @@ export default function OrderDetailPage() {
   const isCancelled = order.status === 'cancelled'
 
   return (
-    <main style={{ minHeight: '100vh', background: '#FFFBF7', paddingBottom: '80px' }}>
+    <>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* Header */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5DFD8', padding: '16px 24px', position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '14px' }}>
-            <ArrowLeft size={16} /> Đơn hàng của tôi
-          </Link>
-          <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
-            {status.label}
-          </span>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '14px' }}>
+          <ArrowLeft size={16} /> Đơn hàng của tôi
+        </Link>
+        <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
+          {status.label}
+        </span>
       </div>
 
-      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 24px' }}>
+      <div>
         {/* Title */}
         <div style={{ marginBottom: '32px' }}>
           <p style={{ fontSize: '12px', color: '#7A7A7A', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Mã đơn hàng</p>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
             #{order.id.slice(0, 8).toUpperCase()}
           </h1>
           <p style={{ fontSize: '13px', color: '#9A9A9A', marginTop: '6px' }}>
@@ -235,6 +232,6 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
-    </main>
+    </>
   )
 }

@@ -1,9 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, MessageSquare } from 'lucide-react'
+import Link from 'next/link'
+import { Mail, Phone, MapPin, Clock, MessageSquare, Send, Globe, ChevronDown } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { sendMessage } from '@/api'
+
+const FAQ_ITEMS = [
+  {
+    q: 'Tôi có thể đổi trả sản phẩm trong bao lâu?',
+    a: 'IKA hỗ trợ đổi trả miễn phí trong vòng 7 ngày kể từ ngày nhận hàng. Sản phẩm cần giữ nguyên tem, nhãn mác và chưa qua sử dụng.',
+  },
+  {
+    q: 'Thời gian giao hàng mất bao lâu?',
+    a: 'Nội thành Hà Nội/HCM: 1-2 ngày. Các tỉnh thành khác: 3-5 ngày làm việc. Miễn phí ship cho đơn từ 500.000đ.',
+  },
+  {
+    q: 'Làm sao để chọn đúng size?',
+    a: 'Bạn có thể tham khảo bảng hướng dẫn chọn size trên trang sản phẩm. Nếu còn phân vân, hãy liên hệ hotline để được tư vấn trực tiếp.',
+  },
+  {
+    q: 'IKA có cửa hàng offline không?',
+    a: 'Hiện tại IKA chủ yếu bán hàng online. Chúng tôi đang xây dựng kế hoạch mở showroom tại Hà Nội và TP.HCM trong thời gian tới.',
+  },
+]
 
 export default function ContactPage() {
   const { data: session } = useSession()
@@ -16,8 +36,9 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -32,10 +53,8 @@ export default function ContactPage() {
       const content = `[Liên hệ từ trang Contact]\nTên: ${formData.name}\nEmail: ${formData.email}\nTiêu đề: ${formData.subject}\n\n${formData.message}`
 
       if (session) {
-        // Gửi qua hệ thống nhắn tin nếu đã đăng nhập
         await sendMessage({ content })
       }
-      // Nếu chưa đăng nhập, vẫn hiển thị thành công (có thể tích hợp email sau)
       setSubmitted(true)
       setFormData({ name: '', email: '', subject: '', message: '' })
       setTimeout(() => setSubmitted(false), 7000)
@@ -46,133 +65,162 @@ export default function ContactPage() {
     }
   }
 
-
   return (
-    <>
-      <main className="min-h-screen bg-background">
-        {/* Page Header */}
-        <div className="px-4 sm:px-6 lg:px-8 py-12 border-b border-border">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl font-heading font-semibold text-foreground mb-4">Liên Hệ Chúng Tôi</h1>
-            <p className="text-lg text-muted-foreground">Chúng tôi rất muốn nghe từ bạn</p>
+    <main className="min-h-screen bg-background">
+      {/* ═══════════ HERO ═══════════ */}
+      <section className="relative overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1423666639041-f56000c27a9a?auto=format&fit=crop&w=1600&q=80"
+          alt="Liên hệ IKA Fashion"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-28 relative z-10">
+          <div className="max-w-3xl">
+            <p className="text-xs tracking-[0.3em] text-accent uppercase mb-4">Liên Hệ</p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold leading-tight mb-6">
+              Chúng Tôi Luôn<br />
+              <span className="text-accent">Sẵn Sàng Hỗ Trợ</span>
+            </h1>
+            <p className="text-lg text-primary-foreground/70 leading-relaxed max-w-xl font-light">
+              Có câu hỏi về sản phẩm, đơn hàng hay cần tư vấn phối đồ? Đội ngũ IKA luôn sẵn lòng giúp đỡ bạn.
+            </p>
           </div>
         </div>
+      </section>
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Contact Info */}
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-heading font-semibold text-foreground mb-8">Liên Lạc Với Chúng Tôi</h2>
-                <div className="space-y-6">
-                  <div className="flex gap-4">
-                    <Mail className="w-5 h-5 text-accent flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="font-heading font-semibold text-foreground mb-1">Email</h3>
-                      <p className="text-muted-foreground">hello@ikafashion.com</p>
-                      <p className="text-muted-foreground text-sm">Chúng tôi sẽ phản hồi trong 24 giờ</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <Phone className="w-5 h-5 text-accent flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="font-heading font-semibold text-foreground mb-1">Điện Thoại</h3>
-                      <p className="text-muted-foreground">+84 (0) 123 456 789</p>
-                      <p className="text-muted-foreground text-sm">Thứ 2 - Thứ 6, 9 AM - 6 PM</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <MapPin className="w-5 h-5 text-accent flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="font-heading font-semibold text-foreground mb-1">Thăm Chúng Tôi</h3>
-                      <p className="text-muted-foreground">123 Phố Thời Trang</p>
-                      <p className="text-muted-foreground">Hà Nội, Việt Nam</p>
-                    </div>
-                  </div>
+      {/* ═══════════ THÔNG TIN LIÊN HỆ CARDS ═══════════ */}
+      <section className="relative z-10 -mt-10 px-4 sm:px-6 lg:px-8 mb-16">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                icon: Phone,
+                title: 'Hotline',
+                line1: '0123 456 789',
+                line2: 'Miễn phí cuộc gọi',
+              },
+              {
+                icon: Mail,
+                title: 'Email',
+                line1: 'hello@ikafashion.com',
+                line2: 'Phản hồi trong 24h',
+              },
+              {
+                icon: MapPin,
+                title: 'Showroom',
+                line1: '123 Phố Thời Trang',
+                line2: 'Hà Nội, Việt Nam',
+              },
+              {
+                icon: Clock,
+                title: 'Giờ làm việc',
+                line1: 'T2–T6: 9:00 – 18:00',
+                line2: 'T7: 10:00 – 16:00',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-card border border-border rounded-xl p-6 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <item.icon size={22} className="text-accent" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="font-heading font-semibold text-foreground text-sm mb-1">{item.title}</h3>
+                  <p className="text-foreground text-sm">{item.line1}</p>
+                  <p className="text-muted-foreground text-xs">{item.line2}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              {/* Hours */}
-              <div className="bg-secondary rounded p-6">
-                <h3 className="font-heading font-semibold text-foreground mb-4">Giờ Làm Việc</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Thứ 2 - Thứ 6</span>
-                    <span>9 AM - 6 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Thứ 7</span>
-                    <span>10 AM - 4 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Chủ Nhật</span>
-                    <span>Đóng Cửa</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* ═══════════ FORM + MAP ═══════════ */}
+      <section className="px-4 sm:px-6 lg:px-8 pb-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-5 gap-12">
+            {/* Form — 3 cột */}
+            <div className="lg:col-span-3">
+              <p className="text-xs tracking-[0.3em] text-accent uppercase mb-3">Gửi Tin Nhắn</p>
+              <h2 className="text-3xl font-heading font-semibold text-foreground mb-2">
+                Liên Hệ Với Chúng Tôi
+              </h2>
+              <p className="text-muted-foreground text-sm mb-8 font-light">
+                Điền thông tin bên dưới và chúng tôi sẽ phản hồi trong thời gian sớm nhất.
+              </p>
 
-            {/* Contact Form */}
-            <div>
               {submitted ? (
-                <div className="bg-accent/20 border border-accent rounded p-6 text-center">
-                  <p className="text-accent font-medium mb-2">Cảm ơn đã liên hệ!</p>
+                <div className="bg-accent/10 border border-accent/30 rounded-xl p-8 text-center">
+                  <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Send size={28} className="text-accent" />
+                  </div>
+                  <p className="text-accent font-heading font-semibold text-lg mb-2">Cảm ơn đã liên hệ!</p>
                   <p className="text-muted-foreground text-sm">
-                    Chúng tôi đã nhận được tin nhắn của bạn và sẽ phản hồi sớm.
+                    Chúng tôi đã nhận được tin nhắn của bạn và sẽ phản hồi trong vòng 24 giờ.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-                      Tên
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2 bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                      Email
-                    </label> 
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2 bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+                        Họ và tên <span className="text-accent">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        placeholder="Nguyễn Văn A"
+                        className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                        Email <span className="text-accent">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        placeholder="email@example.com"
+                        className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-2">
-                      Tiêu Đề
+                      Chủ đề <span className="text-accent">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="subject"
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-2 bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
+                      className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+                    >
+                      <option value="">— Chọn chủ đề —</option>
+                      <option value="Tư vấn sản phẩm">Tư vấn sản phẩm</option>
+                      <option value="Hỏi về đơn hàng">Hỏi về đơn hàng</option>
+                      <option value="Đổi trả / Bảo hành">Đổi trả / Bảo hành</option>
+                      <option value="Hợp tác kinh doanh">Hợp tác kinh doanh</option>
+                      <option value="Góp ý / Phản hồi">Góp ý / Phản hồi</option>
+                      <option value="Khác">Khác</option>
+                    </select>
                   </div>
 
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
-                      Tin Nhắn
+                      Nội dung <span className="text-accent">*</span>
                     </label>
                     <textarea
                       id="message"
@@ -180,33 +228,149 @@ export default function ContactPage() {
                       value={formData.message}
                       onChange={handleChange}
                       required
-                      rows={6}
-                      className="w-full px-4 py-2 bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                      rows={5}
+                      placeholder="Nhập nội dung tin nhắn của bạn..."
+                      className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all resize-none"
                     />
                   </div>
 
                   {error && (
-                    <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">{error}</p>
+                    <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">{error}</p>
                   )}
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-6 py-3 bg-foreground text-primary-foreground font-medium rounded hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-10 py-3.5 bg-foreground text-primary-foreground font-sans text-sm font-semibold tracking-wide rounded-lg hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Đang gửi...
                       </>
-                    ) : 'Gửi Tin Nhắn'}
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        Gửi Tin Nhắn
+                      </>
+                    )}
                   </button>
                 </form>
               )}
             </div>
+
+            {/* Sidebar — 2 cột */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Map placeholder */}
+              <div className="rounded-xl overflow-hidden border border-border aspect-[4/3]">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.6942476416997!2d105.84117907503158!3d21.007091088638414!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ac76a0b3ad21%3A0x9b9b47ab0a84e0f0!2zSG_DoG4gS2nhur9tLCBIw6AgTuG7mWksIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1690000000000!5m2!1svi!2s"
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Bản đồ IKA Fashion"
+                />
+              </div>
+
+              {/* Social & Support */}
+              <div className="bg-secondary rounded-xl p-6">
+                <h3 className="font-heading font-semibold text-foreground mb-4">Kết Nối Với IKA</h3>
+                <div className="space-y-3">
+                  <a href="#" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent transition-colors">
+                    <div className="w-9 h-9 bg-card rounded-lg flex items-center justify-center">
+                      <Globe size={18} className="text-foreground" />
+                    </div>
+                    Facebook: @IKAFashionVN
+                  </a>
+                  <a href="#" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent transition-colors">
+                    <div className="w-9 h-9 bg-card rounded-lg flex items-center justify-center">
+                      <MessageSquare size={18} className="text-foreground" />
+                    </div>
+                    Zalo: 0123 456 789
+                  </a>
+                  <a href="#" className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent transition-colors">
+                    <div className="w-9 h-9 bg-card rounded-lg flex items-center justify-center">
+                      <Mail size={18} className="text-foreground" />
+                    </div>
+                    hello@ikafashion.com
+                  </a>
+                </div>
+              </div>
+
+              {/* Response time */}
+              <div className="bg-accent/10 border border-accent/20 rounded-xl p-6">
+                <div className="flex items-start gap-3">
+                  <Clock size={20} className="text-accent flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-heading font-semibold text-foreground text-sm mb-1">Thời gian phản hồi</h3>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Chúng tôi cam kết phản hồi trong vòng <strong className="text-foreground">24 giờ</strong> làm việc. Các yêu cầu khẩn cấp vui lòng gọi Hotline để được hỗ trợ ngay.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </main>
-    </>
+      </section>
+
+      {/* ═══════════ FAQ ═══════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs tracking-[0.3em] text-accent uppercase mb-3">Hỏi Đáp</p>
+            <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+              Câu Hỏi Thường Gặp
+            </h2>
+            <p className="text-muted-foreground mt-3 text-sm font-light">
+              Tìm câu trả lời nhanh cho những thắc mắc phổ biến nhất
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, i) => (
+              <div
+                key={i}
+                className="bg-card border border-border rounded-xl overflow-hidden transition-shadow hover:shadow-sm"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-6 py-5 text-left"
+                >
+                  <span className="font-heading font-semibold text-foreground text-sm pr-4">{item.q}</span>
+                  <ChevronDown
+                    size={18}
+                    className={`text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
+                      openFaq === i ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                <div
+                  className="overflow-hidden transition-all duration-300"
+                  style={{ maxHeight: openFaq === i ? '200px' : '0' }}
+                >
+                  <p className="px-6 pb-5 text-sm text-muted-foreground leading-relaxed">
+                    {item.a}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <p className="text-sm text-muted-foreground mb-4">
+              Không tìm thấy câu trả lời?
+            </p>
+            <Link
+              href="/faq"
+              className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+            >
+              Xem tất cả câu hỏi →
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }

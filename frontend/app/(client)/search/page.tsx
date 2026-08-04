@@ -77,7 +77,7 @@ function SearchPageContent() {
       {/* Search header */}
       <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5DFD8', padding: '32px 24px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: 700, color: '#2C2C2C', marginBottom: '20px' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '20px' }}>
             Tìm Kiếm
           </h1>
           {/* Search bar */}
@@ -136,7 +136,7 @@ function SearchPageContent() {
       </div>
 
       {query && (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
           {/* Filter bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
             <button onClick={() => setShowFilters(!showFilters)}

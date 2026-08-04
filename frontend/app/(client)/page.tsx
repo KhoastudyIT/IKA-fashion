@@ -1,170 +1,727 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useEffect, useCallback } from 'react'
+import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RefreshCcw, Headphones, ArrowRight, Quote } from 'lucide-react'
+import { getProducts, ApiProduct } from '@/api'
+
+/* ───────── Banner Data ───────── */
+const BANNERS = [
+  {
+    image: '/banners/banner-hero.png',
+    subtitle: 'Bộ Sưu Tập Mới 2026',
+    title: 'Phong Cách\nĐẳng Cấp',
+    description: 'Khám phá bộ sưu tập thời trang cao cấp với công nghệ vải tiên tiến, thiết kế tinh tế phù hợp với phong cách sống hiện đại.',
+    cta: 'KHÁM PHÁ NGAY',
+    href: '/products',
+  },
+  {
+    image: '/banners/banner-summer.png',
+    subtitle: 'Summer Collection',
+    title: 'Thoáng Mát\nSuốt Ngày Dài',
+    description: 'Công nghệ AirDry™ thoát ẩm nhanh 3x, giữ bạn luôn thoải mái trong mọi hoạt động dưới nắng hè.',
+    cta: 'XEM BỘ SƯU TẬP',
+    href: '/products?collection=ao-thun',
+  },
+  {
+    image: '/banners/banner-arrivals.png',
+    subtitle: 'Ưu Đãi Đặc Biệt',
+    title: 'Giảm Đến 40%\nToàn Bộ Sản Phẩm',
+    description: 'Cơ hội sở hữu thời trang chất lượng với giá ưu đãi. Áp dụng cho đơn hàng từ 500.000đ.',
+    cta: 'MUA NGAY',
+    href: '/khuyen-mai',
+  },
+]
+
+/* ───────── Testimonials ───────── */
+const TESTIMONIALS = [
+  {
+    name: 'Nguyễn Minh Tuấn',
+    role: 'Nhân viên văn phòng',
+    content: 'Áo polo IKA mặc rất thoáng mát, đi làm cả ngày không hề bí. Chất vải co giãn tốt, form áo vừa vặn. Mình đã mua thêm 3 cái màu khác!',
+    rating: 5,
+    avatar: '👨‍💼',
+  },
+  {
+    name: 'Trần Hoàng Nam',
+    role: 'Doanh nhân',
+    content: 'Quần âu IKA giữ phom rất tốt dù giặt nhiều lần. Công nghệ FlexFit™ co giãn nhẹ nên ngồi rất thoải mái. Giá thành cũng hợp lý so với chất lượng.',
+    rating: 5,
+    avatar: '👨‍💻',
+  },
+  {
+    name: 'Phạm Đức Huy',
+    role: 'Sinh viên',
+    content: 'Áo thun trắng IKA là món đồ mình mặc nhiều nhất. Vải mềm mịn, nhanh khô sau khi giặt. Ship hàng nhanh, đóng gói cẩn thận nữa!',
+    rating: 4,
+    avatar: '🧑‍🎓',
+  },
+]
+
+/* ───────── Instagram Gallery (dùng ảnh sản phẩm thật) ───────── */
+const INSTAGRAM_IMAGES = [
+  '/products/ao-polo-white.png',
+  '/products/ao-thun-trang.png',
+  '/products/quan-kaki.png',
+  '/products/ao-polo-black.png',
+  '/products/ao-thun-xanh.png',
+  '/products/quan-xam.png',
+]
 
 export default function HomePage() {
+  /* ── Banner Slider State ── */
+  const [currentBanner, setCurrentBanner] = useState(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
+  /* ── Featured Products ── */
+  const [bestSellers, setBestSellers] = useState<ApiProduct[]>([])
+  const [newArrivals, setNewArrivals] = useState<ApiProduct[]>([])
+
+  const nextBanner = useCallback(() => {
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setCurrentBanner((prev) => (prev + 1) % BANNERS.length)
+    setTimeout(() => setIsTransitioning(false), 600)
+  }, [isTransitioning])
+
+  const prevBanner = useCallback(() => {
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setCurrentBanner((prev) => (prev - 1 + BANNERS.length) % BANNERS.length)
+    setTimeout(() => setIsTransitioning(false), 600)
+  }, [isTransitioning])
+
+  /* Auto-slide every 5s */
+  useEffect(() => {
+    const timer = setInterval(nextBanner, 5000)
+    return () => clearInterval(timer)
+  }, [nextBanner])
+
+  /* Fetch products */
+  useEffect(() => {
+    getProducts({ sort: 'sold', limit: 4 })
+      .then((res) => setBestSellers(res.items))
+      .catch(() => {})
+
+    getProducts({ sort: 'newest', limit: 4 })
+      .then((res) => setNewArrivals(res.items))
+      .catch(() => {})
+  }, [])
+
+  const banner = BANNERS[currentBanner]
+
   return (
-    <>
-      <main className="min-h-screen bg-background">
-        {/* Hero Section */}
-        <section className="relative h-screen flex items-center justify-center overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary to-background" />
-
-          <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl">
-            <div className="mb-6 space-y-2">
-              <p className="text-xs sm:text-sm font-sans tracking-widest text-muted-foreground uppercase">
-                Thương Hiệu Thời Trang Việt Nam
-              </p>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-semibold text-foreground leading-tight">
-                IKA Fashion
-              </h1>
-            </div>
-
-            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed font-light">
-              Khám phá bộ sưu tập thời trang chất lượng cao với công nghệ vải tiên tiến, thiết kế hiện đại phù hợp với cuộc sống Việt Nam.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="/products"
-                className="px-8 py-3 bg-foreground text-primary-foreground font-sans text-sm font-medium tracking-wide hover:opacity-90 transition-opacity rounded"
-              >
-                KHÁM PHÁ NGAY
-              </Link>
-              <Link
-                href="/about"
-                className="px-8 py-3 border border-foreground text-foreground font-sans text-sm font-medium tracking-wide hover:bg-foreground hover:text-primary-foreground transition-colors rounded"
-              >
-                TÌM HIỂU THÊM
-              </Link>
-            </div>
+    <main className="min-h-screen bg-background">
+      {/* ═══════════════════════════════════════════════
+          1. HERO BANNER SLIDER
+      ═══════════════════════════════════════════════ */}
+      <section className="relative h-[85vh] min-h-[500px] overflow-hidden">
+        {/* Background Images */}
+        {BANNERS.map((b, i) => (
+          <div
+            key={i}
+            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+            style={{ opacity: i === currentBanner ? 1 : 0 }}
+          >
+            <img
+              src={b.image}
+              alt={b.title}
+              className="w-full h-full object-cover"
+            />
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
           </div>
+        ))}
 
-          {/* Decorative Element */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-            <svg
-              className="w-6 h-6 text-accent animate-bounce"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        {/* Content */}
+        <div className="relative z-10 h-full flex items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div
+              className="max-w-xl transition-all duration-500"
+              style={{
+                opacity: isTransitioning ? 0 : 1,
+                transform: isTransitioning ? 'translateY(20px)' : 'translateY(0)',
+              }}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
-          </div>
-        </section>
-
-        {/* Featured Collections */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <p className="text-xs font-sans tracking-widest text-muted-foreground uppercase mb-4">
-                Bộ Sưu Tập
+              <p className="text-xs sm:text-sm font-sans tracking-[0.3em] text-amber-300 uppercase mb-4">
+                {banner.subtitle}
               </p>
-              <h2 className="text-4xl sm:text-5xl font-heading font-semibold text-foreground">
-                Các Bộ Sưu Tập Nổi Bật
-              </h2>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold text-white leading-tight whitespace-pre-line mb-6">
+                {banner.title}
+              </h1>
+              <p className="text-base sm:text-lg text-white/80 mb-8 leading-relaxed font-light max-w-md">
+                {banner.description}
+              </p>
+              <Link
+                href={banner.href}
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-accent text-accent-foreground font-sans text-sm font-semibold tracking-wide hover:bg-amber-400 transition-all duration-300 rounded shadow-lg hover:shadow-xl"
+              >
+                {banner.cta}
+                <ArrowRight size={16} />
+              </Link>
             </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Collection Cards */}
-              {[
-                {
-                  title: 'Áo Thun',
-                  description: 'Vải mát, nhanh khô, công nghệ AirDry™ thoảng khí',
-                  href: '/products?collection=ao-thun',
-                  image: '/products/ao-thun-trang.png',
-                },
-                {
-                  title: 'Áo Polo & Sơ Mi',
-                  description: 'Khí chất trưởng thành, thoải mái mặc đi làm',
-                  href: '/products?collection=ao-polo',
-                  image: '/products/ao-polo-white.png',
-                },
-                {
-                  title: 'Quần & Kaki',
-                  description: 'Bền bỉ, tôn dáng, công nghệ co giãn FlexFit™',
-                  href: '/products?collection=quan',
-                  image: '/products/quan-kaki.png',
-                },
-              ].map((collection) => (
-                <Link key={collection.title} href={collection.href}>
-                  <div className="group cursor-pointer">
-                    <div className="bg-secondary rounded h-64 flex items-center justify-center mb-4 group-hover:bg-muted transition-colors overflow-hidden relative">
-                      <img
-                        src={collection.image}
-                        alt={collection.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <h3 className="text-xl font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
+        {/* Navigation Arrows */}
+        <button
+          onClick={prevBanner}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/25 transition-all"
+          aria-label="Banner trước"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <button
+          onClick={nextBanner}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/25 transition-all"
+          aria-label="Banner tiếp"
+        >
+          <ChevronRight size={20} />
+        </button>
+
+        {/* Dots */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                setIsTransitioning(true)
+                setCurrentBanner(i)
+                setTimeout(() => setIsTransitioning(false), 600)
+              }}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === currentBanner
+                  ? 'w-8 bg-accent'
+                  : 'w-2 bg-white/50 hover:bg-white/80'
+              }`}
+              aria-label={`Banner ${i + 1}`}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          2. SERVICE HIGHLIGHTS BAR
+      ═══════════════════════════════════════════════ */}
+      <section className="border-b border-border bg-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
+            {[
+              { icon: Truck, title: 'Miễn Phí Ship', desc: 'Đơn từ 500.000đ' },
+              { icon: ShieldCheck, title: 'Cam Kết Chính Hãng', desc: 'Sản phẩm 100% authentic' },
+              { icon: RefreshCcw, title: 'Đổi Trả 7 Ngày', desc: 'Miễn phí, không lý do' },
+              { icon: Headphones, title: 'Hỗ Trợ 24/7', desc: 'Hotline: 0123 456 789' },
+            ].map((item) => (
+              <div key={item.title} className="flex items-center gap-4 py-6 px-6">
+                <item.icon size={28} className="text-accent flex-shrink-0" strokeWidth={1.5} />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          3. FEATURED COLLECTIONS
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+              Bộ Sưu Tập
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+              Khám Phá Danh Mục Sản Phẩm
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'Áo Thun',
+                description: 'Vải mát, nhanh khô, công nghệ AirDry™ thoáng khí',
+                href: '/products?collection=ao-thun',
+                image: '/products/ao-thun-trang.png',
+                count: 'Từ 199.000đ',
+              },
+              {
+                title: 'Áo Polo & Sơ Mi',
+                description: 'Khí chất trưởng thành, thoải mái mặc đi làm',
+                href: '/products?collection=ao-polo',
+                image: '/products/ao-polo-white.png',
+                count: 'Từ 349.000đ',
+              },
+              {
+                title: 'Quần & Kaki',
+                description: 'Bền bỉ, tôn dáng, công nghệ co giãn FlexFit™',
+                href: '/products?collection=quan',
+                image: '/products/quan-kaki.png',
+                count: 'Từ 399.000đ',
+              },
+            ].map((collection) => (
+              <Link key={collection.title} href={collection.href}>
+                <div className="group cursor-pointer relative overflow-hidden rounded-lg">
+                  <div className="aspect-[3/4] bg-secondary overflow-hidden">
+                    <img
+                      src={collection.image}
+                      alt={collection.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                    <span className="text-xs tracking-widest text-accent font-medium uppercase">
+                      {collection.count}
+                    </span>
+                    <h3 className="text-2xl font-heading font-semibold mt-1 mb-2 group-hover:text-accent transition-colors">
                       {collection.title}
                     </h3>
-                    <p className="text-muted-foreground text-sm font-light">
+                    <p className="text-sm text-white/70 font-light">
                       {collection.description}
                     </p>
+                    <div className="mt-4 flex items-center gap-2 text-sm font-medium text-accent opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      Xem ngay <ArrowRight size={14} />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          4. BEST SELLERS (from API)
+      ═══════════════════════════════════════════════ */}
+      {bestSellers.length > 0 && (
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-14">
+              <div>
+                <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+                  Bán Chạy Nhất
+                </p>
+                <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+                  Sản Phẩm Được Yêu Thích
+                </h2>
+              </div>
+              <Link
+                href="/products?sort=sold"
+                className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+              >
+                Xem tất cả <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {bestSellers.map((product) => (
+                <Link key={product.id} href={`/products/${product.handle}`}>
+                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative aspect-square bg-secondary overflow-hidden">
+                      <img
+                        src={product.img}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {product.stock <= 0 && (
+                        <div className="absolute top-3 right-3 bg-destructive text-white px-2 py-0.5 text-[10px] font-semibold rounded">
+                          Hết hàng
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3 bg-accent text-accent-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
+                        HOT
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={12}
+                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
+                          />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-1">({product.sold} đã bán)</span>
+                      </div>
+                      <p className="text-base font-semibold text-accent">
+                        {product.price.toLocaleString()}đ
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-8 text-center sm:hidden">
+              <Link
+                href="/products?sort=sold"
+                className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+              >
+                Xem tất cả sản phẩm <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════
+          5. PROMO BANNER (full-width)
+      ═══════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        <div className="grid md:grid-cols-2">
+          {/* Left: Image */}
+          <div className="relative h-80 md:h-auto">
+            <img
+              src="/Giam-Gia/Ao/Ao-Polo/Polo-4.webp"
+              alt="Khuyến mãi"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {/* Right: Content */}
+          <div className="flex items-center justify-center bg-foreground text-primary-foreground py-16 px-8 lg:px-16">
+            <div className="max-w-md text-center md:text-left">
+              <p className="text-xs tracking-[0.3em] text-accent uppercase mb-4">
+                Ưu Đãi Có Hạn
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-heading font-semibold mb-4 leading-tight">
+                Mua 2 Giảm Thêm 10%
+              </h2>
+              <p className="text-primary-foreground/70 mb-8 font-light leading-relaxed">
+                Áp dụng cho tất cả sản phẩm Polo & Sơ Mi. Cơ hội tuyệt vời để làm mới tủ đồ công sở của bạn với mức giá không thể tốt hơn.
+              </p>
+              <Link
+                href="/khuyen-mai"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-accent text-accent-foreground font-sans text-sm font-semibold tracking-wide hover:bg-amber-400 transition-all rounded"
+              >
+                XEM NGAY <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          6. NEW ARRIVALS (from API)
+      ═══════════════════════════════════════════════ */}
+      {newArrivals.length > 0 && (
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-14">
+              <div>
+                <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+                  Hàng Mới Về
+                </p>
+                <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+                  Sản Phẩm Mới Nhất
+                </h2>
+              </div>
+              <Link
+                href="/products?sort=newest"
+                className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+              >
+                Xem tất cả <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {newArrivals.map((product) => (
+                <Link key={product.id} href={`/products/${product.handle}`}>
+                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="relative aspect-square bg-secondary overflow-hidden">
+                      <img
+                        src={product.img}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 left-3 bg-foreground text-primary-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
+                        MỚI
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            size={12}
+                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
+                          />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-1">({product.rating})</span>
+                      </div>
+                      <p className="text-base font-semibold text-accent">
+                        {product.price.toLocaleString()}đ
+                      </p>
+                    </div>
                   </div>
                 </Link>
               ))}
             </div>
           </div>
         </section>
+      )}
 
-        {/* Why IKA */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl font-heading font-semibold text-foreground">
-                Tại Sao Chọn IKA
+      {/* ═══════════════════════════════════════════════
+          7. WHY IKA - BRAND VALUES
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-foreground text-primary-foreground">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+              Giá Trị Cốt Lõi
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-heading font-semibold">
+              Tại Sao Chọn IKA Fashion
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: '🧪',
+                title: 'Công Nghệ Vải',
+                description: 'AirDry™ thoát ẩm 3x, ColorLock™ giữ màu 50 lần giặt, FlexFit™ co giãn 4 chiều, EasyCare™ kháng nhăn.',
+              },
+              {
+                icon: '✂️',
+                title: 'Thiết Kế Tinh Tế',
+                description: 'Form dáng chuẩn Châu Á, đường may tỉ mỉ, chi tiết tối giản — phong cách vượt thời gian.',
+              },
+              {
+                icon: '💰',
+                title: 'Giá Trị Xứng Đáng',
+                description: 'Chất lượng cao cấp, mức giá bình dân. Cam kết giá tốt nhất thị trường cho cùng phân khúc.',
+              },
+              {
+                icon: '🌿',
+                title: 'Thân Thiện Môi Trường',
+                description: 'Bao bì tái chế, quy trình sản xuất tiết kiệm nước. Thời trang đẹp bắt đầu từ ý thức sống xanh.',
+              },
+            ].map((feature) => (
+              <div key={feature.title} className="text-center group">
+                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:bg-accent/20 transition-colors">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-heading font-semibold mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-primary-foreground/60 text-sm leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          8. CUSTOMER TESTIMONIALS
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+              Đánh Giá
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+              Khách Hàng Nói Gì
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((t) => (
+              <div
+                key={t.name}
+                className="relative bg-card border border-border rounded-xl p-8 hover:shadow-lg transition-shadow"
+              >
+                <Quote size={32} className="text-accent/20 absolute top-6 right-6" />
+                <div className="flex items-center gap-1 mb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={14}
+                      className={i < t.rating ? 'text-accent fill-accent' : 'text-border'}
+                    />
+                  ))}
+                </div>
+                <p className="text-foreground/80 text-sm leading-relaxed mb-6 italic">
+                  &ldquo;{t.content}&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-xl">
+                    {t.avatar}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          9. BLOG PREVIEW
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-end justify-between mb-14">
+            <div>
+              <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+                Blog
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+                Tin Tức & Cảm Hứng
               </h2>
             </div>
+            <Link
+              href="/blog"
+              className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+            >
+              Xem tất cả <ArrowRight size={14} />
+            </Link>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[
-                { title: 'Chất Lượng Cao', description: 'Vải công nghệ, thoát ẩm nhanh, mặc thoải mái' },
-                { title: 'Giá Cạnh Tranh', description: 'Giá thành hợp lý, chất lượng tốt nhất' },
-                { title: 'Công Nghệ Vải', description: 'AirDry™, ColorLock™, FlexFit™, EasyCare™' },
-                { title: 'Hỗ Trợ Tốt', description: 'Tư vấn mua hàng, hỗ trợ sau bán tốt' },
-              ].map((feature) => (
-                <div key={feature.title} className="text-center">
-                  <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-accent-foreground text-lg font-bold">✓</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                id: 'xu-huong-mua-thu-2026',
+                title: 'Xu Hướng Thời Trang Mùa Thu 2026',
+                category: 'XU HƯỚNG',
+                excerpt: 'Khám phá những gam màu ấm áp và chất liệu len lên ngôi trong mùa thu năm nay.',
+                date: '06/07/2026',
+                image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                id: 'phoi-do-cong-so',
+                title: 'Cách Phối Đồ Công Sở Trẻ Trung',
+                category: 'MIX & MATCH',
+                excerpt: 'Phá vỡ sự nhàm chán của đồ công sở với 5 mẹo mix & match cực kỳ đơn giản.',
+                date: '01/07/2026',
+                image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                id: 'bao-quan-ao-thun',
+                title: 'Bảo Quản Áo Thun Đúng Cách',
+                category: 'MẸO VẶT',
+                excerpt: 'Giữ cho những chiếc áo thun yêu thích của bạn luôn như mới với hướng dẫn giặt ủi chuẩn.',
+                date: '25/06/2026',
+                image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
+              },
+            ].map((post) => (
+              <Link key={post.id} href={`/blog/${post.id}`}>
+                <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="aspect-[16/10] overflow-hidden">
+                    <img
+                      src={post.image}
+                      alt={post.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   </div>
-                  <h3 className="text-lg font-heading font-semibold text-foreground mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
+                        {post.category}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{post.date}</span>
+                    </div>
+                    <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground font-light line-clamp-2">
+                      {post.excerpt}
+                    </p>
+                  </div>
+                </article>
+              </Link>
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Newsletter */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground mb-4">
-              Nhận Thông Tin Mới
-            </h2>
-            <p className="text-muted-foreground mb-8 font-light">
-              Đăng ký nhận bản tin của chúng tôi để nhận ưu đãi độc quyền và thông tin về bộ sưu tập mới.
+      {/* ═══════════════════════════════════════════════
+          10. INSTAGRAM / LOOKBOOK GALLERY
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+              @IKA.Fashion
             </p>
-            <form className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                className="flex-1 px-4 py-3 bg-secondary border border-border rounded text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-                required
-              />
-              <button
-                type="submit"
-                className="px-8 py-3 bg-foreground text-primary-foreground font-sans text-sm font-medium tracking-wide hover:opacity-90 transition-opacity rounded whitespace-nowrap"
-              >
-                Đăng Ký
-              </button>
-            </form>
+            <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+              Lookbook & Phong Cách
+            </h2>
+            <p className="text-muted-foreground mt-3 text-sm font-light">
+              Cảm hứng phối đồ từ cộng đồng IKA Fashion
+            </p>
           </div>
-        </section>
-      </main>
-    </>
+
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+            {INSTAGRAM_IMAGES.map((src, i) => (
+              <Link key={i} href="/products" className="group relative aspect-square overflow-hidden rounded-lg">
+                <img
+                  src={src}
+                  alt={`Lookbook ${i + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                  <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                    +
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════
+          11. NEWSLETTER
+      ═══════════════════════════════════════════════ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-foreground to-neutral-800">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+            Bản Tin
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-white mb-4">
+            Nhận Ưu Đãi Độc Quyền
+          </h2>
+          <p className="text-white/60 mb-8 font-light leading-relaxed">
+            Đăng ký nhận bản tin để không bỏ lỡ các chương trình khuyến mãi, bộ sưu tập mới và mẹo phối đồ từ IKA Fashion.
+          </p>
+          <form
+            className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+            onSubmit={(e) => e.preventDefault()}
+          >
+            <input
+              type="email"
+              placeholder="Nhập email của bạn"
+              className="flex-1 px-5 py-3.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent backdrop-blur-sm"
+              required
+            />
+            <button
+              type="submit"
+              className="px-8 py-3.5 bg-accent text-accent-foreground font-sans text-sm font-semibold tracking-wide hover:bg-amber-400 transition-all rounded-lg whitespace-nowrap"
+            >
+              Đăng Ký
+            </button>
+          </form>
+          <p className="text-white/30 text-xs mt-4">
+            Chúng tôi cam kết không gửi spam. Bạn có thể hủy đăng ký bất cứ lúc nào.
+          </p>
+        </div>
+      </section>
+    </main>
   )
 }

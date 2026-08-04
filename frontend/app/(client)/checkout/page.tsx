@@ -166,7 +166,7 @@ export default function CheckoutPage() {
       <main style={{ minHeight: '100vh', background: '#FFFBF7', paddingBottom: '80px' }}>
         {/* Header */}
         <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5DFD8', padding: '16px 24px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#7A7A7A' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#7A7A7A' }}>
             <Link href="/" style={{ color: '#D4AF37', textDecoration: 'none' }}>Trang chủ</Link>
             <ChevronRight size={14} />
             <Link href="/cart" style={{ color: '#D4AF37', textDecoration: 'none' }}>Giỏ hàng</Link>
@@ -175,8 +175,8 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 24px' }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '32px', fontWeight: 700, color: '#2C2C2C', marginBottom: '32px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 24px' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '32px' }}>
             Thanh Toán
           </h1>
 

@@ -73,7 +73,20 @@ export default function AdminMessagesPage() {
   const [search, setSearch] = useState('')
   const [mobileShowChat, setMobileShowChat] = useState(false)
   const [showQuick, setShowQuick] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () =>
+    setTimeout(() => {
+      const el = listRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }, 50)
+
+  // Nhân viên đang cuộn lên đọc lại lịch sử thì đừng kéo họ xuống đáy mỗi 8s.
+  const isNearBottom = () => {
+    const el = listRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -100,9 +113,10 @@ export default function AdminMessagesPage() {
   // Load messages for a conversation
   const loadMessages = useCallback(async (convId: string) => {
     try {
+      const stick = isNearBottom()
       const data = await getConversationMessages(convId, 'admin')
       setMessages(data)
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      if (stick) scrollToBottom()
     } catch (e) {
       // silent fail
     }
@@ -113,6 +127,9 @@ export default function AdminMessagesPage() {
     setSelected(conv)
     setMobileShowChat(true)
     await loadMessages(conv.id)
+    // Đổi hội thoại thì luôn về cuối: isNearBottom() trong loadMessages còn
+    // đang đo theo vị trí cuộn của hội thoại vừa rời.
+    scrollToBottom()
     // Mark as read
     try {
       const updated = await markConversationRead(conv.id, 'admin')
@@ -132,7 +149,7 @@ export default function AdminMessagesPage() {
       setConversations(prev => prev.map(c =>
         c.id === selected.id ? { ...c, lastMessage: content, lastMessageAt: result.message.createdAt } : c
       ))
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      scrollToBottom()
     } catch (e) {
       setInput(content) // restore on error
     } finally {
@@ -350,7 +367,7 @@ export default function AdminMessagesPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-[#FFFBF7]">
+              <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-[#FFFBF7]">
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-[#7A7A7A] text-sm">
                     <MessageSquare className="w-12 h-12 mb-3 opacity-20" />
@@ -447,7 +464,6 @@ export default function AdminMessagesPage() {
                     )
                   })
                 )}
-                <div ref={bottomRef} />
               </div>
 
               {showQuick && (

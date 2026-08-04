@@ -2,9 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { ShoppingBag, Heart, Search, X } from 'lucide-react'
+import { ShoppingBag, Heart, Search, X, User } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from '@/auth-client'
+import { useSession } from '@/auth-client'
 
 const ANNOUNCEMENTS = [
   '🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ',
@@ -30,11 +30,6 @@ export default function Navigation() {
   }, [])
 
   const isActive = (path: string) => pathname === path
-
-  const handleLogout = async () => {
-    await signOut()
-    router.push('/')
-  }
 
   const dashboardHref = session?.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer'
 
@@ -93,8 +88,16 @@ export default function Navigation() {
             </div>
           </Link>
 
-          {/* Center Menu */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Center Menu — gap hẹp lại ở md để 5 mục không tràn ra khỏi thanh */}
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
+            <Link
+              href="/"
+              className={`font-sans text-sm tracking-wide transition-colors ${
+                isActive('/') ? 'text-accent' : 'text-foreground hover:text-accent'
+              }`}
+            >
+              TRANG CHỦ
+            </Link>
             <Link
               href="/products"
               className={`font-sans text-sm tracking-wide transition-colors ${
@@ -118,6 +121,14 @@ export default function Navigation() {
               }`}
             >
               LIÊN HỆ
+            </Link>
+            <Link
+              href="/blog"
+              className={`font-sans text-sm tracking-wide transition-colors ${
+                isActive('/blog') ? 'text-accent' : 'text-foreground hover:text-accent'
+              }`}
+            >
+              TIN TỨC
             </Link>
             <Link
               href="/khuyen-mai"
@@ -162,36 +173,22 @@ export default function Navigation() {
             >
               <ShoppingBag size={20} />
             </Link>
+            {/* Đăng xuất nằm trong khu tài khoản, không để ở header nữa */}
             {session ? (
-              <>
-                <Link
-                  href={dashboardHref}
-                  className="hidden sm:inline-block px-4 py-2 text-accent font-medium text-sm hover:underline"
-                >
-                  {session.user.name}
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="hidden sm:inline-block px-4 py-2 bg-foreground text-primary-foreground font-medium rounded text-sm hover:opacity-90 transition-opacity"
-                >
-                  Đăng Xuất
-                </button>
-              </>
+              <Link
+                href={dashboardHref}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-accent font-medium text-sm hover:underline"
+              >
+                <User size={18} />
+                {session.user.name}
+              </Link>
             ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="hidden sm:inline-block px-4 py-2 text-accent font-medium text-sm hover:underline"
-                >
-                  Đăng Nhập
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="hidden sm:inline-block px-4 py-2 bg-foreground text-primary-foreground font-medium rounded text-sm hover:opacity-90 transition-opacity"
-                >
-                  Đăng Ký
-                </Link>
-              </>
+              <Link
+                href="/auth/login"
+                className="hidden sm:inline-block px-4 py-2 bg-foreground text-primary-foreground font-medium rounded text-sm hover:opacity-90 transition-opacity"
+              >
+                Đăng Nhập
+              </Link>
             )}
           </div>
         </div>

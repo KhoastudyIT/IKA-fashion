@@ -45,14 +45,14 @@ export default function ProductsPage() {
       <main className="min-h-screen bg-background">
         <div className="px-4 sm:px-6 lg:px-8 py-12 border-b border-border">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl sm:text-5xl font-heading font-semibold text-foreground mb-4">Sản Phẩm</h1>
+            <h1 className="text-3xl md:text-4xl font-heading font-semibold text-foreground mb-4">Sản Phẩm</h1>
             <p className="text-muted-foreground font-light">
               Khám phá bộ sưu tập thời trang chất lượng cao với công nghệ vải tiên tiến
             </p>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex gap-8">
             {/* Sidebar */}
             <div className={`w-full md:w-64 flex-shrink-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
