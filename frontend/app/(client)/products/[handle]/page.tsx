@@ -7,6 +7,7 @@ import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'l
 import { useSession } from '@/auth-client'
 import { getProductByHandle, getProducts, addToCart, addWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
 import { useChat } from '@/components/ChatContext'
+import { useShop } from '@/components/context/ShopContext'
 
 export default function ProductDetailPage() {
   const params = useParams<{ handle: string }>()
@@ -14,6 +15,7 @@ export default function ProductDetailPage() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   const chat = useChat()
+  const { incrementCart, incrementWishlist } = useShop()
 
   // Đọc thông tin khuyến mãi từ URL (nếu vào từ trang Ưu Đãi)
   const saleOldPrice = searchParams.get('oldPrice') ? Number(searchParams.get('oldPrice')) : null
@@ -61,6 +63,7 @@ export default function ProductDetailPage() {
     try {
       await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity })
       setMessage('Đã thêm vào giỏ hàng ✓')
+      incrementCart(quantity)
     } catch (e: any) {
       setMessage(e.message || 'Không thêm được vào giỏ')
     } finally {
@@ -73,6 +76,7 @@ export default function ProductDetailPage() {
     setBusy(true)
     try {
       await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity })
+      incrementCart(quantity)
       router.push('/cart')
     } catch (e: any) {
       setMessage(e.message || 'Không thêm được vào giỏ')
@@ -85,6 +89,7 @@ export default function ProductDetailPage() {
     try {
       await addWishlist(product.id)
       setMessage('Đã thêm vào yêu thích ✓')
+      incrementWishlist(1)
     } catch (e: any) {
       setMessage(e.message || 'Lỗi')
     }

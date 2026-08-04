@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingBag, Heart, Search, X, User } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useSession } from '@/auth-client'
+import { useShop } from '@/components/context/ShopContext'
 
 const ANNOUNCEMENTS = [
   '🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ',
@@ -32,6 +33,8 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path
 
   const dashboardHref = session?.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer'
+
+  const { cartCount, wishlistCount } = useShop();
 
   return (
     <div className="sticky top-0 z-50">
@@ -161,17 +164,27 @@ export default function Navigation() {
             </button>
             <Link
               href="/wishlist"
-              className={`transition-colors ${isActive('/wishlist') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
+              className={`transition-colors relative ${isActive('/wishlist') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
               aria-label="Wishlist"
             >
               <Heart size={20} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {wishlistCount}
+                </span>
+              )}
             </Link>
             <Link
               href="/cart"
-              className={`transition-colors ${isActive('/cart') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
+              className={`transition-colors relative ${isActive('/cart') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
               aria-label="Shopping Cart"
             >
               <ShoppingBag size={20} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {cartCount}
+                </span>
+              )}
             </Link>
             {/* Đăng xuất nằm trong khu tài khoản, không để ở header nữa */}
             {session ? (
