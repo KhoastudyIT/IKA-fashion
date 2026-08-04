@@ -4,17 +4,41 @@ import { useSession } from '@/auth-client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { getMyOrders, getWishlist, Order } from '@/api'
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Chờ xác nhận',
+  confirmed: 'Đã xác nhận',
+  shipped: 'Đang giao',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+}
 
 export default function CustomerDashboard() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [orders, setOrders] = useState([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [wishlistCount, setWishlistCount] = useState(0)
+  const [loadingStats, setLoadingStats] = useState(true)
 
   useEffect(() => {
     if (!isPending && !session) {
       router.push('/auth/login')
     }
   }, [session, isPending, router])
+
+  useEffect(() => {
+    if (!session) return
+    Promise.all([
+      getMyOrders().catch(() => [] as Order[]),
+      getWishlist().catch(() => []),
+    ])
+      .then(([myOrders, wishlist]) => {
+        setOrders(myOrders)
+        setWishlistCount(wishlist.length)
+      })
+      .finally(() => setLoadingStats(false))
+  }, [session])
 
   if (isPending) {
     return (
@@ -64,19 +88,23 @@ export default function CustomerDashboard() {
 
           {/* Quick Stats */}
           <div className="md:col-span-2 grid grid-cols-2 gap-4">
-            <div className="bg-secondary rounded-lg p-6">
+            <Link href="/dashboard/customer/orders" className="bg-secondary rounded-lg p-6 hover:shadow-lg transition-shadow">
               <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Đơn Hàng</p>
-              <p className="text-3xl font-heading font-semibold text-foreground">0</p>
-            </div>
-            <div className="bg-secondary rounded-lg p-6">
+              <p className="text-3xl font-heading font-semibold text-foreground">
+                {loadingStats ? '—' : orders.length}
+              </p>
+            </Link>
+            <Link href="/wishlist" className="bg-secondary rounded-lg p-6 hover:shadow-lg transition-shadow">
               <p className="text-xs font-medium text-muted-foreground uppercase mb-2">Yêu Thích</p>
-              <p className="text-3xl font-heading font-semibold text-foreground">0</p>
-            </div>
+              <p className="text-3xl font-heading font-semibold text-foreground">
+                {loadingStats ? '—' : wishlistCount}
+              </p>
+            </Link>
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Navigation — 4 thẻ nên chia 2 cột ở md, 4 cột ở lg cho khỏi lẻ hàng */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Link href="/dashboard/customer/orders" className="group">
             <div className="bg-card rounded-lg p-6 shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
@@ -87,7 +115,7 @@ export default function CustomerDashboard() {
             </div>
           </Link>
 
-          <Link href="/dashboard/customer/wishlist" className="group">
+          <Link href="/wishlist" className="group">
             <div className="bg-card rounded-lg p-6 shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
                 Danh Sách Yêu Thích
@@ -120,8 +148,53 @@ export default function CustomerDashboard() {
 
         {/* Recent Activity */}
         <div className="mt-12 bg-card rounded-lg p-6 shadow">
-          <h2 className="text-lg font-heading font-semibold text-foreground mb-4">Hoạt Động Gần Đây</h2>
-          <p className="text-muted-foreground">Chưa có hoạt động nào</p>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-heading font-semibold text-foreground">Hoạt Động Gần Đây</h2>
+            {orders.length > 3 && (
+              <Link href="/dashboard/customer/orders" className="text-sm text-accent hover:underline">
+                Xem tất cả
+              </Link>
+            )}
+          </div>
+
+          {loadingStats ? (
+            <p className="text-muted-foreground">Đang tải...</p>
+          ) : orders.length === 0 ? (
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-muted-foreground">Bạn chưa đặt đơn hàng nào</p>
+              <Link href="/products" className="text-sm text-accent hover:underline">
+                Bắt đầu mua sắm →
+              </Link>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {orders.slice(0, 3).map(order => (
+                <li key={order.id}>
+                  <Link
+                    href={`/dashboard/customer/orders/${order.id}`}
+                    className="flex items-center justify-between gap-4 py-3 group"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+                        Đơn #{order.id.slice(0, 8).toUpperCase()}
+                        <span className="text-muted-foreground font-normal">
+                          {' '}· {order.items.length} sản phẩm
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                        {' · '}
+                        {STATUS_LABEL[order.status] ?? order.status}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-foreground shrink-0">
+                      {order.totalPrice.toLocaleString('vi-VN')} đ
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </main>

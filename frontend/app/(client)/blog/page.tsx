@@ -1,33 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-
-// Dữ liệu mẫu (Dummy data)
-const blogPosts = [
-    {
-        id: 'xu-huong-mua-thu-2026',
-        title: 'Xu Hướng Thời Trang Mùa Thu 2026',
-        category: 'XU HƯỚNG',
-        excerpt: 'Khám phá những gam màu ấm áp và chất liệu len lên ngôi trong mùa thu năm nay cùng IKA Fashion.',
-        date: '06/07/2026',
-        image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-        id: 'phoi-do-cong-so',
-        title: 'Cách Phối Đồ Công Sở Trẻ Trung',
-        category: 'MIX & MATCH',
-        excerpt: 'Phá vỡ sự nhàm chán của đồ công sở với 5 mẹo mix & match cực kỳ đơn giản nhưng hiệu quả.',
-        date: '01/07/2026',
-        image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-        id: 'bao-quan-ao-thun',
-        title: 'Bảo Quản Áo Thun Đúng Cách',
-        category: 'MẸO VẶT',
-        excerpt: 'Giữ cho những chiếc áo thun yêu thích của bạn luôn như mới với hướng dẫn giặt ủi chuẩn từ chuyên gia.',
-        date: '25/06/2026',
-        image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
-    }
-];
+import { blogPosts } from './posts';
 
 export default function BlogPage() {
     return (

@@ -295,7 +295,7 @@ export default function Footer() {
             {[
               { label: 'Bảo Mật', href: '/chinh-sach-bao-mat' },
               { label: 'Điều Khoản', href: '/dieu-khoan' },
-              { label: 'Cookie', href: '/cookie' },
+              { label: 'Đổi Trả', href: '/chinh-sach-doi-tra' },
             ].map((link) => (
               <Link key={link.href} href={link.href} style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}>{link.label}</Link>
             ))}
@@ -362,19 +362,18 @@ function PaymentBadge({ src, alt }: { src: string; alt: string }) {
   )
 }
 
+// Ứng dụng di động chưa phát hành nên badge chỉ là ảnh tĩnh. Để nguyên thẻ <a
+// href="#" target="_blank"> như trước thì bấm vào là mở ra một tab trắng.
 function AppBadge({ src, alt }: { src: string; alt: string }) {
   const [hovered, setHovered] = useState(false)
   return (
-    <a
-      href="#"
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
+      title="Ứng dụng di động sắp ra mắt"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'block',
         transition: 'transform 0.3s ease',
-        cursor: 'pointer',
         transform: hovered ? 'translateY(-2px)' : 'none'
       }}
     >
@@ -390,6 +389,6 @@ function AppBadge({ src, alt }: { src: string; alt: string }) {
           transition: 'all 0.3s ease'
         }}
       />
-    </a>
+    </div>
   )
 }
