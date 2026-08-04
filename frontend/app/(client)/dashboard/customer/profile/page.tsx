@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useSession } from '@/auth-client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -17,7 +16,7 @@ export default function CustomerProfilePage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Đang tải...</p>
       </div>
     )
@@ -28,18 +27,10 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-heading font-semibold text-foreground">Hồ Sơ Cá Nhân</h1>
-          <Link href="/dashboard/customer" className="text-accent hover:underline">
-            ← Quay Lại
-          </Link>
-        </div>
-      </header>
+    <>
+      <h1 className="text-3xl md:text-4xl font-heading font-semibold text-foreground mb-8">Hồ Sơ Cá Nhân</h1>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div>
         <div className="bg-card rounded-lg shadow p-8">
           <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -122,6 +113,6 @@ export default function CustomerProfilePage() {
           </form>
         </div>
       </div>
-    </main>
+    </>
   )
 }

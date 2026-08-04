@@ -1,14 +1,12 @@
 'use client'
 
-import Link from 'next/link'
-import { useSession, signOut } from '@/auth-client'
-import { useEffect, useState } from 'react'
+import { useSession } from '@/auth-client'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function CustomerSettingsPage() {
   const { data: session, isPending } = useSession()
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -16,21 +14,9 @@ export default function CustomerSettingsPage() {
     }
   }, [session, isPending, router])
 
-  const handleLogout = async () => {
-    setLoading(true)
-    try {
-      await signOut()
-      router.push('/')
-    } catch (err) {
-      console.error('Logout error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <p className="text-muted-foreground">Đang tải...</p>
       </div>
     )
@@ -41,18 +27,10 @@ export default function CustomerSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-heading font-semibold text-foreground">Cài Đặt</h1>
-          <Link href="/dashboard/customer" className="text-accent hover:underline">
-            ← Quay Lại
-          </Link>
-        </div>
-      </header>
+    <>
+      <h1 className="text-3xl md:text-4xl font-heading font-semibold text-foreground mb-8">Cài Đặt</h1>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div>
         {/* Profile Section */}
         <div className="bg-card rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-heading font-semibold text-foreground mb-6">Thông Tin Cá Nhân</h2>
@@ -92,20 +70,7 @@ export default function CustomerSettingsPage() {
         </div>
 
         {/* Logout Section */}
-        <div className="bg-card rounded-lg shadow p-6 border border-destructive/30">
-          <h2 className="text-lg font-heading font-semibold text-foreground mb-4">Đăng Xuất</h2>
-          <p className="text-muted-foreground text-sm mb-4">
-            Bạn sẽ được đăng xuất khỏi tài khoản của mình.
-          </p>
-          <button
-            onClick={handleLogout}
-            disabled={loading}
-            className="px-6 py-2 bg-destructive text-primary-foreground font-medium rounded hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {loading ? 'Đang Đăng Xuất...' : 'Đăng Xuất'}
-          </button>
-        </div>
       </div>
-    </main>
+    </>
   )
 }

@@ -82,14 +82,17 @@ export default function KhuyenMaiPage() {
 
         {/* Hero Banner */}
         <section style={{
-          background: 'linear-gradient(135deg, #1a1a1a 0%, #2C2C2C 50%, #1a1a1a 100%)',
+          position: 'relative',
           padding: '80px 24px',
           textAlign: 'center',
-          position: 'relative',
           overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', top: '-60px', left: '-60px', width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: '-60px', right: '-60px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,0.10) 0%, transparent 70%)', pointerEvents: 'none' }} />
+          <img
+            src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80"
+            alt="Ưu đãi IKA Fashion"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
           <div style={{ position: 'relative', zIndex: 1, maxWidth: '700px', margin: '0 auto' }}>
             <p style={{ color: '#D4AF37', fontSize: '13px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
               ⚡ Chương Trình Đặc Biệt
@@ -121,7 +124,7 @@ export default function KhuyenMaiPage() {
 
         {/* Stats Bar */}
         <section style={{ background: '#F9F5F0', borderBottom: '1px solid #E5DFD8', padding: '28px 24px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px' }}>
             {[
               { icon: '🏷️', label: 'Sản phẩm giảm giá', value: '200+' },
               { icon: '⚡', label: 'Giảm tối đa', value: '40%' },
@@ -140,7 +143,7 @@ export default function KhuyenMaiPage() {
         </section>
 
         {/* Products Grid */}
-        <section id="sale-products" style={{ padding: '72px 24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <section id="sale-products" style={{ padding: '72px 24px', maxWidth: '1280px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '56px' }}>
             <p style={{ fontSize: '12px', letterSpacing: '4px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontFamily: 'Inter, sans-serif' }}>Flash Sale</p>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: '#2C2C2C', marginBottom: '16px' }}>Sản Phẩm Đang Giảm Giá</h2>

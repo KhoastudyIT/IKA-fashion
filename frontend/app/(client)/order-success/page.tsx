@@ -19,7 +19,7 @@ function OrderSuccessContent() {
   return (
     <main style={{ minHeight: '100vh', background: '#FFFBF7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
       <div style={{
-        maxWidth: '560px', width: '100%', textAlign: 'center',
+        maxWidth: '768px', width: '100%', textAlign: 'center',
         opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(24px)',
         transition: 'opacity 0.5s, transform 0.5s',
       }}>
@@ -38,7 +38,7 @@ function OrderSuccessContent() {
         <p style={{ fontSize: '12px', letterSpacing: '4px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
           Thành công
         </p>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,5vw,42px)', fontWeight: 700, color: '#2C2C2C', marginBottom: '12px', lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '12px', lineHeight: 1.2 }}>
           Đặt hàng thành công!
         </h1>
         <p style={{ fontSize: '16px', color: '#7A7A7A', marginBottom: '32px', lineHeight: 1.7 }}>

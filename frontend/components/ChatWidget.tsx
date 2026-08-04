@@ -12,26 +12,11 @@ import {
 } from '@/api'
 import { useChat } from '@/components/ChatContext'
 import { RichText, SuggestionCards } from '@/components/ChatMessageBody'
+import { QUICK_REPLIES } from '@/components/chatQuickReplies'
 import {
   MessageSquare, X, Send, ChevronDown, CheckCheck, Check,
   Sparkles, Headset, Plus, ShoppingBag,
 } from 'lucide-react'
-
-const QUICK_REPLIES = [
-  'Giá bao nhiêu?',
-  'Còn hàng không?',
-  'Còn size nào?',
-  'Có màu gì?',
-  'Chất liệu là gì?',
-  'Tư vấn size giúp em',
-  'Cách giặt và bảo quản',
-  'Phí giao hàng bao nhiêu?',
-  'Hình thức thanh toán',
-  'Chính sách đổi trả',
-  'Ưu đãi đang có',
-  'Đơn hàng của tôi',
-  'Gặp nhân viên',
-]
 
 function formatTime(iso: string) {
   const d = new Date(iso)
@@ -54,14 +39,26 @@ export default function ChatWidget() {
   const [sending, setSending] = useState(false)
   const [unread, setUnread] = useState(0)
   const [showQuick, setShowQuick] = useState(true)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   const isHidden = isPending || !session || session.user.role === 'admin'
 
+  // Cuộn trong khung chat; scrollIntoView có thể kéo theo cả trang phía sau
+  // vì widget là position: fixed.
   const scrollToBottom = () =>
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    setTimeout(() => {
+      const el = listRef.current
+      if (el) el.scrollTop = el.scrollHeight
+    }, 50)
+
+  // Đang đọc tin cũ thì không giật xuống đáy khi có tin mới về.
+  const isNearBottom = () => {
+    const el = listRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
 
   const loadMessages = useCallback(async (convId: string) => {
     const msgs = await getConversationMessages(convId)
@@ -99,9 +96,11 @@ export default function ChatWidget() {
     pollingRef.current = setInterval(async () => {
       if (!convId) return
       try {
+        const stick = isNearBottom()
         await loadMessages(convId)
         await markConversationRead(convId)
         setUnread(0)
+        if (stick) scrollToBottom()
       } catch {
         // lỗi mạng: bỏ qua, lần poll sau thử lại
       }
@@ -212,7 +211,7 @@ export default function ChatWidget() {
           )}
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FFFBF7]">
+          <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FFFBF7]">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="w-5 h-5 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin" />
@@ -283,7 +282,6 @@ export default function ChatWidget() {
                 </div>
               </div>
             )}
-            <div ref={bottomRef} />
           </div>
 
           {showQuick && !loading && (

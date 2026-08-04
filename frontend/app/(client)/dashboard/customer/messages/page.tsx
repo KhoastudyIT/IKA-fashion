@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useSession } from '@/auth-client'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import {
   getMyConversation,
   getConversationMessages,
@@ -13,7 +12,8 @@ import {
   Message,
 } from '@/api'
 import { RichText, SuggestionCards } from '@/components/ChatMessageBody'
-import { MessageSquare, Send, ArrowLeft, CheckCheck, Check, RefreshCw, Sparkles } from 'lucide-react'
+import { QUICK_REPLIES } from '@/components/chatQuickReplies'
+import { MessageSquare, Send, CheckCheck, Check, RefreshCw, Sparkles, Plus, X } from 'lucide-react'
 
 function formatTime(iso: string) {
   const d = new Date(iso)
@@ -31,8 +31,22 @@ export default function CustomerMessagesPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [showQuick, setShowQuick] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Cuộn chính khung tin nhắn, không phải cả trang.
+  const scrollToBottom = () => {
+    const el = listRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }
+
+  // Khách đang đọc tin cũ ở phía trên thì đừng kéo họ xuống đáy.
+  const isNearBottom = () => {
+    const el = listRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
 
   useEffect(() => {
     if (!isPending && !session) router.push('/auth/login')
@@ -45,8 +59,10 @@ export default function CustomerMessagesPage() {
       if (conv) {
         const msgs = await getConversationMessages(conv.id)
         setMessages(msgs)
+        // Hội thoại mới chỉ có lời chào của bot -> bung sẵn bảng gợi ý.
+        if (msgs.length <= 1) setShowQuick(true)
         await markConversationRead(conv.id)
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+        setTimeout(scrollToBottom, 50)
       }
     } catch (e) {
       // silent
@@ -65,19 +81,22 @@ export default function CustomerMessagesPage() {
         return
       }
       try {
+        // Chốt vị trí TRƯỚC khi thêm tin mới: sau khi render thì phép đo đã lệch.
+        const stick = isNearBottom()
         const msgs = await getConversationMessages(conversation.id)
         setMessages(msgs)
         await markConversationRead(conversation.id)
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+        if (stick) setTimeout(scrollToBottom, 50)
       } catch (e) { }
     }, 10000)
     return () => clearInterval(interval)
   }, [session]) // eslint-disable-line
 
-  const handleSend = async () => {
-    if (!input.trim() || sending) return
+  const handleSend = async (preset?: string) => {
+    const content = (preset ?? input).trim()
+    if (!content || sending) return
     setSending(true)
-    const content = input.trim()
+    setShowQuick(false)
     setInput('')
     try {
       const result = await sendMessage({
@@ -86,7 +105,7 @@ export default function CustomerMessagesPage() {
       })
       setConversation(result.conversation)
       setMessages(prev => [...prev, result.message, ...(result.botMessage ? [result.botMessage] : [])])
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+      setTimeout(scrollToBottom, 50)
     } catch (e) {
       setInput(content)
     } finally {
@@ -105,40 +124,35 @@ export default function CustomerMessagesPage() {
   if (isPending || !session) return null
 
   return (
-    <main className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 bg-card border-b border-border z-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
-          <Link href="/dashboard/customer" className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-xl font-heading font-semibold text-foreground flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-accent" />
-              Tin Nhắn
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {conversation
-                ? `Cuộc trò chuyện của bạn · Tự động cập nhật mỗi 10 giây`
-                : 'Bắt đầu cuộc trò chuyện với chúng tôi'}
-            </p>
-          </div>
-          <button
-            onClick={loadConversation}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors cursor-pointer"
-            title="Làm mới"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+    <>
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-heading font-semibold text-foreground flex items-center gap-2">
+            <MessageSquare className="w-7 h-7 text-accent" />
+            Tin Nhắn
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            {conversation
+              ? 'Cuộc trò chuyện của bạn · Tự động cập nhật mỗi 10 giây'
+              : 'Bắt đầu cuộc trò chuyện với chúng tôi'}
+          </p>
         </div>
-      </header>
+        <button
+          onClick={loadConversation}
+          className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors cursor-pointer shrink-0"
+          title="Làm mới"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-4 sm:px-6 py-6">
-        <div className="flex-1 flex flex-col bg-card rounded-xl border border-border shadow-sm overflow-hidden" style={{ minHeight: '60vh' }}>
+      <div className="flex flex-col w-full">
+        {/* Chiều cao CỐ ĐỊNH: để khung tự giãn theo nội dung thì overflow-y-auto
+            không bao giờ kích hoạt và cả trang cuộn thay vì khung tin nhắn. */}
+        <div className="flex flex-col bg-card rounded-xl border border-border shadow-sm overflow-hidden h-[65vh] min-h-[420px] max-h-[720px]">
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#FFFBF7]">
+          <div ref={listRef} className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#FFFBF7]">
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -198,12 +212,40 @@ export default function CustomerMessagesPage() {
                 )
               })
             )}
-            <div ref={bottomRef} />
           </div>
+
+          {/* Câu hỏi nhanh — bật/tắt bằng nút + cạnh ô nhập */}
+          {showQuick && (
+            <div className="px-4 py-2.5 bg-secondary/50 border-t border-border flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+              {QUICK_REPLIES.map(q => (
+                <button
+                  key={q}
+                  onClick={() => handleSend(q)}
+                  disabled={sending}
+                  className="text-xs px-3 py-1.5 rounded-full border border-accent/50 text-foreground bg-card hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Input Area */}
           <div className="px-4 py-3 bg-card border-t border-border">
             <div className="flex gap-2 items-end">
+              <button
+                onClick={() => setShowQuick(v => !v)}
+                title={showQuick ? 'Ẩn câu hỏi nhanh' : 'Câu hỏi nhanh'}
+                aria-label={showQuick ? 'Ẩn câu hỏi nhanh' : 'Câu hỏi nhanh'}
+                aria-expanded={showQuick}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 border ${
+                  showQuick
+                    ? 'bg-accent border-accent text-accent-foreground'
+                    : 'bg-secondary border-border text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {showQuick ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              </button>
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -215,7 +257,7 @@ export default function CustomerMessagesPage() {
                 style={{ minHeight: '42px' }}
               />
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!input.trim() || sending}
                 className="w-10 h-10 bg-[#2C2C2C] hover:bg-[#3D3D3D] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0"
               >
@@ -228,6 +270,6 @@ export default function CustomerMessagesPage() {
           </div>
         </div>
       </div>
-    </main>
+    </>
   )
 }
