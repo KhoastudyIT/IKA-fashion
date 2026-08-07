@@ -88,7 +88,7 @@ export default function KhuyenMaiPage() {
           overflow: 'hidden',
         }}>
           <img
-            src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80"
+            src="/banners/banner-arrivals.jpeg"
             alt="Ưu đãi IKA Fashion"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
           />
