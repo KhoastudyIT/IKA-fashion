@@ -44,8 +44,8 @@ export default function CustomerDashboard() {
 
   const stats = [
     { label: 'Đơn hàng', value: orders.length, icon: Receipt, href: '/dashboard/customer/orders' },
-    { label: 'Giỏ hàng', value: cartCount, icon: ShoppingBag, href: '/cart' },
-    { label: 'Yêu thích', value: wishlistCount, icon: Heart, href: '/wishlist' },
+    { label: 'Giỏ hàng', value: cartCount, icon: ShoppingBag, href: '/dashboard/customer/cart' },
+    { label: 'Yêu thích', value: wishlistCount, icon: Heart, href: '/dashboard/customer/wishlist' },
     {
       label: 'Tổng chi tiêu',
       value: `${totalSpent.toLocaleString('vi-VN')} đ`,

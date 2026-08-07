@@ -4,14 +4,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useSession, signOut } from '@/auth-client'
+import { useShop } from '@/components/context/ShopContext'
 import {
-  LayoutDashboard, Receipt, Heart, MessageSquare, User, Settings, FileText, LogOut, Menu, X,
+  LayoutDashboard, Receipt, ShoppingBag, Heart, MessageSquare, User, Settings, FileText, LogOut, Menu, X,
 } from 'lucide-react'
 
+// `count` là khoá tra số lượng từ ShopContext, chỉ 2 mục giỏ/yêu thích mới có
 const NAV_ITEMS = [
   { name: 'Tổng Quan', href: '/dashboard/customer', icon: LayoutDashboard },
   { name: 'Đơn Hàng', href: '/dashboard/customer/orders', icon: Receipt },
-  { name: 'Yêu Thích', href: '/wishlist', icon: Heart },
+  { name: 'Giỏ Hàng', href: '/dashboard/customer/cart', icon: ShoppingBag, count: 'cart' as const },
+  { name: 'Yêu Thích', href: '/dashboard/customer/wishlist', icon: Heart, count: 'wishlist' as const },
   { name: 'Tin Nhắn', href: '/dashboard/customer/messages', icon: MessageSquare },
   { name: 'Chính Sách', href: '/dashboard/customer/chinh-sach', icon: FileText },
   { name: 'Hồ Sơ', href: '/dashboard/customer/profile', icon: User },
@@ -22,6 +25,7 @@ export default function CustomerDashboardLayout({ children }: { children: React.
   const pathname = usePathname()
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const { cartCount, wishlistCount } = useShop()
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -49,6 +53,7 @@ export default function CustomerDashboardLayout({ children }: { children: React.
         {NAV_ITEMS.map(item => {
           const Icon = item.icon
           const active = pathname === item.href
+          const count = item.count === 'cart' ? cartCount : item.count === 'wishlist' ? wishlistCount : 0
           return (
             <Link
               key={item.href}
@@ -62,6 +67,15 @@ export default function CustomerDashboardLayout({ children }: { children: React.
             >
               <Icon className="w-4 h-4 shrink-0" />
               {item.name}
+              {count > 0 && (
+                <span
+                  className={`ml-auto text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 ${
+                    active ? 'bg-accent-foreground/15 text-accent-foreground' : 'bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {count > 99 ? '99+' : count}
+                </span>
+              )}
             </Link>
           )
         })}

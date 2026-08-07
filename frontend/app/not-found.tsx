@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { ShopProvider } from '@/components/context/ShopContext'
 
+// Trang 404 nằm ngoài nhóm (client) nên phải tự bọc ShopProvider cho Navigation
 export default function NotFound() {
   return (
-    <>
+    <ShopProvider>
       <Navigation />
       <main style={{ minHeight: '80vh', background: '#FFFBF7', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px' }}>
         <div style={{ textAlign: 'center', maxWidth: '500px' }}>
@@ -58,7 +60,7 @@ export default function NotFound() {
                 { label: '👕 Sản phẩm', href: '/products' },
                 { label: '🔥 Ưu đãi', href: '/khuyen-mai' },
                 { label: '📞 Liên hệ', href: '/contact' },
-                { label: '🛒 Giỏ hàng', href: '/cart' },
+                { label: '🛒 Giỏ hàng', href: '/dashboard/customer/cart' },
               ].map(l => (
                 <Link key={l.href} href={l.href} style={{
                   padding: '8px 16px', background: '#F9F5F0', borderRadius: '20px',
@@ -71,6 +73,6 @@ export default function NotFound() {
           </div>
         </div>
       </main>
-    </>
+    </ShopProvider>
   )
 }

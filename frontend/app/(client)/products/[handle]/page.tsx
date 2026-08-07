@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { getProductByHandle, getProducts, addToCart, addWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
+import { getProductByHandle, getProducts, addToCart, addWishlist, removeWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
 import { useChat } from '@/components/ChatContext'
 import { useShop } from '@/components/context/ShopContext'
 
@@ -15,7 +15,7 @@ export default function ProductDetailPage() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   const chat = useChat()
-  const { incrementCart, incrementWishlist } = useShop()
+  const { syncCart, syncWishlist, isWishlisted } = useShop()
 
   // Đọc thông tin khuyến mãi từ URL (nếu vào từ trang Ưu Đãi)
   const saleOldPrice = searchParams.get('oldPrice') ? Number(searchParams.get('oldPrice')) : null
@@ -48,6 +48,8 @@ export default function ProductDetailPage() {
       .finally(() => setLoading(false))
   }, [params?.handle])
 
+  const wishlisted = product ? isWishlisted(product.id) : false
+
   const requireLogin = () => {
     if (!session) {
       router.push('/auth/login')
@@ -61,9 +63,8 @@ export default function ProductDetailPage() {
     setBusy(true)
     setMessage('')
     try {
-      await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity })
+      syncCart(await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity }))
       setMessage('Đã thêm vào giỏ hàng ✓')
-      incrementCart(quantity)
     } catch (e: any) {
       setMessage(e.message || 'Không thêm được vào giỏ')
     } finally {
@@ -75,21 +76,25 @@ export default function ProductDetailPage() {
     if (!product || !requireLogin()) return
     setBusy(true)
     try {
-      await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity })
-      incrementCart(quantity)
-      router.push('/cart')
+      syncCart(await addToCart({ productId: product.id, size: selectedSize, color: selectedColor, quantity }))
+      router.push('/dashboard/customer/cart')
     } catch (e: any) {
       setMessage(e.message || 'Không thêm được vào giỏ')
       setBusy(false)
     }
   }
 
+  // Bấm lần nữa thì bỏ yêu thích
   const handleWishlist = async () => {
     if (!product || !requireLogin()) return
     try {
-      await addWishlist(product.id)
-      setMessage('Đã thêm vào yêu thích ✓')
-      incrementWishlist(1)
+      if (wishlisted) {
+        syncWishlist(await removeWishlist(product.id))
+        setMessage('Đã bỏ khỏi yêu thích')
+      } else {
+        syncWishlist(await addWishlist(product.id))
+        setMessage('Đã thêm vào yêu thích ✓')
+      }
     } catch (e: any) {
       setMessage(e.message || 'Lỗi')
     }
@@ -168,8 +173,15 @@ export default function ProductDetailPage() {
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <h1 className="text-3xl md:text-4xl font-heading font-semibold text-foreground">{product.name}</h1>
-                  <button onClick={handleWishlist} className="p-2 rounded-full bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground transition-colors" aria-label="Yêu thích">
-                    <Heart size={24} />
+                  <button
+                    onClick={handleWishlist}
+                    aria-pressed={wishlisted}
+                    aria-label={wishlisted ? 'Bỏ yêu thích' : 'Yêu thích'}
+                    className={`p-2 rounded-full bg-secondary transition-colors ${
+                      wishlisted ? 'text-red-600' : 'text-foreground hover:text-red-600'
+                    }`}
+                  >
+                    <Heart size={24} fill={wishlisted ? 'currentColor' : 'none'} />
                   </button>
                 </div>
 

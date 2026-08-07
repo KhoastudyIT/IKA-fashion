@@ -7,6 +7,18 @@ import { useState, useEffect } from 'react'
 import { useSession } from '@/auth-client'
 import { useShop } from '@/components/context/ShopContext'
 
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
 const ANNOUNCEMENTS = [
   '🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ',
   '🔥 Flash Sale — Giảm đến 40% toàn bộ sản phẩm hôm nay!',
@@ -18,6 +30,7 @@ export default function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: session } = useSession()
+  const { cartCount, wishlistCount } = useShop()
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [announcementVisible, setAnnouncementVisible] = useState(true)
@@ -33,8 +46,6 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path
 
   const dashboardHref = session?.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer'
-
-  const { cartCount, wishlistCount } = useShop();
 
   return (
     <div className="sticky top-0 z-50">
@@ -163,28 +174,20 @@ export default function Navigation() {
               <Search size={20} />
             </button>
             <Link
-              href="/wishlist"
-              className={`transition-colors relative ${isActive('/wishlist') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
-              aria-label="Wishlist"
+              href="/dashboard/customer/wishlist"
+              className={`transition-colors relative ${isActive('/dashboard/customer/wishlist') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
+              aria-label={`Yêu thích, ${wishlistCount} sản phẩm`}
             >
               <Heart size={20} />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {wishlistCount}
-                </span>
-              )}
+              <CountBadge count={wishlistCount} />
             </Link>
             <Link
-              href="/cart"
-              className={`transition-colors relative ${isActive('/cart') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
-              aria-label="Shopping Cart"
+              href="/dashboard/customer/cart"
+              className={`transition-colors relative ${isActive('/dashboard/customer/cart') ? 'text-accent' : 'text-foreground hover:text-accent'}`}
+              aria-label={`Giỏ hàng, ${cartCount} sản phẩm`}
             >
               <ShoppingBag size={20} />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {cartCount}
-                </span>
-              )}
+              <CountBadge count={cartCount} />
             </Link>
             {/* Đăng xuất nằm trong khu tài khoản, không để ở header nữa */}
             {session ? (
