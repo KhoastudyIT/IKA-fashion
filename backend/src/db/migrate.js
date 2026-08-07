@@ -23,6 +23,39 @@ const STATEMENTS = [
   `ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_sender_role_check`,
   `ALTER TABLE messages ADD CONSTRAINT messages_sender_role_check
      CHECK (sender_role IN ('customer', 'admin', 'ai'))`,
+
+  // Tin tức — thêm sau nên DB cũ chưa có bảng.
+  `CREATE TABLE IF NOT EXISTS news_categories (
+     id         SERIAL       PRIMARY KEY,
+     name       VARCHAR(120) NOT NULL,
+     slug       VARCHAR(140) NOT NULL UNIQUE,
+     sort_order INTEGER      NOT NULL DEFAULT 0,
+     created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE TABLE IF NOT EXISTS news (
+     id           SERIAL       PRIMARY KEY,
+     title        VARCHAR(300) NOT NULL,
+     slug         VARCHAR(350) NOT NULL UNIQUE,
+     img          VARCHAR(500) NOT NULL DEFAULT '',
+     excerpt      VARCHAR(500) NOT NULL DEFAULT '',
+     content      TEXT         NOT NULL DEFAULT '',
+     author       VARCHAR(100) NOT NULL DEFAULT 'IKA Fashion',
+     category_id  INTEGER      REFERENCES news_categories(id) ON DELETE SET NULL,
+     status       VARCHAR(20)  NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+     publish_date DATE         NOT NULL DEFAULT CURRENT_DATE,
+     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_news_status_publish ON news (status, publish_date DESC, id DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_news_category ON news (category_id)`,
+
+  // Danh mục mặc định để admin có sẵn lựa chọn trong form.
+  `INSERT INTO news_categories (name, slug, sort_order) VALUES
+     ('Xu Hướng', 'xu-huong', 1),
+     ('Phối Đồ', 'phoi-do', 2),
+     ('Bảo Quản', 'bao-quan', 3),
+     ('Tin Cửa Hàng', 'tin-cua-hang', 4)
+   ON CONFLICT (slug) DO NOTHING`,
 ];
 
 export async function runMigrations() {

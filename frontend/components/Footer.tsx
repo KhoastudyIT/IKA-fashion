@@ -35,7 +35,7 @@ const navLinks = [
   { label: 'Ưu Đãi - Giảm Giá', href: '/khuyen-mai' },
   { label: 'Về Chúng Tôi', href: '/about' },
   { label: 'Liên Hệ', href: '/contact' },
-  { label: 'Blog Thời Trang', href: '/blog' },
+  { label: 'Tạp Chí Thời Trang', href: '/tin-tuc' },
 ]
 
 const supportLinks = [

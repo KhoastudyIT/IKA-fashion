@@ -5,17 +5,18 @@ import {
   getProducts, getCollections, createProduct, updateProduct, deleteProduct,
   ApiProduct, Collection, ProductInput,
 } from '@/api'
+import ImageListField from '@/components/ImageListField'
 
 const csvToArr = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean)
 
 type FormState = {
   name: string; handle: string; collection: string; type: string; price: string
-  img: string; stock: string; description: string; colors: string; sizes: string; features: string
+  img: string[]; stock: string; description: string; colors: string; sizes: string; features: string
 }
 
 const emptyForm: FormState = {
   name: '', handle: '', collection: 'ao-thun', type: '', price: '',
-  img: '', stock: '0', description: '', colors: '', sizes: '', features: '',
+  img: [], stock: '0', description: '', colors: '', sizes: '', features: '',
 }
 
 export default function AdminProductsPage() {
@@ -31,6 +32,7 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const ITEMS_PER_PAGE = 8
 
@@ -59,7 +61,7 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name, handle: p.handle, collection: p.collection, type: p.type,
       price: String(p.price),
-      img: p.images ? p.images.join(', ') : p.img,
+      img: p.images?.length ? p.images : (p.img ? [p.img] : []),
       stock: String(p.stock), description: p.description,
       colors: p.colors.join(', '), sizes: p.sizes.join(', '), features: p.features.join(', '),
     })
@@ -71,7 +73,7 @@ export default function AdminProductsPage() {
     e.preventDefault()
     setSaving(true)
     setError('')
-    const imgList = csvToArr(form.img)
+    const imgList = form.img.filter(Boolean)
     const payload: ProductInput = {
       name: form.name,
       handle: form.handle,
@@ -286,7 +288,7 @@ export default function AdminProductsPage() {
       {/* Form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[92vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-xl font-heading font-semibold text-[#2C2C2C] mb-6">
               {editingId ? 'Sửa Sản Phẩm' : 'Thêm Sản Phẩm'}
             </h2>
@@ -318,9 +320,13 @@ export default function AdminProductsPage() {
                   <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputCls} />
                 </Field>
               </div>
-              <Field label="Danh sách ảnh (URL - phân tách bằng dấu phẩy) *">
-                <textarea required value={form.img} onChange={(e) => setForm({ ...form, img: e.target.value })} placeholder="/products/trang-1.png, /products/trang-2.png" rows={2} className={inputCls} />
-              </Field>
+              <ImageListField
+                label="Ảnh sản phẩm"
+                type="products"
+                value={form.img}
+                onChange={(img) => setForm({ ...form, img })}
+                onUploadingChange={setUploading}
+              />
               <Field label="Màu sắc (phân cách bằng dấu phẩy)">
                 <input value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} placeholder="Đen, Trắng" className={inputCls} />
               </Field>
@@ -397,7 +403,7 @@ export default function AdminProductsPage() {
               </Field>
 
               <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded transition-colors disabled:opacity-50 cursor-pointer">
+                <button type="submit" disabled={saving || uploading} className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded transition-colors disabled:opacity-50 cursor-pointer">
                   {saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
                 </button>
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2.5 border border-[#E5DFD8] text-[#2C2C2C] font-medium rounded hover:bg-[#F9F5F0] transition-colors cursor-pointer">

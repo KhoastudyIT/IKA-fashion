@@ -467,3 +467,136 @@ export function replyReview(id: number, reply: string): Promise<{ id: number; re
 export function deleteReview(id: number): Promise<void> {
   return request(`/admin/reviews/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
+
+// ---------- Tải ảnh (admin) ----------
+
+export type UploadType = 'news' | 'products' | 'collections'
+
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+
+/** Trả về thông báo lỗi, hoặc null nếu file hợp lệ. Kiểm tra trước khi gửi lên server. */
+export function validateImageFile(file: File): string | null {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) return 'Ảnh chỉ chấp nhận JPG, PNG hoặc WEBP'
+  if (file.size > MAX_IMAGE_BYTES) return 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB)'
+  return null
+}
+
+/**
+ * Tải ảnh lên backend, trả về đường dẫn tương đối dạng /uploads/<type>/<file>.
+ * Không dùng `request()` vì multipart phải để trình duyệt tự đặt Content-Type
+ * kèm boundary — đặt tay 'application/json' là server không parse được.
+ */
+export async function uploadImage(file: File, type: UploadType): Promise<string> {
+  const invalid = validateImageFile(file)
+  if (invalid) throw new Error(invalid)
+
+  const body = new FormData()
+  body.append('file', file)
+
+  const token = getToken()
+  const res = await fetch(`${API_URL}/admin/uploads/${type}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body,
+  })
+
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.message || `Tải ảnh thất bại (${res.status})`)
+  }
+  return json.data.url as string
+}
+
+/** Xoá ảnh đã tải lên. Chỉ dùng được với đường dẫn /uploads/... */
+export function deleteUploadedImage(url: string): Promise<void> {
+  return request(`/admin/uploads?url=${encodeURIComponent(url)}`, { method: 'DELETE', auth: true }).then(() => { })
+}
+
+// ---------- Tin tức / News ----------
+
+export interface NewsCategory {
+  id: number
+  name: string
+  slug: string
+  sortOrder: number
+  articleCount: number
+}
+
+export interface Article {
+  id: number
+  title: string
+  slug: string
+  img: string
+  excerpt: string
+  /** Chỉ có ở API chi tiết, danh sách không trả về cho nhẹ */
+  content?: string
+  author: string
+  category: { id: number; name: string; slug: string } | null
+  status: 'draft' | 'published'
+  publishDate: string          // 'yyyy-mm-dd'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ArticleInput {
+  title: string
+  slug?: string
+  img?: string
+  excerpt?: string
+  content: string
+  author?: string
+  categoryId?: number | null
+  status?: 'draft' | 'published'
+  date?: string                // 'yyyy-mm-dd'
+}
+
+export interface NewsQuery {
+  search?: string
+  category?: string
+  status?: 'draft' | 'published'
+  sort?: 'newest' | 'oldest'
+  page?: number
+  limit?: number
+}
+
+function newsQueryString(query: NewsQuery): string {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  return qs.toString() ? `?${qs}` : ''
+}
+
+/** Công khai: danh sách bài đã đăng */
+export async function getNews(query: NewsQuery = {}): Promise<{ items: Article[]; meta: any }> {
+  const json = await request(`/news${newsQueryString(query)}`)
+  return { items: json.data as Article[], meta: json.meta }
+}
+export function getArticle(idOrSlug: string | number): Promise<Article> {
+  return getData(`/news/${encodeURIComponent(String(idOrSlug))}`)
+}
+export function getNewsCategories(): Promise<NewsCategory[]> {
+  return getData('/news/categories')
+}
+
+/** Admin: danh sách gồm cả bài nháp */
+export async function getAdminNews(query: NewsQuery = {}): Promise<{ items: Article[]; meta: any }> {
+  const json = await request(`/admin/news${newsQueryString(query)}`, { auth: true })
+  return { items: json.data as Article[], meta: json.meta }
+}
+export function getAdminArticle(id: number): Promise<Article> {
+  return getData(`/admin/news/${id}`, { auth: true })
+}
+export function createArticle(body: ArticleInput): Promise<Article> {
+  return getData('/admin/news', { method: 'POST', body, auth: true })
+}
+export function updateArticle(id: number, body: Partial<ArticleInput>): Promise<Article> {
+  return getData(`/admin/news/${id}`, { method: 'PUT', body, auth: true })
+}
+export function updateArticleStatus(id: number, status: 'draft' | 'published'): Promise<Article> {
+  return getData(`/admin/news/${id}/status`, { method: 'PATCH', body: { status }, auth: true })
+}
+export function deleteArticle(id: number): Promise<void> {
+  return request(`/admin/news/${id}`, { method: 'DELETE', auth: true }).then(() => { })
+}

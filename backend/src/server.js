@@ -2,7 +2,7 @@ import 'dotenv/config';   // nạp backend/.env trước khi đọc config (DATA
 import { createApp } from './app.js';
 import config from './config/index.js';
 import db from './db/index.js';
-import { seedAdmin } from './db/seed.js';
+import { seedAdmin, seedNews } from './db/seed.js';
 import { runMigrations } from './db/migrate.js';
 
 // Chờ Postgres sẵn sàng (container DB có thể khởi động chậm hơn backend)
@@ -24,6 +24,7 @@ const app = createApp();
 await waitForDb();
 await runMigrations();
 await seedAdmin();
+await seedNews();
 
 const server = app.listen(config.port, () => {
   console.log('');

@@ -10,9 +10,9 @@ const spec = {
     description: `## API thương mại điện tử thời trang **IKA Fashion**
 
 API được tách theo **vai trò**:
-- **Public** \`/api/v1/...\` — duyệt sản phẩm, danh mục, xem đánh giá, đăng ký/đăng nhập
+- **Public** \`/api/v1/...\` — duyệt sản phẩm, danh mục, tin tức, xem đánh giá, đăng ký/đăng nhập
 - **Customer** \`/api/v1/customer/...\` — giỏ hàng, đơn của tôi, wishlist, áp mã, gửi đánh giá, nhắn tin
-- **Admin** \`/api/v1/admin/...\` — quản lý sản phẩm, danh mục, đơn hàng, người dùng, mã giảm giá, đánh giá, tin nhắn
+- **Admin** \`/api/v1/admin/...\` — quản lý sản phẩm, danh mục, đơn hàng, người dùng, mã giảm giá, đánh giá, tin nhắn, tin tức, tải ảnh
 
 ### Xác thực
 Các endpoint có **khóa** yêu cầu header:
@@ -83,6 +83,31 @@ Token nhận được từ \`POST /api/v1/auth/login\` hoặc \`POST /api/v1/aut
     '/api/v1/reviews/product/{productId}': {
       get: { tags: ['Public'], summary: 'Đánh giá đã duyệt của 1 sản phẩm', parameters: [{ name: 'productId', in: 'path', required: true, schema: { type: 'integer' } }], responses: { 200: { description: 'OK' } } },
     },
+    '/api/v1/news': {
+      get: {
+        tags: ['Public'], summary: 'Danh sách bài viết ĐÃ ĐĂNG (bài nháp không lộ ra)',
+        description: 'Không kèm trường `content` cho nhẹ — lấy nội dung đầy đủ ở endpoint chi tiết.',
+        parameters: [
+          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Tìm trong tiêu đề và tóm tắt (có phân biệt dấu tiếng Việt)' },
+          { name: 'category', in: 'query', schema: { type: 'string' }, description: 'slug danh mục: xu-huong | phoi-do | bao-quan | tin-cua-hang' },
+          { name: 'sort', in: 'query', schema: { type: 'string', enum: ['newest', 'oldest'], default: 'newest' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 12, maximum: 100 } },
+        ],
+        responses: { 200: { description: 'Trả về { data, meta: { total, page, limit, totalPages } }' } },
+      },
+    },
+    '/api/v1/news/categories': {
+      get: { tags: ['Public'], summary: 'Danh mục bài viết + số bài đã đăng', responses: { 200: { description: 'OK' } } },
+    },
+    '/api/v1/news/{idOrSlug}': {
+      get: {
+        tags: ['Public'], summary: 'Chi tiết bài viết (kèm content)',
+        description: 'Nhận cả id lẫn slug: `/news/12` hoặc `/news/xu-huong-thoi-trang-nam-thu-dong-2026`. Bài nháp trả 404.',
+        parameters: [{ name: 'idOrSlug', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { 200: { description: 'OK' }, 404: { description: 'Không tìm thấy hoặc bài đang ở trạng thái nháp' } },
+      },
+    },
 
     // ══════════════ CUSTOMER ══════════════
     '/api/v1/customer/cart': {
@@ -142,6 +167,73 @@ Token nhận được từ \`POST /api/v1/auth/login\` hoặc \`POST /api/v1/aut
     },
     '/api/v1/admin/collections': {
       post: { tags: ['Admin'], summary: 'Tạo danh mục', security: bearer, responses: { 201: { description: 'Created' } } },
+    },
+    '/api/v1/admin/news': {
+      get: {
+        tags: ['Admin'], summary: 'Danh sách bài viết (gồm cả bài nháp)', security: bearer,
+        parameters: [
+          { name: 'search', in: 'query', schema: { type: 'string' } },
+          { name: 'category', in: 'query', schema: { type: 'string' }, description: 'slug danh mục' },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['draft', 'published'] } },
+          { name: 'sort', in: 'query', schema: { type: 'string', enum: ['newest', 'oldest'], default: 'newest' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 12, maximum: 100 } },
+        ],
+        responses: { 200: { description: 'OK' } },
+      },
+      post: {
+        tags: ['Admin'], summary: 'Tạo bài viết', security: bearer,
+        description: 'Bỏ trống `slug` thì tự sinh từ tiêu đề (bỏ dấu tiếng Việt, trùng thì thêm hậu tố `-2`). Thẻ HTML trong `content` bị loại bỏ khi lưu.',
+        requestBody: {
+          required: true,
+          content: { 'application/json': { example: {
+            title: 'Xu hướng thời trang nam thu đông 2026',
+            excerpt: 'Gam màu trầm ấm và phom dáng vừa vặn định hình mùa lạnh năm nay.',
+            content: 'Đoạn mở đầu.\n\n## Tiêu đề mục\n\n- Gạch đầu dòng\n\n> Trích dẫn',
+            img: '/uploads/news/anh-bia.jpg',
+            author: 'IKA Fashion',
+            categoryId: 1,
+            status: 'published',
+            date: '2026-07-15',
+          } } },
+        },
+        responses: { 201: { description: 'Created' }, 400: { description: 'Danh mục không tồn tại' }, 422: { description: 'Dữ liệu không hợp lệ' } },
+      },
+    },
+    '/api/v1/admin/news/{id}': {
+      get:    { tags: ['Admin'], summary: 'Chi tiết bài viết (kèm content, xem được cả bài nháp)', security: bearer, parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }], responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
+      put:    { tags: ['Admin'], summary: 'Cập nhật bài viết', security: bearer, description: 'Chỉ gửi trường muốn đổi. Slug chỉ thay khi truyền `slug` — đổi tiêu đề không phá URL đã công khai.', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }], responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
+      delete: { tags: ['Admin'], summary: 'Xóa bài viết', security: bearer, parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }], responses: { 204: { description: 'No content' }, 404: { description: 'Not found' } } },
+    },
+    '/api/v1/admin/news/{id}/status': {
+      patch: {
+        tags: ['Admin'], summary: 'Đổi trạng thái đăng/nháp', security: bearer,
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+        requestBody: { required: true, content: { 'application/json': { example: { status: 'published' } } } },
+        responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } },
+      },
+    },
+    '/api/v1/admin/uploads/{type}': {
+      post: {
+        tags: ['Admin'], summary: 'Tải ảnh lên (multipart)', security: bearer,
+        description: 'Trả về đường dẫn tương đối `/uploads/<type>/<tên-do-server-sinh>` để lưu vào DB. Tên file client gửi lên bị bỏ qua. Ảnh phục vụ tĩnh tại cùng đường dẫn đó.',
+        parameters: [{ name: 'type', in: 'path', required: true, schema: { type: 'string', enum: ['news', 'products', 'collections'] } }],
+        requestBody: {
+          required: true,
+          content: { 'multipart/form-data': { schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } }, required: ['file'] } } },
+        },
+        responses: {
+          201: { description: 'Trả về { url, size, mimeType }' },
+          400: { description: 'Sai định dạng (chỉ JPG/PNG/WEBP), quá 5MB, hoặc type không hợp lệ' },
+        },
+      },
+    },
+    '/api/v1/admin/uploads': {
+      delete: {
+        tags: ['Admin'], summary: 'Xóa ảnh đã tải lên', security: bearer,
+        parameters: [{ name: 'url', in: 'query', required: true, schema: { type: 'string' }, description: 'Đường dẫn dạng /uploads/news/abc.jpg' }],
+        responses: { 200: { description: 'OK' }, 400: { description: 'Đường dẫn không hợp lệ' }, 404: { description: 'Không tìm thấy ảnh' } },
+      },
     },
     '/api/v1/admin/collections/{id}': {
       put:    { tags: ['Admin'], summary: 'Cập nhật danh mục', security: bearer, parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }], responses: { 200: { description: 'OK' } } },

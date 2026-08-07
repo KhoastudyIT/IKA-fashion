@@ -248,3 +248,45 @@ UPDATE products p SET rating = COALESCE(
   (SELECT ROUND(AVG(r.rating)::numeric, 1) FROM reviews r WHERE r.product_id = p.id AND r.approved),
   5.0
 );
+
+-- =============================================================
+-- TIN TỨC (news_categories, news)
+-- =============================================================
+CREATE TABLE IF NOT EXISTS news_categories (
+  id         SERIAL       PRIMARY KEY,
+  name       VARCHAR(120) NOT NULL,
+  slug       VARCHAR(140) NOT NULL UNIQUE,
+  sort_order INTEGER      NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS news (
+  id           SERIAL        PRIMARY KEY,
+  title        VARCHAR(300)  NOT NULL,
+  slug         VARCHAR(350)  NOT NULL UNIQUE,
+  img          VARCHAR(500)  NOT NULL DEFAULT '',
+  excerpt      VARCHAR(500)  NOT NULL DEFAULT '',
+  content      TEXT          NOT NULL DEFAULT '',
+  author       VARCHAR(100)  NOT NULL DEFAULT 'IKA Fashion',
+  -- Xoá danh mục thì bài viết vẫn còn, chỉ mất phân loại
+  category_id  INTEGER       REFERENCES news_categories(id) ON DELETE SET NULL,
+  status       VARCHAR(20)   NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  publish_date DATE          NOT NULL DEFAULT CURRENT_DATE,
+  created_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+-- Danh sách công khai lọc theo status rồi sắp theo ngày đăng
+CREATE INDEX IF NOT EXISTS idx_news_status_publish ON news (status, publish_date DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_news_category       ON news (category_id);
+
+INSERT INTO news_categories (id, name, slug, sort_order) VALUES
+  (1, 'Xu Hướng',   'xu-huong',   1),
+  (2, 'Phối Đồ',    'phoi-do',    2),
+  (3, 'Bảo Quản',   'bao-quan',   3),
+  (4, 'Tin Cửa Hàng', 'tin-cua-hang', 4)
+ON CONFLICT (slug) DO NOTHING;
+SELECT setval('news_categories_id_seq', (SELECT MAX(id) FROM news_categories));
+
+-- Bài viết mẫu seed ở src/db/seed-data/news.js (nạp bởi seed.js).
+

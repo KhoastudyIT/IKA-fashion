@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getCollections, createCollection, updateCollection, deleteCollection, Collection } from '@/api'
 import { FolderKanban, Plus, Edit, Trash2, X, RefreshCw } from 'lucide-react'
+import ImageField from '@/components/ImageField'
 
 type FormState = {
   name: string
@@ -25,6 +26,7 @@ export default function AdminCollectionsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const loadCollections = async () => {
     try {
@@ -171,7 +173,7 @@ export default function AdminCollectionsPage() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-xl max-h-[92vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-heading font-semibold text-[#2C2C2C]">
                 {editingId ? 'Sửa Danh Mục' : 'Thêm Danh Mục'}
@@ -217,24 +219,22 @@ export default function AdminCollectionsPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Đường dẫn ảnh bìa danh mục *</label>
-                <input
-                  required
-                  value={form.img}
-                  onChange={(e) => setForm({ ...form, img: e.target.value })}
-                  placeholder="/products/ten-anh.png"
-                  className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
-                />
-              </div>
+              <ImageField
+                label="Ảnh bìa danh mục"
+                type="collections"
+                required
+                value={form.img}
+                onChange={(img) => setForm({ ...form, img })}
+                onUploadingChange={setUploading}
+              />
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded transition-colors disabled:opacity-50 cursor-pointer"
                 >
-                  {saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
+                  {uploading ? 'Đang tải ảnh...' : saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
                 </button>
                 <button
                   type="button"

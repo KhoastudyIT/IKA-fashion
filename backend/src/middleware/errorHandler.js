@@ -24,6 +24,15 @@ export function errorHandler(err, _req, res, _next) {
     return res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc đã hết hạn' });
   }
 
+  // multer ném lỗi riêng khi file vượt giới hạn — trả 400 kèm thông báo dễ hiểu
+  // thay vì để rơi xuống nhánh 500 bên dưới.
+  if (err.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB)'
+      : `Lỗi tải file: ${err.message}`;
+    return res.status(400).json({ success: false, message });
+  }
+
   console.error('[Error]', err);
   return res.status(500).json({ success: false, message: 'Lỗi máy chủ nội bộ' });
 }

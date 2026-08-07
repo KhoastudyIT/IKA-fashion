@@ -17,6 +17,9 @@ import { wishlistRouter }                             from './modules/wishlist/w
 import { messageCustomerRouter, messageAdminRouter }  from './modules/messages/message.routes.js';
 import { couponCustomerRouter, couponAdminRouter }    from './modules/coupons/coupon.routes.js';
 import { reviewPublicRouter, reviewCustomerRouter, reviewAdminRouter } from './modules/reviews/review.routes.js';
+import { newsPublicRouter, newsAdminRouter }          from './modules/news/news.routes.js';
+import { uploadAdminRouter }                          from './modules/uploads/upload.routes.js';
+import { UPLOAD_ROOT }                                from './modules/uploads/upload.service.js';
 
 export function createApp() {
   const app = express();
@@ -30,6 +33,13 @@ export function createApp() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() }),
   );
 
+  // Ảnh admin tải lên. crossOriginResourcePolicy của helmet mặc định chặn ảnh
+  // nhúng từ origin khác, mà frontend chạy ở cổng 3000 — nên phải nới ở đây.
+  app.use('/uploads', express.static(UPLOAD_ROOT, {
+    maxAge: '7d',
+    setHeaders: (res) => res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'),
+  }));
+
   const v1 = '/api/v1';
 
   // ── Public (không cần đăng nhập) ──────────────────────────
@@ -37,6 +47,7 @@ export function createApp() {
   app.use(`${v1}/products`,    productPublicRouter);
   app.use(`${v1}/collections`, collectionPublicRouter);
   app.use(`${v1}/reviews`,     reviewPublicRouter);
+  app.use(`${v1}/news`,        newsPublicRouter);
 
   // ── Customer (khách hàng đã đăng nhập) ────────────────────
   app.use(`${v1}/customer/cart`,     cartRouter);
@@ -54,6 +65,8 @@ export function createApp() {
   app.use(`${v1}/admin/coupons`,     couponAdminRouter);
   app.use(`${v1}/admin/reviews`,     reviewAdminRouter);
   app.use(`${v1}/admin/messages`,    messageAdminRouter);
+  app.use(`${v1}/admin/news`,        newsAdminRouter);
+  app.use(`${v1}/admin/uploads`,     uploadAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 

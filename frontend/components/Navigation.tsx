@@ -137,9 +137,9 @@ export default function Navigation() {
               LIÊN HỆ
             </Link>
             <Link
-              href="/blog"
+              href="/tin-tuc"
               className={`font-sans text-sm tracking-wide transition-colors ${
-                isActive('/blog') ? 'text-accent' : 'text-foreground hover:text-accent'
+                isActive('/tin-tuc') ? 'text-accent' : 'text-foreground hover:text-accent'
               }`}
             >
               TIN TỨC

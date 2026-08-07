@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RefreshCcw, Headphones, ArrowRight, Quote } from 'lucide-react'
-import { getProducts, ApiProduct } from '@/api'
+import { getProducts, getNews, ApiProduct, Article } from '@/api'
 
 /* ───────── Banner Data ───────── */
 const BANNERS = [
@@ -77,6 +77,9 @@ export default function HomePage() {
   const [bestSellers, setBestSellers] = useState<ApiProduct[]>([])
   const [newArrivals, setNewArrivals] = useState<ApiProduct[]>([])
 
+  /* ── Tin tức mới nhất ── */
+  const [latestNews, setLatestNews] = useState<Article[]>([])
+
   const nextBanner = useCallback(() => {
     if (isTransitioning) return
     setIsTransitioning(true)
@@ -105,6 +108,10 @@ export default function HomePage() {
 
     getProducts({ sort: 'newest', limit: 4 })
       .then((res) => setNewArrivals(res.items))
+      .catch(() => {})
+
+    getNews({ limit: 3 })
+      .then((res) => setLatestNews(res.items))
       .catch(() => {})
   }, [])
 
@@ -572,21 +579,22 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════
-          9. BLOG PREVIEW
+          9. BLOG PREVIEW — ẩn hẳn khi chưa có bài viết nào
       ═══════════════════════════════════════════════ */}
+      {latestNews.length > 0 && (
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-14">
             <div>
               <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
-                Blog
+                Tạp Chí
               </p>
               <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
                 Tin Tức & Cảm Hứng
               </h2>
             </div>
             <Link
-              href="/blog"
+              href="/tin-tuc"
               className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
             >
               Xem tất cả <ArrowRight size={14} />
@@ -594,47 +602,26 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                id: 'xu-huong-mua-thu-2026',
-                title: 'Xu Hướng Thời Trang Mùa Thu 2026',
-                category: 'XU HƯỚNG',
-                excerpt: 'Khám phá những gam màu ấm áp và chất liệu len lên ngôi trong mùa thu năm nay.',
-                date: '06/07/2026',
-                image: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                id: 'phoi-do-cong-so',
-                title: 'Cách Phối Đồ Công Sở Trẻ Trung',
-                category: 'MIX & MATCH',
-                excerpt: 'Phá vỡ sự nhàm chán của đồ công sở với 5 mẹo mix & match cực kỳ đơn giản.',
-                date: '01/07/2026',
-                image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                id: 'bao-quan-ao-thun',
-                title: 'Bảo Quản Áo Thun Đúng Cách',
-                category: 'MẸO VẶT',
-                excerpt: 'Giữ cho những chiếc áo thun yêu thích của bạn luôn như mới với hướng dẫn giặt ủi chuẩn.',
-                date: '25/06/2026',
-                image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80',
-              },
-            ].map((post) => (
-              <Link key={post.id} href={`/blog/${post.id}`}>
+            {latestNews.map((post) => (
+              <Link key={post.id} href={`/tin-tuc/${post.slug}`}>
                 <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="aspect-[16/10] overflow-hidden">
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                  <div className="aspect-[16/10] overflow-hidden bg-secondary">
+                    {post.img && (
+                      <img
+                        src={post.img}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    )}
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
-                        {post.category}
+                        {post.category?.name ?? 'TIN TỨC'}
                       </span>
-                      <span className="text-xs text-muted-foreground">{post.date}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {post.publishDate ? post.publishDate.split('-').reverse().join('/') : ''}
+                      </span>
                     </div>
                     <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
                       {post.title}
@@ -649,6 +636,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* ═══════════════════════════════════════════════
           10. INSTAGRAM / LOOKBOOK GALLERY

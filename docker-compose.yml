@@ -52,6 +52,9 @@ services:
         condition: service_healthy
     ports:
       - "4000:4000"
+    volumes:
+      # Ảnh admin tải lên — để ngoài image thì rebuild không mất
+      - ika_uploads:/app/uploads
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:4000/api/health"]
       interval: 10s
@@ -68,6 +71,9 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api/v1}
     container_name: ika_frontend
     restart: unless-stopped
+    environment:
+      # Next proxy /uploads/* về backend — dùng tên service vì chạy trong mạng Docker
+      API_ORIGIN: http://backend:4000
     depends_on:
       backend:
         condition: service_healthy
@@ -76,3 +82,4 @@ services:
 
 volumes:
   ika_pgdata:
+  ika_uploads:
