@@ -2,12 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ChevronDown } from 'lucide-react'
-import { getProducts, getCollections, ApiProduct, Collection, ProductQuery } from '@/api'
+import { useRouter } from 'next/navigation'
+import { ChevronDown, Heart } from 'lucide-react'
+import { useSession } from '@/auth-client'
+import { getProducts, getCollections, addWishlist, removeWishlist, ApiProduct, Collection, ProductQuery } from '@/api'
+import { useShop } from '@/components/context/ShopContext'
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'rating'
 
 export default function ProductsPage() {
+  const router = useRouter()
+  const { data: session } = useSession()
+  const { syncWishlist, isWishlisted } = useShop()
+  const [wishlistBusyId, setWishlistBusyId] = useState<number | null>(null)
+
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [maxPrice, setMaxPrice] = useState(1000000)
   const [selectedCollection, setSelectedCollection] = useState<string>('all')
@@ -39,6 +47,27 @@ export default function ProductsPage() {
       .catch((e) => setError(e.message || 'Không tải được sản phẩm'))
       .finally(() => setLoading(false))
   }, [sortBy, maxPrice, selectedCollection])
+
+  // Bấm lần nữa thì bỏ yêu thích
+  const handleWishlist = async (product: ApiProduct) => {
+    if (!session) {
+      router.push('/auth/login')
+      return
+    }
+    setWishlistBusyId(product.id)
+    setError('')
+    try {
+      syncWishlist(
+        isWishlisted(product.id)
+          ? await removeWishlist(product.id)
+          : await addWishlist(product.id),
+      )
+    } catch (e: any) {
+      setError(e.message || 'Không cập nhật được yêu thích')
+    } finally {
+      setWishlistBusyId(null)
+    }
+  }
 
   return (
     <>
@@ -137,23 +166,41 @@ export default function ProductsPage() {
                 <>
                   <p className="text-sm text-muted-foreground mb-6">Hiển thị {products.length} sản phẩm</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {products.map((product) => (
-                      <Link key={product.handle} href={`/products/${product.handle}`}>
-                        <div className="group cursor-pointer">
-                          <div className="bg-secondary rounded-lg overflow-hidden mb-4 h-80 flex items-center justify-center relative">
-                            <img src={product.img} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          </div>
-                          <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
-                            {product.name}
-                          </h3>
-                          <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{product.description}</p>
-                          <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-foreground">{product.price.toLocaleString()} đ</span>
-                            <span className="text-accent group-hover:underline text-sm font-medium">Chi Tiết →</span>
-                          </div>
+                    {products.map((product) => {
+                      const wished = isWishlisted(product.id)
+                      return (
+                        <div key={product.handle} className="group relative">
+                          {/* Nằm ngoài Link để không lồng button trong thẻ <a> */}
+                          <button
+                            onClick={() => handleWishlist(product)}
+                            disabled={wishlistBusyId === product.id}
+                            aria-pressed={wished}
+                            aria-label={`${wished ? 'Bỏ yêu thích' : 'Yêu thích'} ${product.name}`}
+                            className={`absolute top-3 right-3 z-10 p-2 rounded-full bg-background/85 shadow-sm transition-colors disabled:opacity-50 ${
+                              wished ? 'text-red-600' : 'text-foreground hover:text-red-600'
+                            }`}
+                          >
+                            <Heart size={18} fill={wished ? 'currentColor' : 'none'} />
+                          </button>
+
+                          <Link href={`/products/${product.handle}`}>
+                            <div className="cursor-pointer">
+                              <div className="bg-secondary rounded-lg overflow-hidden mb-4 h-80 flex items-center justify-center">
+                                <img src={product.img} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              </div>
+                              <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
+                                {product.name}
+                              </h3>
+                              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{product.description}</p>
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-semibold text-foreground">{product.price.toLocaleString()} đ</span>
+                                <span className="text-accent group-hover:underline text-sm font-medium">Chi Tiết →</span>
+                              </div>
+                            </div>
+                          </Link>
                         </div>
-                      </Link>
-                    ))}
+                      )
+                    })}
                   </div>
                 </>
               ) : (
