@@ -3,8 +3,9 @@
 import { useSession } from '@/auth-client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { getMyOrders, getWishlist, Order } from '@/api'
-import { Receipt, Heart, Wallet } from 'lucide-react'
+import { getMyOrders, Order } from '@/api'
+import { Receipt, Heart, Wallet, ShoppingBag } from 'lucide-react'
+import { useShop } from '@/components/context/ShopContext'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Chờ xác nhận',
@@ -25,19 +26,14 @@ const STATUS_STYLE: Record<string, string> = {
 export default function CustomerDashboard() {
   const { data: session } = useSession()
   const [orders, setOrders] = useState<Order[]>([])
-  const [wishlistCount, setWishlistCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { cartCount, wishlistCount } = useShop()
 
   useEffect(() => {
     if (!session) return
-    Promise.all([
-      getMyOrders().catch(() => [] as Order[]),
-      getWishlist().catch(() => []),
-    ])
-      .then(([myOrders, wishlist]) => {
-        setOrders(myOrders)
-        setWishlistCount(wishlist.length)
-      })
+    getMyOrders()
+      .then(setOrders)
+      .catch(() => setOrders([]))
       .finally(() => setLoading(false))
   }, [session])
 
@@ -48,7 +44,8 @@ export default function CustomerDashboard() {
 
   const stats = [
     { label: 'Đơn hàng', value: orders.length, icon: Receipt, href: '/dashboard/customer/orders' },
-    { label: 'Yêu thích', value: wishlistCount, icon: Heart, href: '/wishlist' },
+    { label: 'Giỏ hàng', value: cartCount, icon: ShoppingBag, href: '/dashboard/customer/cart' },
+    { label: 'Yêu thích', value: wishlistCount, icon: Heart, href: '/dashboard/customer/wishlist' },
     {
       label: 'Tổng chi tiêu',
       value: `${totalSpent.toLocaleString('vi-VN')} đ`,
@@ -66,7 +63,7 @@ export default function CustomerDashboard() {
         <p className="text-muted-foreground mt-1">Tổng quan tài khoản của bạn tại IKA Fashion</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {stats.map(stat => {
           const Icon = stat.icon
           return (

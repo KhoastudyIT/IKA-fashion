@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/auth-client'
 import { getProducts, addToCart, ApiProduct } from '@/api'
+import { useShop } from '@/components/context/ShopContext'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 
 const SORT_OPTIONS = [
@@ -31,6 +32,7 @@ function SearchPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { data: session } = useSession()
+  const { syncCart } = useShop()
   const query = searchParams.get('q') || ''
 
   const [results, setResults] = useState<ApiProduct[]>([])
@@ -60,7 +62,7 @@ function SearchPageContent() {
   const handleAddToCart = async (product: ApiProduct) => {
     if (!session) { router.push('/auth/login'); return }
     try {
-      await addToCart({ productId: product.id, size: product.sizes[0] ?? '', color: product.colors[0] ?? '', quantity: 1 })
+      syncCart(await addToCart({ productId: product.id, size: product.sizes[0] ?? '', color: product.colors[0] ?? '', quantity: 1 }))
       setMessage(`✓ Đã thêm "${product.name}" vào giỏ hàng`)
       setTimeout(() => setMessage(''), 3000)
     } catch (e: any) { setMessage(e.message) }

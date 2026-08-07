@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSession } from '@/auth-client'
 import { getCart, createOrder, applyCoupon, Cart, AppliedCoupon } from '@/api'
+import { useShop } from '@/components/context/ShopContext'
 import { Check, ChevronRight, MapPin, Phone, CreditCard, Package, Truck } from 'lucide-react'
 
 type Step = 1 | 2 | 3
@@ -58,6 +59,7 @@ function StepIndicator({ current }: { current: Step }) {
 export default function CheckoutPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
+  const { refreshCounts } = useShop()
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
   const [step, setStep] = useState<Step>(1)
@@ -84,11 +86,11 @@ export default function CheckoutPage() {
     if (!session) { router.push('/auth/login'); return }
     getCart()
       .then((c) => {
-        if (!c || c.items.length === 0) { router.push('/cart'); return }
+        if (!c || c.items.length === 0) { router.push('/dashboard/customer/cart'); return }
         setCart(c)
         if (session.user.name) setName(session.user.name)
       })
-      .catch(() => router.push('/cart'))
+      .catch(() => router.push('/dashboard/customer/cart'))
       .finally(() => setLoading(false))
   }, [session, isPending, router])
 
@@ -143,6 +145,8 @@ export default function CheckoutPage() {
         notes: `Vận chuyển: ${shipping} | Thanh toán: ${payment}${notes ? ' | Ghi chú: ' + notes : ''}`,
         couponCode: appliedCoupon?.code,
       })
+      // Đặt hàng xong backend đã dọn giỏ — đồng bộ lại badge
+      await refreshCounts()
       router.push(`/order-success?orderId=${order.id}&total=${total}`)
     } catch (e: any) {
       setError(e.message || 'Đặt hàng thất bại, vui lòng thử lại')
@@ -169,7 +173,7 @@ export default function CheckoutPage() {
           <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#7A7A7A' }}>
             <Link href="/" style={{ color: '#D4AF37', textDecoration: 'none' }}>Trang chủ</Link>
             <ChevronRight size={14} />
-            <Link href="/cart" style={{ color: '#D4AF37', textDecoration: 'none' }}>Giỏ hàng</Link>
+            <Link href="/dashboard/customer/cart" style={{ color: '#D4AF37', textDecoration: 'none' }}>Giỏ hàng</Link>
             <ChevronRight size={14} />
             <span style={{ color: '#2C2C2C', fontWeight: 600 }}>Thanh toán</span>
           </div>
