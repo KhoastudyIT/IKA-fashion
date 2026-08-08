@@ -70,11 +70,11 @@ export default function NewsDetailPage() {
   return (
     <div className="min-h-screen">
       {/* Banner */}
-      <div className="relative w-full h-[50vh] min-h-[320px] max-h-[520px] overflow-hidden bg-secondary">
+      <div className="relative w-full h-[40vh] min-h-[300px] md:h-[50vh] md:min-h-[400px] lg:h-[60vh] lg:min-h-[500px] overflow-hidden bg-secondary">
         {article.img && (
-          <img src={article.img} alt={article.title} className="w-full h-full object-cover" />
+          <img src={article.img} alt={article.title} className="w-full h-full object-cover object-center" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16">
           <div className="max-w-5xl mx-auto">
             <Link href="/tin-tuc" className="text-sm text-accent hover:underline mb-4 inline-block">

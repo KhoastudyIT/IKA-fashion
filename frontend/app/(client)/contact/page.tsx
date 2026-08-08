@@ -70,19 +70,19 @@ export default function ContactPage() {
       {/* ═══════════ HERO ═══════════ */}
       <section className="relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1423666639041-f56000c27a9a?auto=format&fit=crop&w=1600&q=80"
+          src="/banners/banner-contact.jpeg"
           alt="Liên hệ IKA Fashion"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/50" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-28 relative z-10">
           <div className="max-w-3xl">
             <p className="text-xs tracking-[0.3em] text-accent uppercase mb-4">Liên Hệ</p>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold leading-tight mb-6 text-white">
               Chúng Tôi Luôn<br />
-              <span className="text-accent">Sẵn Sàng Hỗ Trợ</span>
+              <span className="text-accent drop-shadow-md">Sẵn Sàng Hỗ Trợ</span>
             </h1>
-            <p className="text-lg text-primary-foreground/70 leading-relaxed max-w-xl font-light">
+            <p className="text-lg text-gray-200 leading-relaxed max-w-xl font-light">
               Có câu hỏi về sản phẩm, đơn hàng hay cần tư vấn phối đồ? Đội ngũ IKA luôn sẵn lòng giúp đỡ bạn.
             </p>
           </div>

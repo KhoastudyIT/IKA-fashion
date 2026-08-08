@@ -8,7 +8,8 @@ import { getProducts, getNews, ApiProduct, Article } from '@/api'
 /* ───────── Banner Data ───────── */
 const BANNERS = [
   {
-    image: '/banners/banner-hero.png',
+    image: '/banners/banner-hero.jpeg',
+    imageMobile: '/banners/banner-hero-mobile.jpeg',
     subtitle: 'Bộ Sưu Tập Mới 2026',
     title: 'Phong Cách\nĐẳng Cấp',
     description: 'Khám phá bộ sưu tập thời trang cao cấp với công nghệ vải tiên tiến, thiết kế tinh tế phù hợp với phong cách sống hiện đại.',
@@ -16,7 +17,7 @@ const BANNERS = [
     href: '/products',
   },
   {
-    image: '/banners/banner-summer.png',
+    image: '/banners/banner-summer.jpeg',
     subtitle: 'Summer Collection',
     title: 'Thoáng Mát\nSuốt Ngày Dài',
     description: 'Công nghệ AirDry™ thoát ẩm nhanh 3x, giữ bạn luôn thoải mái trong mọi hoạt động dưới nắng hè.',
@@ -24,7 +25,7 @@ const BANNERS = [
     href: '/products?collection=ao-thun',
   },
   {
-    image: '/banners/banner-arrivals.png',
+    image: '/banners/banner-arrivals.jpeg',
     subtitle: 'Ưu Đãi Đặc Biệt',
     title: 'Giảm Đến 40%\nToàn Bộ Sản Phẩm',
     description: 'Cơ hội sở hữu thời trang chất lượng với giá ưu đãi. Áp dụng cho đơn hàng từ 500.000đ.',
@@ -104,15 +105,15 @@ export default function HomePage() {
   useEffect(() => {
     getProducts({ sort: 'sold', limit: 4 })
       .then((res) => setBestSellers(res.items))
-      .catch(() => {})
+      .catch(() => { })
 
     getProducts({ sort: 'newest', limit: 4 })
       .then((res) => setNewArrivals(res.items))
-      .catch(() => {})
+      .catch(() => { })
 
     getNews({ limit: 3 })
       .then((res) => setLatestNews(res.items))
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   const banner = BANNERS[currentBanner]
@@ -130,11 +131,16 @@ export default function HomePage() {
             className="absolute inset-0 transition-opacity duration-700 ease-in-out"
             style={{ opacity: i === currentBanner ? 1 : 0 }}
           >
-            <img
-              src={b.image}
-              alt={b.title}
-              className="w-full h-full object-cover"
-            />
+            <picture>
+              {b.imageMobile && (
+                <source media="(max-width: 767px)" srcSet={b.imageMobile} />
+              )}
+              <img
+                src={b.image}
+                alt={b.title}
+                className="w-full h-full object-cover object-top"
+              />
+            </picture>
             {/* Dark overlay for text readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
           </div>
@@ -196,11 +202,10 @@ export default function HomePage() {
                 setCurrentBanner(i)
                 setTimeout(() => setIsTransitioning(false), 600)
               }}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === currentBanner
-                  ? 'w-8 bg-accent'
-                  : 'w-2 bg-white/50 hover:bg-white/80'
-              }`}
+              className={`h-2 rounded-full transition-all duration-300 ${i === currentBanner
+                ? 'w-8 bg-accent'
+                : 'w-2 bg-white/50 hover:bg-white/80'
+                }`}
               aria-label={`Banner ${i + 1}`}
             />
           ))}
@@ -386,7 +391,7 @@ export default function HomePage() {
           {/* Left: Image */}
           <div className="relative h-80 md:h-auto">
             <img
-              src="/Giam-Gia/Ao/Ao-Polo/Polo-4.webp"
+              src="/banners/banner-promo.jpeg"
               alt="Khuyến mãi"
               className="w-full h-full object-cover"
             />
@@ -582,60 +587,60 @@ export default function HomePage() {
           9. BLOG PREVIEW — ẩn hẳn khi chưa có bài viết nào
       ═══════════════════════════════════════════════ */}
       {latestNews.length > 0 && (
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-end justify-between mb-14">
-            <div>
-              <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
-                Tạp Chí
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
-                Tin Tức & Cảm Hứng
-              </h2>
-            </div>
-            <Link
-              href="/tin-tuc"
-              className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
-            >
-              Xem tất cả <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {latestNews.map((post) => (
-              <Link key={post.id} href={`/tin-tuc/${post.slug}`}>
-                <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="aspect-[16/10] overflow-hidden bg-secondary">
-                    {post.img && (
-                      <img
-                        src={post.img}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
-                        {post.category?.name ?? 'TIN TỨC'}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {post.publishDate ? post.publishDate.split('-').reverse().join('/') : ''}
-                      </span>
-                    </div>
-                    <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground font-light line-clamp-2">
-                      {post.excerpt}
-                    </p>
-                  </div>
-                </article>
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-14">
+              <div>
+                <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
+                  Tạp Chí
+                </p>
+                <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground">
+                  Tin Tức & Cảm Hứng
+                </h2>
+              </div>
+              <Link
+                href="/tin-tuc"
+                className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent hover:underline"
+              >
+                Xem tất cả <ArrowRight size={14} />
               </Link>
-            ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {latestNews.map((post) => (
+                <Link key={post.id} href={`/tin-tuc/${post.slug}`}>
+                  <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="aspect-[16/10] overflow-hidden bg-secondary">
+                      {post.img && (
+                        <img
+                          src={post.img}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      )}
+                    </div>
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
+                          {post.category?.name ?? 'TIN TỨC'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {post.publishDate ? post.publishDate.split('-').reverse().join('/') : ''}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground font-light line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    </div>
+                  </article>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* ═══════════════════════════════════════════════

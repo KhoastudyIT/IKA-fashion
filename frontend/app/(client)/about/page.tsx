@@ -6,20 +6,19 @@ export default function AboutPage() {
     <main className="min-h-screen bg-background">
       {/* ═══════════ HERO ═══════════ */}
       <section className="relative overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1600&q=80"
-          alt="Về IKA Fashion"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/60" />
+        <picture className="absolute inset-0 w-full h-full">
+          <source media="(max-width: 767px)" srcSet="/banners/banner-about-mobile.jpeg" />
+          <img src="/banners/banner-about.jpeg" alt="Về IKA Fashion" className="w-full h-full object-cover object-top" />
+        </picture>
+        <div className="absolute inset-0 bg-black/50" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 relative z-10">
           <div className="max-w-3xl">
             <p className="text-xs tracking-[0.3em] text-accent uppercase mb-4">Về Chúng Tôi</p>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-semibold leading-tight mb-6 text-white">
               IKA Fashion — <br />Thời Trang Cho<br />
-              <span className="text-accent">Người Việt Hiện Đại</span>
+              <span className="text-accent drop-shadow-md">Người Việt Hiện Đại</span>
             </h1>
-            <p className="text-lg text-primary-foreground/70 leading-relaxed max-w-xl font-light">
+            <p className="text-lg text-gray-200 leading-relaxed max-w-xl font-light">
               Chúng tôi tạo ra những bộ trang phục chất lượng cao, dễ phối, với mức giá bình dân — để mỗi ngày bước ra đường, bạn luôn tự tin nhất.
             </p>
           </div>

@@ -11,14 +11,14 @@
 
 export const NEWS_SEED = [
   {
-    title:        'Phối đồ dự tiệc: lịch sự mà không cứng nhắc',
-    slug:         'phoi-do-du-tiec-lich-su-ma-khong-cung-nhac',
-    img:          '/banners/banner-promo.png',
-    excerpt:      'Không phải bữa tiệc nào cũng cần vest. Đây là cách chọn trang phục đúng mức cho từng loại sự kiện.',
-    author:       'IKA Fashion',
+    title: 'Phối đồ dự tiệc: lịch sự mà không cứng nhắc',
+    slug: 'phoi-do-du-tiec-lich-su-ma-khong-cung-nhac',
+    img: '/banners/tin-tuc/blog-du-tiec.jpeg',
+    excerpt: 'Không phải bữa tiệc nào cũng cần vest. Đây là cách chọn trang phục đúng mức cho từng loại sự kiện.',
+    author: 'IKA Fashion',
     categorySlug: 'phoi-do',
-    status:       'published',
-    date:         '2026-07-05',
+    status: 'published',
+    date: '2026-07-05',
     content: `Câu hỏi khó nhất khi nhận thiệp mời không phải *đi hay không*, mà là *mặc gì*. Mặc quá trang trọng cũng lạc lõng như mặc quá xuề xòa.
 
 ## Đọc mã trang phục trên thiệp mời
@@ -65,14 +65,14 @@ Vẫn nên tránh quần short và dép lê. Kaki với áo thun trơn chất l�
 *Một bộ đồ bình thường được chăm chút kỹ luôn trông tốt hơn một bộ đắt tiền bị bỏ bê.*`,
   },
   {
-    title:        'Vì sao bảng màu trung tính không bao giờ lỗi mốt',
-    slug:         'vi-sao-bang-mau-trung-tinh-khong-bao-gio-loi-mot',
-    img:          '/products/ao-thun-trang.png',
-    excerpt:      'Đen, trắng, xám, be và nâu — năm màu này chiếm tới 80% tủ đồ của những người ăn mặc đẹp. Đây là lý do.',
-    author:       'IKA Fashion',
+    title: 'Vì sao bảng màu trung tính không bao giờ lỗi mốt',
+    slug: 'vi-sao-bang-mau-trung-tinh-khong-bao-gio-loi-mot',
+    img: '/banners/tin-tuc/blog-mau-trung-tinh.jpeg',
+    excerpt: 'Đen, trắng, xám, be và nâu — năm màu này chiếm tới 80% tủ đồ của những người ăn mặc đẹp. Đây là lý do.',
+    author: 'IKA Fashion',
     categorySlug: 'xu-huong',
-    status:       'published',
-    date:         '2026-07-08',
+    status: 'published',
+    date: '2026-07-08',
     content: `Có một điều dễ nhận ra khi quan sát những người ăn mặc đẹp: tủ đồ của họ thường **ít màu hơn** bạn tưởng.
 
 ## Toán học đơn giản của tủ đồ
@@ -118,14 +118,14 @@ Màu nổi không sai — chỉ là nên dùng có chủ đích. Một chiếc �
 *Nguyên tắc: mua món trung tính bằng tiền, mua món màu nổi bằng sự chắc chắn rằng bạn thực sự thích nó.*`,
   },
   {
-    title:        'Chọn đúng size khi mua online',
-    slug:         'chon-dung-size-khi-mua-online',
-    img:          '/products/ao-thun-xanh.png',
-    excerpt:      'Bảng size chỉ là điểm khởi đầu. Ba số đo bạn cần biết và cách đối chiếu để không phải đổi trả.',
-    author:       'IKA Fashion',
+    title: 'Chọn đúng size khi mua online',
+    slug: 'chon-dung-size-khi-mua-online',
+    img: '/banners/tin-tuc/blog-chon-size.jpeg',
+    excerpt: 'Bảng size chỉ là điểm khởi đầu. Ba số đo bạn cần biết và cách đối chiếu để không phải đổi trả.',
+    author: 'IKA Fashion',
     categorySlug: 'bao-quan',
-    status:       'published',
-    date:         '2026-07-12',
+    status: 'published',
+    date: '2026-07-12',
     content: `Lý do đổi trả phổ biến nhất khi mua quần áo online là sai size. Phần lớn trường hợp có thể tránh được chỉ với một chiếc thước dây.
 
 ## Ba số đo cần biết
@@ -168,14 +168,14 @@ Hãy xem [hướng dẫn chọn size](/huong-dan-size) chi tiết, hoặc nhắn
 *Chính sách đổi trả trong 7 ngày áp dụng cho mọi đơn hàng — nhưng chọn đúng ngay từ đầu vẫn dễ chịu hơn nhiều.*`,
   },
   {
-    title:        'Xu hướng thời trang nam thu đông 2026',
-    slug:         'xu-huong-thoi-trang-nam-thu-dong-2026',
-    img:          '/banners/banner-hero.png',
-    excerpt:      'Gam màu trầm ấm, phom dáng vừa vặn và chất liệu dày dặn — ba trục chính định hình tủ đồ nam mùa lạnh năm nay.',
-    author:       'IKA Fashion',
+    title: 'Xu hướng thời trang nam thu đông 2026',
+    slug: 'xu-huong-thoi-trang-nam-thu-dong-2026',
+    img: '/banners/tin-tuc/blog-thu-dong.jpeg',
+    excerpt: 'Gam màu trầm ấm, phom dáng vừa vặn và chất liệu dày dặn — ba trục chính định hình tủ đồ nam mùa lạnh năm nay.',
+    author: 'IKA Fashion',
     categorySlug: 'xu-huong',
-    status:       'published',
-    date:         '2026-07-15',
+    status: 'published',
+    date: '2026-07-15',
     content: `Mỗi mùa thu đông, câu hỏi quen thuộc nhất mà chúng tôi nhận được là: *năm nay nên mua gì?* Câu trả lời ngắn gọn cho 2026 là hãy đầu tư vào màu trầm, phom vừa vặn và chất liệu dày dặn hơn một chút so với năm ngoái.
 
 ## Bảng màu: đất và khói lên ngôi
@@ -226,14 +226,14 @@ Nếu ngân sách có hạn, hãy bắt đầu từ ba món này. Chúng phối 
 Xem toàn bộ [bộ sưu tập mới](/products) để tìm món phù hợp với phong cách của bạn.`,
   },
   {
-    title:        'Chương trình thành viên IKA: những gì bạn cần biết',
-    slug:         'chuong-trinh-thanh-vien-ika-nhung-gi-ban-can-biet',
-    img:          '/banners/banner-summer.png',
-    excerpt:      'Ba hạng thành viên, cách tích điểm và những quyền lợi đi kèm — giải thích ngắn gọn trong một bài.',
-    author:       'IKA Fashion',
+    title: 'Chương trình thành viên IKA: những gì bạn cần biết',
+    slug: 'chuong-trinh-thanh-vien-ika-nhung-gi-ban-can-biet',
+    img: '/banners/tin-tuc/blog-the-thanh-vien.jpeg',
+    excerpt: 'Ba hạng thành viên, cách tích điểm và những quyền lợi đi kèm — giải thích ngắn gọn trong một bài.',
+    author: 'IKA Fashion',
     categorySlug: 'tin-cua-hang',
-    status:       'published',
-    date:         '2026-07-18',
+    status: 'published',
+    date: '2026-07-18',
     content: `Nhiều khách hàng hỏi về chương trình thành viên, nên chúng tôi tổng hợp lại toàn bộ thông tin trong một bài viết.
 
 ## Cách tham gia
@@ -287,14 +287,14 @@ Hạng cao nhất, kèm các quyền lợi riêng.
 Xem thêm tại [trang câu hỏi thường gặp](/faq) hoặc liên hệ trực tiếp với chúng tôi.`,
   },
   {
-    title:        'Năm công thức phối quần kaki cho cả tuần',
-    slug:         'nam-cong-thuc-phoi-quan-kaki-cho-ca-tuan',
-    img:          '/products/quan-kaki.png',
-    excerpt:      'Một chiếc quần kaki be có thể tạo ra năm bộ trang phục khác nhau — từ đi làm đến đi chơi cuối tuần.',
-    author:       'IKA Fashion',
+    title: 'Năm công thức phối quần kaki cho cả tuần',
+    slug: 'nam-cong-thuc-phoi-quan-kaki-cho-ca-tuan',
+    img: '/banners/tin-tuc/5-cach-phoi-quan-kaki.jpeg',
+    excerpt: 'Một chiếc quần kaki be có thể tạo ra năm bộ trang phục khác nhau — từ đi làm đến đi chơi cuối tuần.',
+    author: 'IKA Fashion',
     categorySlug: 'phoi-do',
-    status:       'published',
-    date:         '2026-07-20',
+    status: 'published',
+    date: '2026-07-20',
     content: `Nếu chỉ được giữ lại một chiếc quần trong tủ, nhiều người sẽ chọn kaki be. Lý do rất đơn giản: nó phối được với gần như mọi thứ.
 
 ## Vì sao kaki be là món đáng đầu tư nhất
@@ -334,14 +334,14 @@ Kaki be + áo thun đen + áo khoác denim. Bộ này chuyển từ văn phòng 
 Tham khảo [các mẫu quần](/products) đang có tại cửa hàng.`,
   },
   {
-    title:        'Giặt và bảo quản quần âu đúng cách',
-    slug:         'giat-va-bao-quan-quan-au-dung-cach',
-    img:          '/products/quan-den.png',
-    excerpt:      'Quần âu hỏng phom thường không phải vì vải kém, mà vì giặt sai cách. Đây là hướng dẫn chi tiết.',
-    author:       'IKA Fashion',
+    title: 'Giặt và bảo quản quần âu đúng cách',
+    slug: 'giat-va-bao-quan-quan-au-dung-cach',
+    img: '/banners/tin-tuc/blog-bao-quan-quan-au.jpeg',
+    excerpt: 'Quần âu hỏng phom thường không phải vì vải kém, mà vì giặt sai cách. Đây là hướng dẫn chi tiết.',
+    author: 'IKA Fashion',
     categorySlug: 'bao-quan',
-    status:       'published',
-    date:         '2026-07-25',
+    status: 'published',
+    date: '2026-07-25',
     content: `Một chiếc quần âu tốt có thể dùng nhiều năm. Nhưng chỉ vài lần giặt sai là phom quần biến dạng vĩnh viễn.
 
 ## Bao lâu nên giặt một lần
@@ -393,14 +393,14 @@ Tuyệt đối không vắt ngang qua dây phơi — cách này tạo nếp gãy
 *Túi nilon giữ ẩm và là nguyên nhân gây mốc phổ biến nhất trong tủ quần áo ở khí hậu Việt Nam.*`,
   },
   {
-    title:        'Cách phối áo polo cho dân công sở',
-    slug:         'cach-phoi-ao-polo-cho-dan-cong-so',
-    img:          '/products/ao-polo-black.png',
-    excerpt:      'Áo polo không chỉ dành cho cuối tuần. Chọn đúng phom và đúng cách phối, đây là món đồ công sở linh hoạt bậc nhất.',
-    author:       'IKA Fashion',
+    title: 'Cách phối áo polo cho dân công sở',
+    slug: 'cach-phoi-ao-polo-cho-dan-cong-so',
+    img: '/banners/tin-tuc/blog-phoi-polo.jpeg',
+    excerpt: 'Áo polo không chỉ dành cho cuối tuần. Chọn đúng phom và đúng cách phối, đây là món đồ công sở linh hoạt bậc nhất.',
+    author: 'IKA Fashion',
     categorySlug: 'phoi-do',
-    status:       'published',
-    date:         '2026-07-28',
+    status: 'published',
+    date: '2026-07-28',
     content: `Áo polo từ lâu bị gắn mác trang phục thể thao. Thực tế, đây là một trong những lựa chọn công sở linh hoạt nhất — nếu bạn chọn đúng.
 
 ## Chọn phom trước, chọn màu sau
@@ -446,14 +446,14 @@ Cổ áo là bộ phận hỏng đầu tiên của một chiếc polo. Đừng t
 Xem [các mẫu polo hiện có](/products) tại IKA Fashion.`,
   },
   {
-    title:        'Giữ áo thun trắng luôn như mới',
-    slug:         'giu-ao-thun-trang-luon-nhu-moi',
-    img:          '/products/ao-thun-trang.png',
-    excerpt:      'Vài thói quen giặt phơi đơn giản giúp áo trắng bền màu gấp đôi thời gian sử dụng.',
-    author:       'IKA Fashion',
+    title: 'Giữ áo thun trắng luôn như mới',
+    slug: 'giu-ao-thun-trang-luon-nhu-moi',
+    img: '/banners/tin-tuc/blog-ao-thun-trang.jpeg',
+    excerpt: 'Vài thói quen giặt phơi đơn giản giúp áo trắng bền màu gấp đôi thời gian sử dụng.',
+    author: 'IKA Fashion',
     categorySlug: 'bao-quan',
-    status:       'published',
-    date:         '2026-08-02',
+    status: 'published',
+    date: '2026-08-02',
     content: `Áo thun trắng là món dễ mặc nhất trong tủ đồ, và cũng là món xuống cấp nhanh nhất. Tin tốt là phần lớn nguyên nhân đều nằm ở thói quen giặt phơi, không phải chất lượng vải.
 
 ## Ba nguyên nhân khiến áo trắng ngả vàng
@@ -499,14 +499,14 @@ Là ở nhiệt độ trung bình khi áo còn hơi ẩm. Là áo khô hoàn to�
 Xem [các mẫu áo thun](/products) tại IKA Fashion.`,
   },
   {
-    title:        'IKA Fashion khai trương cửa hàng thứ 5',
-    slug:         'ika-fashion-khai-truong-cua-hang-thu-5',
-    img:          '/banners/banner-about.png',
-    excerpt:      'Không gian mới tại trung tâm thành phố sẽ mở cửa đón khách từ đầu tháng tới, kèm nhiều ưu đãi trong tuần khai trương.',
-    author:       'IKA Fashion',
+    title: 'IKA Fashion khai trương cửa hàng thứ 5',
+    slug: 'ika-fashion-khai-truong-cua-hang-thu-5',
+    img: '/banners/tin-tuc/blog-khai-truong.jpeg',
+    excerpt: 'Không gian mới tại trung tâm thành phố sẽ mở cửa đón khách từ đầu tháng tới, kèm nhiều ưu đãi trong tuần khai trương.',
+    author: 'IKA Fashion',
     categorySlug: 'tin-cua-hang',
-    status:       'published',
-    date:         '2026-08-04',
+    status: 'published',
+    date: '2026-08-04',
     content: `Chúng tôi vui mừng thông báo cửa hàng thứ 5 của IKA Fashion sắp chính thức đi vào hoạt động.
 
 ## Không gian mới có gì khác
@@ -520,7 +520,7 @@ Xem [các mẫu áo thun](/products) tại IKA Fashion.`,
 
 > Chúng tôi muốn cửa hàng là nơi bạn thấy thoải mái khi dành thời gian, không chỉ là nơi mua rồi đi.
 
-![Cửa hàng mới](/banners/banner-arrivals.png)
+![Cửa hàng mới](/banners/banner-about-mobile.jpeg)
 
 ## Ưu đãi tuần khai trương
 
@@ -540,14 +540,14 @@ Thời gian mở cửa dự kiến từ 9h00 đến 21h30 tất cả các ngày 
 *Cảm ơn bạn đã đồng hành cùng IKA Fashion trong suốt thời gian qua.*`,
   },
   {
-    title:        'Bộ sưu tập xuân hè 2027 — hé lộ đầu tiên',
-    slug:         'bo-suu-tap-xuan-he-2027-he-lo-dau-tien',
-    img:          '/banners/banner-contact.png',
-    excerpt:      'Bài viết đang soạn, chưa công bố. Dùng để kiểm tra trạng thái nháp không lộ ra trang công khai.',
-    author:       'IKA Fashion',
+    title: 'Bộ sưu tập xuân hè 2027 — hé lộ đầu tiên',
+    slug: 'bo-suu-tap-xuan-he-2027-he-lo-dau-tien',
+    img: '/banners/banner-contact.png',
+    excerpt: 'Bài viết đang soạn, chưa công bố. Dùng để kiểm tra trạng thái nháp không lộ ra trang công khai.',
+    author: 'IKA Fashion',
     categorySlug: 'tin-cua-hang',
-    status:       'draft',
-    date:         '2026-08-07',
+    status: 'draft',
+    date: '2026-08-07',
     content: `Đây là bài viết ở trạng thái **nháp**.
 
 ## Mục đích
