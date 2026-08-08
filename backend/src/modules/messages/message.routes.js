@@ -7,7 +7,8 @@ import { sendMessageSchema, toggleBotSchema } from './message.schema.js';
 
 // Khách hàng — mount tại /api/v1/customer/messages
 export const messageCustomerRouter = Router();
-messageCustomerRouter.use(authenticate);
+// Admin trả lời khách qua messageAdminRouter, không dùng luồng của khách.
+messageCustomerRouter.use(authenticate, authorize('customer'));
 messageCustomerRouter.get('/my',                       ctrl.getMyConversation);
 messageCustomerRouter.post('/',                        validate(sendMessageSchema), ctrl.sendMessage);
 messageCustomerRouter.get('/:conversationId/messages', ctrl.getMessages);

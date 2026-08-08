@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Mail, Phone, MapPin, ArrowRight } from 'lucide-react'
+import { useSettings } from '@/components/context/SettingsContext'
 
 // ─── SVG Social Icons ─────────────────────────────────────────────────────────
 const TikTokIcon = () => (
@@ -47,12 +48,14 @@ const supportLinks = [
   { label: 'Điều Khoản Sử Dụng', href: '/dieu-khoan' },
 ]
 
-const socialLinks = [
-  { label: 'TikTok', href: 'https://tiktok.com/@ikafashion', icon: <TikTokIcon />, color: '#010101' },
+// Link mạng xã hội lấy từ Cài Đặt Hệ Thống; mục nào admin bỏ trống thì ẩn luôn
+// thay vì trỏ tới trang không tồn tại. YouTube chưa có trong cấu hình nên vẫn cố định.
+const buildSocialLinks = (s: { tiktokUrl: string; facebookUrl: string; instagramUrl: string }) => [
+  { label: 'TikTok', href: s.tiktokUrl, icon: <TikTokIcon />, color: '#010101' },
   { label: 'YouTube', href: 'https://youtube.com/@ikafashion', icon: <YouTubeIcon />, color: '#FF0000' },
-  { label: 'Facebook', href: 'https://facebook.com/ikafashion', icon: <FacebookIcon />, color: '#1877F2' },
-  { label: 'Instagram', href: 'https://instagram.com/ikafashion', icon: <InstagramIcon />, color: '#E1306C' },
-]
+  { label: 'Facebook', href: s.facebookUrl, icon: <FacebookIcon />, color: '#1877F2' },
+  { label: 'Instagram', href: s.instagramUrl, icon: <InstagramIcon />, color: '#E1306C' },
+].filter((link) => link.href)
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Footer() {
@@ -60,36 +63,10 @@ export default function Footer() {
   const [subscribed, setSubscribed] = useState(false)
   const [hoveredSocial, setHoveredSocial] = useState<string | null>(null)
 
-  const [storeSettings, setStoreSettings] = useState({
-    storeName: 'IKA - Luxury Fashion',
-    hotline: '0987.654.321',
-    email: 'support@ika-fashion.vn',
-    address: 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh',
-  })
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const sync = () => {
-        const raw = localStorage.getItem('ika_settings')
-        if (raw) {
-          try {
-            const parsed = JSON.parse(raw)
-            setStoreSettings({
-              storeName: parsed.storeName || 'IKA - Luxury Fashion',
-              hotline: parsed.hotline || '0987.654.321',
-              email: parsed.email || 'support@ika-fashion.vn',
-              address: parsed.address || 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh',
-            })
-          } catch {
-            // fallback
-          }
-        }
-      }
-      sync()
-      window.addEventListener('storage', sync)
-      return () => window.removeEventListener('storage', sync)
-    }
-  }, [])
+  // Trước đây đọc localStorage nên chỉ máy admin thấy được cấu hình đã sửa;
+  // giờ lấy từ API qua SettingsProvider nên khách vào web cũng thấy đúng.
+  const { settings: storeSettings } = useSettings()
+  const socialLinks = buildSocialLinks(storeSettings)
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,10 +109,14 @@ export default function Footer() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
 
           <div>
+            {/* Dấu hiệu vuông icon.svg — ruột hình thoi #2C2C2C sáng hơn nền footer
+                một chút, cộng khung vàng nên vẫn tách khỏi nền tối. */}
             <Link href="/" style={{ textDecoration: 'none' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '32px', fontWeight: 700, color: '#D4AF37', letterSpacing: '6px', marginBottom: '16px', display: 'inline-block' }}>
-                IKA
-              </div>
+              <img
+                src={storeSettings.logo || '/icon.svg'}
+                alt={storeSettings.storeName}
+                style={{ height: '56px', width: 'auto', maxWidth: '220px', objectFit: 'contain', marginBottom: '16px', display: 'inline-block' }}
+              />
             </Link>
             <p style={{ fontSize: '13px', lineHeight: 1.8, color: '#9A9A9A', marginBottom: '20px', maxWidth: '240px' }}>
               Thương hiệu thời trang Việt Nam với cam kết chất lượng cao, công nghệ vải tiên tiến và phong cách hiện đại.
@@ -290,7 +271,7 @@ export default function Footer() {
       {/* ── Bottom Bar ──────────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} IKA Fashion. Tất cả quyền được bảo lưu.</p>
+          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} {storeSettings.storeName}. Tất cả quyền được bảo lưu.</p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             {[
               { label: 'Bảo Mật', href: '/chinh-sach-bao-mat' },

@@ -46,6 +46,7 @@ export const messagePaths = {
       responses: {
         200: okData('Hội thoại của khách, hoặc null', 'Conversation'),
         401: unauthorized,
+      403: forbidden,
       },
     },
   },
@@ -60,6 +61,7 @@ export const messagePaths = {
       responses: {
         201: sendMessageResult,
         401: unauthorized,
+        403: forbidden,
         422: validationError,
       },
     },
@@ -75,6 +77,7 @@ export const messagePaths = {
       responses: {
         200: okList('Tin nhắn theo thứ tự thời gian', 'Message'),
         401: unauthorized,
+       403: forbidden,
         403: forbidden,
         404: notFound,
       },
@@ -91,6 +94,7 @@ export const messagePaths = {
       responses: {
         200: okData('Hội thoại sau khi đánh dấu', 'Conversation'),
         401: unauthorized,
+        403: forbidden,
         404: notFound,
       },
     },

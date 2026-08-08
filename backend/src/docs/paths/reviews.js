@@ -1,7 +1,7 @@
 import {
   bearer, pathParam, jsonBody,
   okData, okList, createdData, okMessage,
-  adminErrors, unauthorized, notFound, validationError,
+  adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
 export const reviewPaths = {
@@ -41,6 +41,7 @@ export const reviewPaths = {
           },
         },
         401: unauthorized,
+      403: forbidden,
       },
     },
   },
@@ -55,6 +56,7 @@ export const reviewPaths = {
       responses: {
         201: createdData('Đánh giá vừa gửi — chờ admin duyệt', 'Review'),
         401: unauthorized,
+       403: forbidden,
         403: {
           description: 'Chưa mua hoặc chưa nhận hàng sản phẩm này',
           content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Bạn cần mua và nhận hàng trước khi đánh giá' } } },

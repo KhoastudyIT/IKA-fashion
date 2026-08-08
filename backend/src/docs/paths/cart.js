@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, jsonBody, okData,
-  unauthorized, notFound, validationError,
+  unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
 const itemKey = pathParam('key', {
@@ -17,6 +17,7 @@ export const cartPaths = {
       responses: {
         200: okData('Giỏ hàng hiện tại kèm subtotal', 'Cart'),
         401: unauthorized,
+      403: forbidden,
       },
     },
     delete: {
@@ -26,6 +27,7 @@ export const cartPaths = {
       responses: {
         200: okData('Giỏ hàng rỗng sau khi xóa', 'Cart'),
         401: unauthorized,
+      403: forbidden,
       },
     },
   },
@@ -44,6 +46,7 @@ export const cartPaths = {
           content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Size không hợp lệ' } } },
         },
         401: unauthorized,
+        403: forbidden,
         404: notFound,
         422: validationError,
       },
@@ -61,6 +64,7 @@ export const cartPaths = {
       responses: {
         200: okData('Giỏ hàng sau khi cập nhật', 'Cart'),
         401: unauthorized,
+        403: forbidden,
         404: notFound,
         422: validationError,
       },
@@ -73,6 +77,7 @@ export const cartPaths = {
       responses: {
         200: okData('Giỏ hàng sau khi xóa', 'Cart'),
         401: unauthorized,
+        403: forbidden,
         404: notFound,
       },
     },

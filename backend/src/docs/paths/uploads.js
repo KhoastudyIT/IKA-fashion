@@ -10,7 +10,7 @@ export const uploadPaths = {
       parameters: [
         {
           name: 'type', in: 'path', required: true,
-          schema: { type: 'string', enum: ['news', 'products', 'collections'] },
+          schema: { type: 'string', enum: ['news', 'products', 'collections', 'settings'] },
           example: 'news',
           description: 'Thư mục đích — khớp với IMAGE_FOLDERS ở upload.service.js',
         },

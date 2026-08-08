@@ -35,6 +35,7 @@ endpoint bên dưới.`,
     { name: 'Cửa hàng - Danh mục', description: 'Dữ liệu cho bộ lọc danh mục và trang /collections. Không cần đăng nhập.' },
     { name: 'Cửa hàng - Tin tức', description: 'Trang Tin tức — danh sách bài đã đăng, chi tiết theo id hoặc slug, danh mục bài viết. Không cần đăng nhập.' },
     { name: 'Cửa hàng - Đánh giá', description: 'Khối đánh giá trong trang chi tiết sản phẩm — chỉ hiện đánh giá đã được duyệt. Không cần đăng nhập.' },
+    { name: 'Cửa hàng - Thông tin', description: 'Logo, tên, hotline, địa chỉ, giờ làm việc, mạng xã hội — Header, Footer và trang Liên hệ đọc từ đây. Không cần đăng nhập.' },
 
     // ── Khu vực tài khoản ──────────────────────────────────────────────────
     { name: 'Xác thực', description: 'Đăng ký · Đăng nhập · Đăng xuất · Hồ sơ — lấy Bearer token dùng cho mọi mục bên dưới' },
@@ -54,6 +55,7 @@ endpoint bên dưới.`,
     { name: 'Admin - Mã giảm giá', description: 'Tab Khuyến mãi — tạo mã, bật/tắt, sửa hạn dùng' },
     { name: 'Admin - Đánh giá', description: 'Tab Đánh giá — duyệt/ẩn, phản hồi khách, xoá' },
     { name: 'Admin - Tin nhắn', description: 'Tab Tin nhắn — xem hội thoại, tiếp quản trả lời thay bot' },
+    { name: 'Admin - Cài đặt', description: 'Tab Cài Đặt Hệ Thống — sửa logo, tên cửa hàng, hotline và các thông tin khách hàng nhìn thấy trên web' },
     { name: 'Admin - Tải ảnh', description: 'Dùng chung cho mọi form có ảnh — upload multipart, trả về đường dẫn để lưu vào DB' },
   ],
 };
