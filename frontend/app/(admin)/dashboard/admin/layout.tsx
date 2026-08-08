@@ -129,8 +129,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-[#2C2C2C] text-white border-r border-[#E5DFD8]">
         <div className="h-16 flex items-center px-6 border-b border-[#3D3D3D]">
-          <Link href="/" className="text-lg font-heading font-semibold tracking-wider text-[#D4AF37]">
-            IKA LUXURY
+          <Link href="/dashboard/admin">
+            <img src="/icon.svg" alt="IKA Fashion" className="h-10 w-auto object-contain" />
           </Link>
         </div>
 
@@ -174,8 +174,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Header - Mobile */}
       <header className="md:hidden h-16 bg-[#2C2C2C] text-white flex justify-between items-center px-4 border-b border-[#3D3D3D] sticky top-0 z-50">
-        <Link href="/" className="text-md font-heading font-semibold tracking-wider text-[#D4AF37]">
-          IKA LUXURY
+        <Link href="/dashboard/admin">
+          <img src="/icon.svg" alt="IKA Fashion" className="h-9 w-auto object-contain" />
         </Link>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -197,9 +197,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Drawer Menu */}
           <aside className="relative flex flex-col w-64 bg-[#2C2C2C] text-white h-full z-50 shadow-xl max-w-xs animate-in slide-in-from-left duration-200">
             <div className="h-16 flex items-center justify-between px-6 border-b border-[#3D3D3D]">
-              <span className="text-lg font-heading font-semibold tracking-wider text-[#D4AF37]">
-                IKA LUXURY
-              </span>
+              <img src="/icon.svg" alt="IKA Fashion" className="h-10 w-auto object-contain" />
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-1 text-gray-400 hover:text-white"
@@ -302,18 +300,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               )}
             </div>
 
-            <Link
-              href="/"
-              className="text-[#7A7A7A] hover:text-[#2C2C2C] text-sm font-medium transition-colors"
-            >
-              Xem Trang Chủ →
-            </Link>
           </div>
         </header>
 
-        {/* Content Wrapper */}
+        {/* Content Wrapper — trần rộng 1600px thay cho max-w-7xl (1280px).
+            Sidebar đã chiếm 256px nên ở màn 1920px, trần cũ để thừa ~320px lề
+            trống hai bên trong khi các bảng dữ liệu lại phải cuộn ngang.
+            Vẫn giữ trần để trên màn siêu rộng dòng bảng không kéo dài quá cỡ. */}
         <div className="flex-1 px-4 py-6 md:p-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[1600px] mx-auto">
             {children}
           </div>
         </div>

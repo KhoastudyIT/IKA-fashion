@@ -53,6 +53,7 @@ type Props = {
   /** Để form khoá nút Lưu trong lúc đang tải ảnh */
   onUploadingChange?: (uploading: boolean) => void
   hint?: string
+  shape?: 'wide' | 'square'
 }
 
 /**
@@ -62,7 +63,9 @@ type Props = {
  */
 export default function ImageField({
   value, onChange, type, label = 'Ảnh', required = false, onUploadingChange, hint,
+  shape = 'wide',
 }: Props) {
+  const isSquare = shape === 'square'
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [zoomed, setZoomed] = useState(false)
@@ -104,13 +107,16 @@ export default function ImageField({
         <div
           onClick={() => value && setZoomed(true)}
           title={value ? 'Bấm để phóng to' : undefined}
-          className={`w-40 h-28 shrink-0 rounded border border-[#E5DFD8] bg-[#F9F5F0] overflow-hidden relative flex items-center justify-center ${
-            value ? 'cursor-zoom-in' : ''
-          }`}
+          className={`${isSquare ? 'w-28 h-28' : 'w-40 h-28'} shrink-0 rounded border border-[#E5DFD8] bg-[#F9F5F0] overflow-hidden relative flex items-center justify-center ${value ? 'cursor-zoom-in' : ''
+            }`}
         >
           {value ? (
             <>
-              <img src={value} alt="Xem trước" className="w-full h-full object-cover" />
+              <img
+                src={value}
+                alt="Xem trước"
+                className={`w-full h-full ${isSquare ? 'object-contain p-2' : 'object-cover'}`}
+              />
               <span className="absolute right-1.5 bottom-1.5 inline-flex items-center gap-1 bg-black/60 text-white px-2 py-0.5 rounded-full text-[10px] font-medium pointer-events-none">
                 <ZoomIn className="w-3 h-3" /> Phóng to
               </span>

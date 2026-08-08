@@ -1,7 +1,7 @@
 import {
   bearer, pathParam, queryParam, jsonBody,
   okData, okList, createdData,
-  adminErrors, unauthorized, notFound, validationError,
+  adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
 export const orderPaths = {
@@ -15,6 +15,7 @@ export const orderPaths = {
       responses: {
         200: okList('Toàn bộ đơn của người đang đăng nhập', 'Order'),
         401: unauthorized,
+      403: forbidden,
       },
     },
     post: {
@@ -30,6 +31,7 @@ export const orderPaths = {
           content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Giỏ hàng đang trống' } } },
         },
         401: unauthorized,
+        403: forbidden,
         422: validationError,
       },
     },
@@ -45,6 +47,7 @@ export const orderPaths = {
       responses: {
         200: okData('Chi tiết đơn hàng', 'Order'),
         401: unauthorized,
+        403: forbidden,
         404: notFound,
       },
     },

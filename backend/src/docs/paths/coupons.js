@@ -1,7 +1,7 @@
 import {
   bearer, pathParam, jsonBody,
   okData, okList, createdData, okMessage,
-  adminErrors, unauthorized, notFound, validationError,
+  adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
 export const couponPaths = {
@@ -20,6 +20,7 @@ export const couponPaths = {
           content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Mã giảm giá đã hết hạn' } } },
         },
         401: unauthorized,
+        403: forbidden,
         422: validationError,
       },
     },

@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, jsonBody, okList,
-  unauthorized, notFound, validationError,
+  unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
 export const wishlistPaths = {
@@ -13,6 +13,7 @@ export const wishlistPaths = {
       responses: {
         200: okList('Sản phẩm đã thích, mới nhất trước', 'Product'),
         401: unauthorized,
+      403: forbidden,
       },
     },
     post: {
@@ -24,6 +25,7 @@ export const wishlistPaths = {
       responses: {
         200: okList('Danh sách sau khi thêm', 'Product'),
         401: unauthorized,
+        403: forbidden,
         404: notFound,
         422: validationError,
       },
@@ -39,6 +41,7 @@ export const wishlistPaths = {
       responses: {
         200: okList('Danh sách sau khi xóa', 'Product'),
         401: unauthorized,
+      403: forbidden,
       },
     },
   },

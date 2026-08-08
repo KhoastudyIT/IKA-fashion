@@ -8,7 +8,7 @@ import { AppError } from '../../middleware/errorHandler.js';
 export const UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads');
 
 // Client chỉ chọn được thư mục trong danh sách này — không tự đặt đường dẫn lưu.
-export const IMAGE_FOLDERS = ['news', 'products', 'collections'];
+export const IMAGE_FOLDERS = ['news', 'products', 'collections', 'settings'];
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 

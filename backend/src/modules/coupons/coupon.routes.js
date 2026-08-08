@@ -7,7 +7,7 @@ import { applyCouponSchema, createCouponSchema, updateCouponSchema } from './cou
 
 // Khách hàng — mount tại /api/v1/customer/coupons
 export const couponCustomerRouter = Router();
-couponCustomerRouter.post('/apply', authenticate, validate(applyCouponSchema), ctrl.apply);
+couponCustomerRouter.post('/apply', authenticate, authorize('customer'), validate(applyCouponSchema), ctrl.apply);
 
 // Admin quản lý mã giảm giá — mount tại /api/v1/admin/coupons
 export const couponAdminRouter = Router();

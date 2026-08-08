@@ -10,6 +10,7 @@ import { wishlistPaths } from './wishlist.js';
 import { couponPaths } from './coupons.js';
 import { messagePaths } from './messages.js';
 import { userPaths } from './users.js';
+import { settingsPaths } from './settings.js';
 import { uploadPaths } from './uploads.js';
 
 export const paths = {
@@ -25,5 +26,6 @@ export const paths = {
   ...couponPaths,
   ...messagePaths,
   ...userPaths,
+  ...settingsPaths,
   ...uploadPaths,
 };
