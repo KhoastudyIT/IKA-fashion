@@ -64,7 +64,9 @@ export default function AdminDashboard() {
     switch (status) {
       case 'pending':
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Chờ xử lý</span>
-      case 'shipping':
+      case 'confirmed':
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">Đã xác nhận</span>
+      case 'shipped':
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Đang giao</span>
       case 'completed':
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Đã hoàn thành</span>

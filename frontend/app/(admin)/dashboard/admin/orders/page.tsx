@@ -52,7 +52,9 @@ export default function AdminOrdersPage() {
     switch (status) {
       case 'pending':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Chờ xử lý</span>
-      case 'shipping':
+      case 'confirmed':
+        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">Đã xác nhận</span>
+      case 'shipped':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Đang giao</span>
       case 'completed':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Đã hoàn thành</span>
@@ -151,7 +153,8 @@ export default function AdminOrdersPage() {
         >
           <option value="">Tất cả trạng thái</option>
           <option value="pending">Chờ xử lý</option>
-          <option value="shipping">Đang giao</option>
+          <option value="confirmed">Đã xác nhận</option>
+          <option value="shipped">Đang giao</option>
           <option value="completed">Đã hoàn thành</option>
           <option value="cancelled">Đã hủy</option>
         </select>
@@ -318,13 +321,22 @@ export default function AdminOrdersPage() {
                   {selectedOrder.status === 'pending' && (
                     <button
                       disabled={updatingId !== null}
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'shipping')}
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'confirmed')}
                       className="px-4 py-2 bg-[#2C2C2C] hover:bg-[#D4AF37] text-white text-xs font-semibold rounded shadow transition-colors cursor-pointer"
                     >
-                      Duyệt & Giao Hàng
+                      Duyệt Đơn
                     </button>
                   )}
-                  {selectedOrder.status === 'shipping' && (
+                  {selectedOrder.status === 'confirmed' && (
+                    <button
+                      disabled={updatingId !== null}
+                      onClick={() => handleUpdateStatus(selectedOrder.id, 'shipped')}
+                      className="px-4 py-2 bg-[#2C2C2C] hover:bg-[#D4AF37] text-white text-xs font-semibold rounded shadow transition-colors cursor-pointer"
+                    >
+                      Bàn Giao Vận Chuyển
+                    </button>
+                  )}
+                  {selectedOrder.status === 'shipped' && (
                     <button
                       disabled={updatingId !== null}
                       onClick={() => handleUpdateStatus(selectedOrder.id, 'completed', 'paid')}
