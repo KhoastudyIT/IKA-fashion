@@ -62,7 +62,9 @@ export interface ApiProduct {
   handle: string
   collection: string
   type: string
-  price: number
+  price: number          // Giá bán cuối — dùng cho Cart & Order
+  originalPrice?: number // Giá gốc trước giảm (null nếu không giảm)
+  discount: number       // % giảm (0 = không giảm)
   img: string
   images: string[]
   colors: string[]
@@ -87,6 +89,7 @@ export interface ProductQuery {
   priceMax?: number
   colors?: string
   sizes?: string
+  isSale?: boolean  // true → lọc discount > 0 (tab Ưu Đãi)
 }
 
 export interface Collection {
@@ -135,7 +138,14 @@ export const lineKey = (it: { productId: number; size: string; color: string }) 
   `${it.productId}|${it.size}|${it.color}`
 
 function mapProduct(p: any): ApiProduct {
-  return { ...p, title: p.name, image: p.img }
+  return {
+    ...p,
+    // snake_case → camelCase
+    originalPrice: p.original_price ?? undefined,
+    discount: p.discount ?? 0,
+    title: p.name,
+    image: p.img,
+  }
 }
 
 // ---------- Products (công khai) ----------
@@ -165,6 +175,8 @@ export interface ProductInput {
   collection: string
   type: string
   price: number
+  original_price?: number | null
+  discount?: number
   img?: string
   images?: string[]
   colors?: string[]

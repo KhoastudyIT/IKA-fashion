@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- Danh mục (Áo Thun, Áo Polo, Quần, Ưu Đãi)
+-- Danh mục (Áo Thun, Áo Polo, Quần)
 CREATE TABLE IF NOT EXISTS collections (
   id    SERIAL       PRIMARY KEY,
   slug  VARCHAR(100) NOT NULL UNIQUE,
@@ -37,23 +37,26 @@ CREATE TABLE IF NOT EXISTS collections (
 
 -- Sản phẩm
 CREATE TABLE IF NOT EXISTS products (
-  id           SERIAL        PRIMARY KEY,
-  name         VARCHAR(200)  NOT NULL,
-  handle       VARCHAR(200)  NOT NULL UNIQUE,
-  collection   VARCHAR(100)  NOT NULL REFERENCES collections(slug),
-  type         VARCHAR(100)  NOT NULL,
-  price        INTEGER       NOT NULL CHECK (price > 0),          -- VND
-  img          VARCHAR(500)  NOT NULL DEFAULT '/products/placeholder.png',
-  images       JSONB         NOT NULL DEFAULT '[]',
-  colors       JSONB         NOT NULL DEFAULT '[]',
-  sizes        JSONB         NOT NULL DEFAULT '[]',
-  features     JSONB         NOT NULL DEFAULT '[]',
-  rating       NUMERIC(3,1)  NOT NULL DEFAULT 5.0 CHECK (rating >= 0 AND rating <= 5),
-  sold         INTEGER       NOT NULL DEFAULT 0,
-  stock        INTEGER       NOT NULL DEFAULT 0,
-  description  TEXT          NOT NULL DEFAULT '',
-  created_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
-  updated_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+  id             SERIAL        PRIMARY KEY,
+  name           VARCHAR(200)  NOT NULL,
+  handle         VARCHAR(200)  NOT NULL UNIQUE,
+  collection     VARCHAR(100)  NOT NULL REFERENCES collections(slug),
+  type           VARCHAR(100)  NOT NULL,
+  price          INTEGER       NOT NULL CHECK (price > 0),           -- VND (giá bán cuối)
+  original_price INTEGER       CHECK (original_price > 0),           -- VND (giá gốc trước giảm, NULL = không giảm)
+  discount       INTEGER       NOT NULL DEFAULT 0
+                 CHECK (discount >= 0 AND discount <= 100),          -- % giảm giá (0 = không giảm)
+  img            VARCHAR(500)  NOT NULL DEFAULT '/products/placeholder.png',
+  images         JSONB         NOT NULL DEFAULT '[]',
+  colors         JSONB         NOT NULL DEFAULT '[]',
+  sizes          JSONB         NOT NULL DEFAULT '[]',
+  features       JSONB         NOT NULL DEFAULT '[]',
+  rating         NUMERIC(3,1)  NOT NULL DEFAULT 5.0 CHECK (rating >= 0 AND rating <= 5),
+  sold           INTEGER       NOT NULL DEFAULT 0,
+  stock          INTEGER       NOT NULL DEFAULT 0,
+  description    TEXT          NOT NULL DEFAULT '',
+  created_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 -- Giỏ hàng (mỗi dòng = sản phẩm + size + màu của 1 user)
@@ -137,6 +140,7 @@ CREATE TABLE IF NOT EXISTS messages (
 
 -- Index thường dùng
 CREATE INDEX IF NOT EXISTS idx_products_collection ON products(collection);
+CREATE INDEX IF NOT EXISTS idx_products_discount   ON products(discount);
 CREATE INDEX IF NOT EXISTS idx_orders_user         ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_cart_user           ON cart_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_wishlist_user       ON wishlist(user_id);
@@ -146,53 +150,332 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv       ON messages(conversation_id);
 -- SEED DỮ LIỆU (tài khoản admin được backend seed lúc khởi động)
 -- =============================================================
 
--- Danh mục
+-- Danh mục — chỉ 3 danh mục thật, không còn 'sale'
 INSERT INTO collections (id, slug, name, img) VALUES
   (1, 'ao-thun', 'Áo Thun', '/products/ao-thun-trang.png'),
   (2, 'ao-polo', 'Áo Polo', '/products/ao-polo-white.png'),
-  (3, 'quan', 'Quần', '/products/quan-den.png'),
-  (4, 'sale', 'Ưu Đãi', '/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg')
+  (3, 'quan',    'Quần',    '/products/quan-den.png')
 ON CONFLICT (slug) DO NOTHING;
 SELECT setval('collections_id_seq', (SELECT MAX(id) FROM collections));
 
+-- =============================================================
 -- Sản phẩm
-INSERT INTO products (id, name, handle, collection, type, price, img, images, colors, sizes, features, rating, sold, stock, description) VALUES
-  (1, 'Áo Thun Trắng Premium', 'ao-thun-trang', 'ao-thun', 'Áo Thun', 299000, '/products/ao-thun-trang.png', '["/products/ao-thun-trang.png"]'::jsonb, '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb, 4.8, 152, 120, 'Áo thun trắng tinh khôi, vải 100% cotton, thoáng khí, nhanh khô với công nghệ AirDry™'),
-  (2, 'Áo Thun Đen Premium', 'ao-thun-den', 'ao-thun', 'Áo Thun', 299000, '/products/ao-thun-den.png', '["/products/ao-thun-den.png"]'::jsonb, '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb, 4.9, 203, 100, 'Áo thun đen đẹp, vải 100% cotton, thoáng khí, nhanh khô với công nghệ AirDry™'),
-  (3, 'Áo Thun Xanh Navy', 'ao-thun-xanh', 'ao-thun', 'Áo Thun', 299000, '/products/ao-thun-xanh.png', '["/products/ao-thun-xanh.png"]'::jsonb, '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb, 4.7, 98, 80, 'Áo thun xanh navy lịch sự, vải 100% cotton, thoáng khí, nhanh khô'),
-  (4, 'Áo Thun Xám', 'ao-thun-xam', 'ao-thun', 'Áo Thun', 299000, '/products/ao-thun-xam.png', '["/products/ao-thun-xam.png"]'::jsonb, '["Xám"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb, 4.6, 74, 90, 'Áo thun xám trung tính, vải 100% cotton, thoáng khí, nhanh khô'),
-  (5, 'Áo Polo Trắng', 'ao-polo-trang', 'ao-polo', 'Áo Polo', 399000, '/products/ao-polo-white.png', '["/products/ao-polo-white.png"]'::jsonb, '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb, 4.8, 110, 70, 'Áo polo trắng sang trọng, vải piqué cao cấp, phù hợp mặc đi làm'),
-  (6, 'Áo Polo Xanh Navy', 'ao-polo-xanh', 'ao-polo', 'Áo Polo', 399000, '/products/ao-polo-blue.png', '["/products/ao-polo-blue.png"]'::jsonb, '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb, 4.7, 87, 65, 'Áo polo xanh navy lịch sự, vải piqué cao cấp, phù hợp mặc đi làm'),
-  (7, 'Áo Polo Đỏ', 'ao-polo-do', 'ao-polo', 'Áo Polo', 399000, '/products/ao-polo-red.png', '["/products/ao-polo-red.png"]'::jsonb, '["Đỏ"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb, 4.6, 63, 55, 'Áo polo đỏ nổi bật, vải piqué cao cấp, phù hợp mặc dạo phố'),
-  (8, 'Áo Polo Đen', 'ao-polo-den', 'ao-polo', 'Áo Polo', 399000, '/products/ao-polo-black.png', '["/products/ao-polo-black.png"]'::jsonb, '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb, 4.9, 134, 60, 'Áo polo đen thanh lịch, vải piqué cao cấp, phù hợp mặc đi làm'),
-  (9, 'Quần Đen Slim Fit', 'quan-den', 'quan', 'Quần', 499000, '/products/quan-den.png', '["/products/quan-den.png"]'::jsonb, '["Đen"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb, 4.8, 91, 50, 'Quần đen slim fit hiện đại, tôn dáng, công nghệ co giãn FlexFit™'),
-  (10, 'Quần Jean Xanh Navy', 'quan-xanh', 'quan', 'Quần', 599000, '/products/quan-xanh.png', '["/products/quan-xanh.png"]'::jsonb, '["Xanh Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Jean Premium","Co Giãn","Thoải Mái","Bền Lâu"]'::jsonb, 4.7, 68, 45, 'Quần jean xanh navy chất lượng cao, co giãn thoải mái'),
-  (11, 'Quần Kaki Casual', 'quan-kaki', 'quan', 'Quần', 449000, '/products/quan-kaki.png', '["/products/quan-kaki.png"]'::jsonb, '["Kaki"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Casual","Thoải Mái","Dễ Chăm Sóc","Bền Lâu"]'::jsonb, 4.6, 57, 60, 'Quần kaki casual thoải mái, phù hợp mặc hàng ngày'),
-  (12, 'Quần Xám Formal', 'quan-xam', 'quan', 'Quần', 549000, '/products/quan-xam.png', '["/products/quan-xam.png"]'::jsonb, '["Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Formal","Sang Trọng","Chất Vải Tốt","Bền Lâu"]'::jsonb, 4.7, 44, 40, 'Quần xám formal sang trọng, phù hợp mặc đi làm và dự tiệc'),
-  (13, 'Áo Polo Bo Sọc Form Regular PO136 Màu Trắng', 'sale-polo-1', 'sale', 'Áo Polo', 270000, '/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg"]'::jsonb, '["Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 40%"]'::jsonb, 4.8, 312, 80, 'Áo polo bo sọc form regular, vải piqué cao cấp thoáng mát, kháng nhăn xuất sắc — đang giảm 40%.'),
-  (14, 'Áo Thun Lạnh Thể Thao Thoáng Mát Navy BS3234', 'sale-polo-2', 'sale', 'Áo Polo', 429000, '/Giam-Gia/Ao/Ao-Polo/Polo-2.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-2.jpg"]'::jsonb, '["Đen","Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 34%"]'::jsonb, 4.9, 189, 65, 'Áo thun lạnh thể thao BS3234, công nghệ làm mát AirCool™ giữ thoáng mát suốt ngày — giảm 34%.'),
-  (15, 'Áo Polo Màu Trơn Nam Ngắn Tay', 'sale-polo-3', 'sale', 'Áo Polo', 354000, '/Giam-Gia/Ao/Ao-Polo/Polo-3.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-3.jpg"]'::jsonb, '["Xanh","Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 40%"]'::jsonb, 4.7, 254, 90, 'Áo polo màu trơn ngắn tay nam, vải piqué mềm mịn kháng nhăn — đang giảm 40%.'),
-  (16, 'Áo Polo Nam Màu Xanh Lá - North Sails', 'sale-polo-4', 'sale', 'Áo Polo', 168000, '/Giam-Gia/Ao/Ao-Polo/Polo-4.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-4.webp"]'::jsonb, '["Xanh Lá"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 40%"]'::jsonb, 4.6, 421, 55, 'Áo polo North Sails màu xanh lá tươi, chất vải cotton piqué thấm hút mồ hôi — giảm 40%.'),
-  (17, 'Áo Polo Nam Regular Fit Màu Trắng', 'sale-polo-5', 'sale', 'Áo Polo', 499000, '/Giam-Gia/Ao/Ao-Polo/Polo-5.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-5.webp"]'::jsonb, '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 36%"]'::jsonb, 4.8, 143, 70, 'Áo polo regular fit màu trắng tinh tế, vải cao cấp không nhàu — đang giảm 36%.'),
-  (18, 'Áo Polo Saint Laurent', 'sale-polo-6', 'sale', 'Áo Polo', 234000, '/Giam-Gia/Ao/Ao-Polo/Polo-6.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-6.webp"]'::jsonb, '["Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 40%"]'::jsonb, 4.5, 367, 45, 'Áo polo Saint Laurent thiết kế thanh lịch, chất liệu piqué cao cấp — đang giảm 40%.'),
-  (19, 'Áo Polo Ralph Lauren', 'sale-polo-7', 'sale', 'Áo Polo', 312000, '/Giam-Gia/Ao/Ao-Polo/Polo-7.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-7.webp"]'::jsonb, '["Nhiều màu"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 40%"]'::jsonb, 4.9, 98, 60, 'Áo polo Ralph Lauren đẳng cấp, biểu tượng thời trang phổ biến toàn cầu — đang giảm 40%.'),
-  (20, 'Áo Polo Unisex Cổ Bẻ Tay Ngắn', 'sale-polo-8', 'sale', 'Áo Polo', 609000, '/Giam-Gia/Ao/Ao-Polo/Polo-8.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-8.webp"]'::jsonb, '["Trắng","Đen","Xanh"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu","Giảm 30%"]'::jsonb, 4.7, 211, 75, 'Áo polo unisex cổ bẻ tay ngắn, form dáng unisex phù hợp mọi vóc dáng — đang giảm 30%.'),
-  (21, 'Áo Thun Trắng Premium Classic', 'sale-thun-1', 'sale', 'Áo Thun', 270000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-1.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-1.jpg"]'::jsonb, '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.8, 312, 100, 'Áo thun trắng Premium Classic, 100% cotton combed mềm mịn, thoáng khí — đang giảm 40%.'),
-  (22, 'Áo Thun Kẻ Sọc Premium', 'sale-thun-2', 'sale', 'Áo Thun', 364000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-2.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-2.jpg"]'::jsonb, '["Trắng Sọc"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 30%"]'::jsonb, 4.9, 189, 80, 'Áo thun kẻ sọc Premium, thiết kế classic không bao giờ lỗi mốt — đang giảm 30%.'),
-  (23, 'Áo Thun Nam Slim Fit Xanh Navy', 'sale-thun-3', 'sale', 'Áo Thun', 354000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-3.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-3.jpg"]'::jsonb, '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.7, 254, 90, 'Áo thun slim fit xanh navy tôn dáng, vải cotton co giãn nhẹ — đang giảm 40%.'),
-  (24, 'Áo Thun Xám EasyCare', 'sale-thun-4', 'sale', 'Áo Thun', 288000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-4.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-4.jpg"]'::jsonb, '["Xám"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.6, 421, 110, 'Áo thun xám EasyCare kháng nhăn, dễ chăm sóc, mặc đi làm đi chơi đều đẹp — đang giảm 40%.'),
-  (25, 'Áo Thun Nam AirLight Trắng', 'sale-thun-5', 'sale', 'Áo Thun', 330000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-5.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-5.jpg"]'::jsonb, '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.8, 143, 75, 'Áo thun AirLight siêu nhẹ, thoáng mát ngay cả những ngày nóng bức — đang giảm 40%.'),
-  (26, 'Áo Thun Đen Dài Tay FormFit', 'sale-thun-6', 'sale', 'Áo Thun', 372000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-6.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-6.jpg"]'::jsonb, '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.5, 367, 60, 'Áo thun đen dài tay FormFit ôm dáng, vải cotton mỏng nhẹ mặc rất thoải mái — đang giảm 40%.'),
-  (27, 'Áo Thun Classic Fit Màu Đen - Calvin Klein', 'sale-thun-7', 'sale', 'Áo Thun', 468000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-7.webp', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-7.webp"]'::jsonb, '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 40%"]'::jsonb, 4.9, 98, 50, 'Áo thun Calvin Klein classic fit màu đen huyền thoại, chất vải cao cấp bền đẹp — đang giảm 40%.'),
-  (28, 'Áo Thun Unisex Basic', 'sale-thun-8', 'sale', 'Áo Thun', 294000, '/Giam-Gia/Ao/Ao-SoMi/SoMi-8.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-8.jpg"]'::jsonb, '["Nhiều màu"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb, '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai","Giảm 30%"]'::jsonb, 4.7, 211, 120, 'Áo thun unisex basic dành cho mọi người, dễ phối đồ với bất kỳ trang phục nào — đang giảm 30%.'),
-  (29, 'Quần Trouser Trắng Trơn', 'sale-quan-1', 'sale', 'Quần', 312000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-1.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-1.jpg"]'::jsonb, '["Trắng"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.8, 312, 70, 'Quần trouser trắng trơn thanh lịch, form suôn đứng tôn dáng — đang giảm 40%.'),
-  (30, 'Quần Âu Be Trơn', 'sale-quan-2', 'sale', 'Quần', 288000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-2.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-2.jpg"]'::jsonb, '["Be"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.7, 205, 65, 'Quần âu be trơn công sở, vải cao cấp mặc thoải mái cả ngày dài — đang giảm 40%.'),
-  (31, 'Quần Tây Nam Thanh Lịch Tôn Dáng Form Slim', 'sale-quan-3', 'sale', 'Quần', 330000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-3.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-3.webp"]'::jsonb, '["Đen","Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.6, 178, 55, 'Quần tây slim fit thanh lịch tôn dáng, phù hợp văn phòng và sự kiện — đang giảm 40%.'),
-  (32, 'Quần Dài Công Sở Thẳng Nam Cao Cấp', 'sale-quan-4', 'sale', 'Quần', 372000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-4.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-4.webp"]'::jsonb, '["Đen","Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.9, 143, 40, 'Quần dài công sở thẳng cao cấp, dáng đứng không nhàu, chuyên nghiệp — đang giảm 40%.'),
-  (33, 'Quần Jean Xanh Ôm Dáng Kiểu Anh', 'sale-quan-5', 'sale', 'Quần', 408000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-5.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-5.jpg"]'::jsonb, '["Xanh Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Jean Premium","Ôm Dáng","Thoải Mái","Giảm 40%"]'::jsonb, 4.8, 312, 60, 'Quần jean xanh ôm dáng kiểu Anh, cut chuẩn tôn dáng cả ngày — đang giảm 40%.'),
-  (34, 'Quần Tây Nam Xám Trơn Công Sở', 'sale-quan-6', 'sale', 'Quần', 354000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-6.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-6.jpg"]'::jsonb, '["Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.6, 189, 50, 'Quần tây xám trơn công sở, vải chống nhăn cao cấp giữ phong độ suốt ngày — đang giảm 40%.'),
-  (35, 'Quần Kaki Nam Casual', 'sale-quan-7', 'sale', 'Quần', 450000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-7.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-7.webp"]'::jsonb, '["Kaki","Be"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Casual","Thoải Mái","Dễ Chăm Sóc","Giảm 40%"]'::jsonb, 4.9, 254, 80, 'Quần kaki nam casual phong cách trẻ trung, phù hợp đi chơi cuối tuần — đang giảm 40%.'),
-  (36, 'Quần Âu Đen Trơn Slim Fit', 'sale-quan-8', 'sale', 'Quần', 384000, '/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp"]'::jsonb, '["Đen"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb, '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu","Giảm 40%"]'::jsonb, 4.7, 421, 45, 'Quần âu đen slim fit thanh lịch, vải cao cấp kháng nhăn suốt ngày — đang giảm 40%.')
+-- Cột thứ tự: id, name, handle, collection, type, price,
+--             original_price, discount,
+--             img, images, colors, sizes, features,
+--             rating, sold, stock, description
+-- Ghi chú giá:
+--   price          = giá bán cuối (cột Cart & Order dùng)
+--   original_price = giá gốc trước khi giảm (NULL nếu không giảm)
+--   discount       = % giảm giá (0 nếu không giảm)
+--   Công thức: price = ROUND(original_price * (1 - discount/100))
+-- =============================================================
+INSERT INTO products
+  (id, name, handle, collection, type,
+   price, original_price, discount,
+   img, images, colors, sizes, features,
+   rating, sold, stock, description)
+VALUES
+
+-- ── Áo Thun (không giảm giá, gốc) ──────────────────────────
+  (1,  'Áo Thun Trắng Premium',  'ao-thun-trang', 'ao-thun', 'Áo Thun',
+   299000, NULL, 0,
+   '/products/ao-thun-trang.png', '["/products/ao-thun-trang.png"]'::jsonb,
+   '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.8, 152, 120,
+   'Áo thun trắng tinh khôi, vải 100% cotton, thoáng khí, nhanh khô với công nghệ AirDry™'),
+
+  (2,  'Áo Thun Đen Premium',    'ao-thun-den',   'ao-thun', 'Áo Thun',
+   299000, NULL, 0,
+   '/products/ao-thun-den.png', '["/products/ao-thun-den.png"]'::jsonb,
+   '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.9, 203, 100,
+   'Áo thun đen đẹp, vải 100% cotton, thoáng khí, nhanh khô với công nghệ AirDry™'),
+
+  (3,  'Áo Thun Xanh Navy',      'ao-thun-xanh',  'ao-thun', 'Áo Thun',
+   299000, NULL, 0,
+   '/products/ao-thun-xanh.png', '["/products/ao-thun-xanh.png"]'::jsonb,
+   '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.7, 98, 80,
+   'Áo thun xanh navy lịch sự, vải 100% cotton, thoáng khí, nhanh khô'),
+
+  (4,  'Áo Thun Xám',            'ao-thun-xam',   'ao-thun', 'Áo Thun',
+   299000, NULL, 0,
+   '/products/ao-thun-xam.png', '["/products/ao-thun-xam.png"]'::jsonb,
+   '["Xám"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.6, 74, 90,
+   'Áo thun xám trung tính, vải 100% cotton, thoáng khí, nhanh khô'),
+
+-- ── Áo Polo (không giảm giá, gốc) ───────────────────────────
+  (5,  'Áo Polo Trắng',          'ao-polo-trang', 'ao-polo', 'Áo Polo',
+   399000, NULL, 0,
+   '/products/ao-polo-white.png', '["/products/ao-polo-white.png"]'::jsonb,
+   '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.8, 110, 70,
+   'Áo polo trắng sang trọng, vải piqué cao cấp, phù hợp mặc đi làm'),
+
+  (6,  'Áo Polo Xanh Navy',      'ao-polo-xanh',  'ao-polo', 'Áo Polo',
+   399000, NULL, 0,
+   '/products/ao-polo-blue.png', '["/products/ao-polo-blue.png"]'::jsonb,
+   '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.7, 87, 65,
+   'Áo polo xanh navy lịch sự, vải piqué cao cấp, phù hợp mặc đi làm'),
+
+  (7,  'Áo Polo Đỏ',             'ao-polo-do',    'ao-polo', 'Áo Polo',
+   399000, NULL, 0,
+   '/products/ao-polo-red.png', '["/products/ao-polo-red.png"]'::jsonb,
+   '["Đỏ"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.6, 63, 55,
+   'Áo polo đỏ nổi bật, vải piqué cao cấp, phù hợp mặc dạo phố'),
+
+  (8,  'Áo Polo Đen',            'ao-polo-den',   'ao-polo', 'Áo Polo',
+   399000, NULL, 0,
+   '/products/ao-polo-black.png', '["/products/ao-polo-black.png"]'::jsonb,
+   '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.9, 134, 60,
+   'Áo polo đen thanh lịch, vải piqué cao cấp, phù hợp mặc đi làm'),
+
+-- ── Quần (không giảm giá, gốc) ───────────────────────────────
+  (9,  'Quần Đen Slim Fit',      'quan-den',      'quan',    'Quần',
+   499000, NULL, 0,
+   '/products/quan-den.png', '["/products/quan-den.png"]'::jsonb,
+   '["Đen"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.8, 91, 50,
+   'Quần đen slim fit hiện đại, tôn dáng, công nghệ co giãn FlexFit™'),
+
+  (10, 'Quần Jean Xanh Navy',    'quan-xanh',     'quan',    'Quần',
+   599000, NULL, 0,
+   '/products/quan-xanh.png', '["/products/quan-xanh.png"]'::jsonb,
+   '["Xanh Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Jean Premium","Co Giãn","Thoải Mái","Bền Lâu"]'::jsonb,
+   4.7, 68, 45,
+   'Quần jean xanh navy chất lượng cao, co giãn thoải mái'),
+
+  (11, 'Quần Kaki Casual',       'quan-kaki',     'quan',    'Quần',
+   449000, NULL, 0,
+   '/products/quan-kaki.png', '["/products/quan-kaki.png"]'::jsonb,
+   '["Kaki"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Casual","Thoải Mái","Dễ Chăm Sóc","Bền Lâu"]'::jsonb,
+   4.6, 57, 60,
+   'Quần kaki casual thoải mái, phù hợp mặc hàng ngày'),
+
+  (12, 'Quần Xám Formal',        'quan-xam',      'quan',    'Quần',
+   549000, NULL, 0,
+   '/products/quan-xam.png', '["/products/quan-xam.png"]'::jsonb,
+   '["Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Formal","Sang Trọng","Chất Vải Tốt","Bền Lâu"]'::jsonb,
+   4.7, 44, 40,
+   'Quần xám formal sang trọng, phù hợp mặc đi làm và dự tiệc'),
+
+-- ── Áo Polo — Ưu Đãi (collection = ao-polo, discount > 0) ───
+-- price  = giá bán cuối; original_price = giá gốc trước giảm
+-- Công thức kiểm tra: price = ROUND(original_price * (1 - discount/100))
+
+  (13, 'Áo Polo Bo Sọc Form Regular PO136 Màu Trắng', 'sale-polo-1', 'ao-polo', 'Áo Polo',
+   270000, 450000, 40,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg"]'::jsonb,
+   '["Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.8, 312, 80,
+   'Áo polo bo sọc form regular, vải piqué cao cấp thoáng mát, kháng nhăn xuất sắc.'),
+
+  (14, 'Áo Thun Lạnh Thể Thao Thoáng Mát Navy BS3234', 'sale-polo-2', 'ao-polo', 'Áo Polo',
+   429000, 650000, 34,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-2.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-2.jpg"]'::jsonb,
+   '["Đen","Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.9, 189, 65,
+   'Áo thun lạnh thể thao BS3234, công nghệ làm mát AirCool™ giữ thoáng mát suốt ngày.'),
+
+  (15, 'Áo Polo Màu Trơn Nam Ngắn Tay', 'sale-polo-3', 'ao-polo', 'Áo Polo',
+   354000, 590000, 40,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-3.jpg', '["/Giam-Gia/Ao/Ao-Polo/Polo-3.jpg"]'::jsonb,
+   '["Xanh","Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.7, 254, 90,
+   'Áo polo màu trơn ngắn tay nam, vải piqué mềm mịn kháng nhăn.'),
+
+  (16, 'Áo Polo Nam Màu Xanh Lá - North Sails', 'sale-polo-4', 'ao-polo', 'Áo Polo',
+   168000, 280000, 40,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-4.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-4.webp"]'::jsonb,
+   '["Xanh Lá"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.6, 421, 55,
+   'Áo polo North Sails màu xanh lá tươi, chất vải cotton piqué thấm hút mồ hôi.'),
+
+  (17, 'Áo Polo Nam Regular Fit Màu Trắng', 'sale-polo-5', 'ao-polo', 'Áo Polo',
+   499000, 780000, 36,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-5.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-5.webp"]'::jsonb,
+   '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.8, 143, 70,
+   'Áo polo regular fit màu trắng tinh tế, vải cao cấp không nhàu.'),
+
+  (18, 'Áo Polo Saint Laurent', 'sale-polo-6', 'ao-polo', 'Áo Polo',
+   234000, 390000, 40,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-6.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-6.webp"]'::jsonb,
+   '["Trắng","Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.5, 367, 45,
+   'Áo polo Saint Laurent thiết kế thanh lịch, chất liệu piqué cao cấp.'),
+
+  (19, 'Áo Polo Ralph Lauren', 'sale-polo-7', 'ao-polo', 'Áo Polo',
+   312000, 520000, 40,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-7.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-7.webp"]'::jsonb,
+   '["Nhiều màu"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.9, 98, 60,
+   'Áo polo Ralph Lauren đẳng cấp, biểu tượng thời trang phổ biến toàn cầu.'),
+
+  (20, 'Áo Polo Unisex Cổ Bẻ Tay Ngắn', 'sale-polo-8', 'ao-polo', 'Áo Polo',
+   609000, 870000, 30,
+   '/Giam-Gia/Ao/Ao-Polo/Polo-8.webp', '["/Giam-Gia/Ao/Ao-Polo/Polo-8.webp"]'::jsonb,
+   '["Trắng","Đen","Xanh"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Piqué","Kháng Nhăn","Khí Chất","Bền Lâu"]'::jsonb,
+   4.7, 211, 75,
+   'Áo polo unisex cổ bẻ tay ngắn, form dáng unisex phù hợp mọi vóc dáng.'),
+
+-- ── Áo Thun — Ưu Đãi (collection = ao-thun, discount > 0) ───
+
+  (21, 'Áo Thun Trắng Premium Classic', 'sale-thun-1', 'ao-thun', 'Áo Thun',
+   270000, 450000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-1.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-1.jpg"]'::jsonb,
+   '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.8, 312, 100,
+   'Áo thun trắng Premium Classic, 100% cotton combed mềm mịn, thoáng khí.'),
+
+  (22, 'Áo Thun Kẻ Sọc Premium', 'sale-thun-2', 'ao-thun', 'Áo Thun',
+   364000, 520000, 30,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-2.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-2.jpg"]'::jsonb,
+   '["Trắng Sọc"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.9, 189, 80,
+   'Áo thun kẻ sọc Premium, thiết kế classic không bao giờ lỗi mốt.'),
+
+  (23, 'Áo Thun Nam Slim Fit Xanh Navy', 'sale-thun-3', 'ao-thun', 'Áo Thun',
+   354000, 590000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-3.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-3.jpg"]'::jsonb,
+   '["Xanh Navy"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.7, 254, 90,
+   'Áo thun slim fit xanh navy tôn dáng, vải cotton co giãn nhẹ.'),
+
+  (24, 'Áo Thun Xám EasyCare', 'sale-thun-4', 'ao-thun', 'Áo Thun',
+   288000, 480000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-4.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-4.jpg"]'::jsonb,
+   '["Xám"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.6, 421, 110,
+   'Áo thun xám EasyCare kháng nhăn, dễ chăm sóc, mặc đi làm đi chơi đều đẹp.'),
+
+  (25, 'Áo Thun Nam AirLight Trắng', 'sale-thun-5', 'ao-thun', 'Áo Thun',
+   330000, 550000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-5.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-5.jpg"]'::jsonb,
+   '["Trắng"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.8, 143, 75,
+   'Áo thun AirLight siêu nhẹ, thoáng mát ngay cả những ngày nóng bức.'),
+
+  (26, 'Áo Thun Đen Dài Tay FormFit', 'sale-thun-6', 'ao-thun', 'Áo Thun',
+   372000, 620000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-6.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-6.jpg"]'::jsonb,
+   '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.5, 367, 60,
+   'Áo thun đen dài tay FormFit ôm dáng, vải cotton mỏng nhẹ mặc rất thoải mái.'),
+
+  (27, 'Áo Thun Classic Fit Màu Đen - Calvin Klein', 'sale-thun-7', 'ao-thun', 'Áo Thun',
+   468000, 780000, 40,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-7.webp', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-7.webp"]'::jsonb,
+   '["Đen"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.9, 98, 50,
+   'Áo thun Calvin Klein classic fit màu đen huyền thoại, chất vải cao cấp bền đẹp.'),
+
+  (28, 'Áo Thun Unisex Basic', 'sale-thun-8', 'ao-thun', 'Áo Thun',
+   294000, 420000, 30,
+   '/Giam-Gia/Ao/Ao-SoMi/SoMi-8.jpg', '["/Giam-Gia/Ao/Ao-SoMi/SoMi-8.jpg"]'::jsonb,
+   '["Nhiều màu"]'::jsonb, '["S","M","L","XL","XXL"]'::jsonb,
+   '["Vải Premium","Nhanh Khô","Thoáng Khí","Không Phai"]'::jsonb,
+   4.7, 211, 120,
+   'Áo thun unisex basic dành cho mọi người, dễ phối đồ với bất kỳ trang phục nào.'),
+
+-- ── Quần — Ưu Đãi (collection = quan, discount > 0) ─────────
+
+  (29, 'Quần Trouser Trắng Trơn', 'sale-quan-1', 'quan', 'Quần',
+   312000, 520000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-1.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-1.jpg"]'::jsonb,
+   '["Trắng"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.8, 312, 70,
+   'Quần trouser trắng trơn thanh lịch, form suôn đứng tôn dáng.'),
+
+  (30, 'Quần Âu Be Trơn', 'sale-quan-2', 'quan', 'Quần',
+   288000, 480000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-2.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-2.jpg"]'::jsonb,
+   '["Be"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.7, 205, 65,
+   'Quần âu be trơn công sở, vải cao cấp mặc thoải mái cả ngày dài.'),
+
+  (31, 'Quần Tây Nam Thanh Lịch Tôn Dáng Form Slim', 'sale-quan-3', 'quan', 'Quần',
+   330000, 550000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-3.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-3.webp"]'::jsonb,
+   '["Đen","Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.6, 178, 55,
+   'Quần tây slim fit thanh lịch tôn dáng, phù hợp văn phòng và sự kiện.'),
+
+  (32, 'Quần Dài Công Sở Thẳng Nam Cao Cấp', 'sale-quan-4', 'quan', 'Quần',
+   372000, 620000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-4.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-4.webp"]'::jsonb,
+   '["Đen","Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.9, 143, 40,
+   'Quần dài công sở thẳng cao cấp, dáng đứng không nhàu, chuyên nghiệp.'),
+
+  (33, 'Quần Jean Xanh Ôm Dáng Kiểu Anh', 'sale-quan-5', 'quan', 'Quần',
+   408000, 680000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-5.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-5.jpg"]'::jsonb,
+   '["Xanh Navy"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Jean Premium","Ôm Dáng","Thoải Mái","Co Giãn"]'::jsonb,
+   4.8, 312, 60,
+   'Quần jean xanh ôm dáng kiểu Anh, cut chuẩn tôn dáng cả ngày.'),
+
+  (34, 'Quần Tây Nam Xám Trơn Công Sở', 'sale-quan-6', 'quan', 'Quần',
+   354000, 590000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-6.jpg', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-6.jpg"]'::jsonb,
+   '["Xám"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.6, 189, 50,
+   'Quần tây xám trơn công sở, vải chống nhăn cao cấp giữ phong độ suốt ngày.'),
+
+  (35, 'Quần Kaki Nam Casual', 'sale-quan-7', 'quan', 'Quần',
+   450000, 750000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-7.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-7.webp"]'::jsonb,
+   '["Kaki","Be"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Casual","Thoải Mái","Dễ Chăm Sóc","Co Giãn"]'::jsonb,
+   4.9, 254, 80,
+   'Quần kaki nam casual phong cách trẻ trung, phù hợp đi chơi cuối tuần.'),
+
+  (36, 'Quần Âu Đen Trơn Slim Fit', 'sale-quan-8', 'quan', 'Quần',
+   384000, 640000, 40,
+   '/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp', '["/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp"]'::jsonb,
+   '["Đen"]'::jsonb, '["28","30","32","34","36","38"]'::jsonb,
+   '["Slim Fit","Co Giãn","Tôn Dáng","Bền Lâu"]'::jsonb,
+   4.7, 421, 45,
+   'Quần âu đen slim fit thanh lịch, vải cao cấp kháng nhăn suốt ngày.')
+
 ON CONFLICT (handle) DO NOTHING;
 SELECT setval('products_id_seq', (SELECT MAX(id) FROM products));
 
@@ -289,4 +572,3 @@ ON CONFLICT (slug) DO NOTHING;
 SELECT setval('news_categories_id_seq', (SELECT MAX(id) FROM news_categories));
 
 -- Bài viết mẫu seed ở src/db/seed-data/news.js (nạp bởi seed.js).
-

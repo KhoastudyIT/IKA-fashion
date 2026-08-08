@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   getProducts, getCollections, createProduct, updateProduct, deleteProduct,
   ApiProduct, Collection, ProductInput,
@@ -10,12 +10,16 @@ import ImageListField from '@/components/ImageListField'
 const csvToArr = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean)
 
 type FormState = {
-  name: string; handle: string; collection: string; type: string; price: string
+  name: string; handle: string; collection: string; type: string
+  price: string          // giá bán cuối — tự động tính khi có originalPrice + discount
+  originalPrice: string  // giá gốc trước giảm (rỗng = không giảm)
+  discount: string       // % giảm, 0-100
   img: string[]; stock: string; description: string; colors: string; sizes: string; features: string
 }
 
 const emptyForm: FormState = {
-  name: '', handle: '', collection: 'ao-thun', type: '', price: '',
+  name: '', handle: '', collection: 'ao-thun', type: '',
+  price: '', originalPrice: '', discount: '0',
   img: [], stock: '0', description: '', colors: '', sizes: '', features: '',
 }
 
@@ -61,6 +65,8 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name, handle: p.handle, collection: p.collection, type: p.type,
       price: String(p.price),
+      originalPrice: p.originalPrice ? String(p.originalPrice) : '',
+      discount: String(p.discount ?? 0),
       img: p.images?.length ? p.images : (p.img ? [p.img] : []),
       stock: String(p.stock), description: p.description,
       colors: p.colors.join(', '), sizes: p.sizes.join(', '), features: p.features.join(', '),
@@ -69,17 +75,32 @@ export default function AdminProductsPage() {
     setShowForm(true)
   }
 
+  // Tự động tính giá bán khi thay đổi giá gốc hoặc % giảm
+  const recalcPrice = useCallback((op: string, dc: string, currentPrice: string) => {
+    const opNum = parseFloat(op)
+    const dcNum = parseFloat(dc)
+    if (op !== '' && !isNaN(opNum) && opNum > 0 && !isNaN(dcNum) && dcNum > 0) {
+      return String(Math.round(opNum * (1 - dcNum / 100)))
+    }
+    // Nếu bỏ originalPrice hoặc discount = 0, giữ nguyên price hiện tại
+    return currentPrice
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
     const imgList = form.img.filter(Boolean)
+    const discountNum = parseInt(form.discount, 10) || 0
+    const originalPriceNum = form.originalPrice ? parseInt(form.originalPrice, 10) : undefined
     const payload: ProductInput = {
       name: form.name,
       handle: form.handle,
       collection: form.collection,
       type: form.type,
       price: parseInt(form.price, 10),
+      original_price: originalPriceNum ?? null,
+      discount: discountNum,
       img: imgList[0] || '/products/ao-thun-trang.png',
       images: imgList.length ? imgList : ['/products/ao-thun-trang.png'],
       stock: parseInt(form.stock, 10) || 0,
@@ -185,7 +206,8 @@ export default function AdminProductsPage() {
               <tr>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Hình Ảnh</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Tên Sản Phẩm</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Giá Bán</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Giá Bán / Gốc</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Ưu Đãi</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Danh Mục</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Tồn Kho</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Đã Bán</th>
@@ -208,7 +230,23 @@ export default function AdminProductsPage() {
                       <img src={product.img} alt={product.name} className="w-12 h-12 object-cover rounded border border-[#E5DFD8]" />
                     </td>
                     <td className="py-4 px-6 text-[#2C2C2C] font-medium">{product.name}</td>
-                    <td className="py-4 px-6 text-[#2C2C2C] font-semibold">{product.price.toLocaleString()} đ</td>
+                    <td className="py-4 px-6">
+                      <span className="text-[#2C2C2C] font-semibold">{product.price.toLocaleString('vi-VN')} đ</span>
+                      {product.originalPrice && (
+                        <span className="block text-xs text-muted-foreground line-through">
+                          {product.originalPrice.toLocaleString('vi-VN')} đ
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      {product.discount > 0 ? (
+                        <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                          -{product.discount}%
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="py-4 px-6 text-muted-foreground capitalize">{product.collection}</td>
                     <td className="py-4 px-6">
                       {product.stock <= 5 ? (
@@ -312,13 +350,71 @@ export default function AdminProductsPage() {
                   <input required value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} placeholder="Áo Thun, Quần..." className={inputCls} />
                 </Field>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Giá (VND) *">
-                  <input required type="number" min="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="Số lượng tồn kho">
-                  <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputCls} />
-                </Field>
+              {/* ── Pricing section ───────────────────────────────────── */}
+              <div className="rounded-lg border border-[#E5DFD8] bg-[#FDFAF6] p-4 space-y-3">
+                <p className="text-xs font-semibold text-[#2C2C2C] uppercase tracking-wide flex items-center gap-1.5">
+                  <span>🏷️</span> Giá & Ưu Đãi
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Giá gốc (VND)">
+                    <input
+                      type="number" min="1"
+                      value={form.originalPrice}
+                      placeholder="VD: 500000"
+                      onChange={(e) => {
+                        const op = e.target.value
+                        const newPrice = recalcPrice(op, form.discount, form.price)
+                        setForm({ ...form, originalPrice: op, price: newPrice })
+                      }}
+                      className={inputCls}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Để trống nếu không áp dụng giảm giá.</p>
+                  </Field>
+                  <Field label="Giảm giá (%) — 0 đến 100">
+                    <input
+                      type="number" min="0" max="100"
+                      value={form.discount}
+                      placeholder="VD: 20"
+                      onChange={(e) => {
+                        const dc = e.target.value
+                        const newPrice = recalcPrice(form.originalPrice, dc, form.price)
+                        setForm({ ...form, discount: dc, price: newPrice })
+                      }}
+                      className={inputCls}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Nhập 0 hoặc để trống nếu không giảm.</p>
+                  </Field>
+                </div>
+
+                {/* Live preview callout */}
+                {parseInt(form.discount, 10) > 0 && form.originalPrice && (
+                  <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-sm">
+                    <span className="text-amber-600 font-bold text-xs bg-amber-100 px-2 py-0.5 rounded-full">-{form.discount}%</span>
+                    <span className="text-muted-foreground line-through text-xs">{parseInt(form.originalPrice, 10).toLocaleString('vi-VN')} đ</span>
+                    <span className="font-bold text-[#2C2C2C]">→ {parseInt(form.price, 10).toLocaleString('vi-VN')} đ</span>
+                    <span className="text-green-700 text-xs ml-auto">
+                      Tiết kiệm {(parseInt(form.originalPrice, 10) - parseInt(form.price, 10)).toLocaleString('vi-VN')} đ
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Giá bán cuối (VND) *">
+                    <input
+                      required type="number" min="1"
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      className={`${inputCls} ${parseInt(form.discount, 10) > 0 ? 'ring-1 ring-[#D4AF37] font-semibold' : ''}`}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {parseInt(form.discount, 10) > 0 ? '⚡ Tự động tính từ Giá gốc × (1 − %). Có thể chỉnh thủ công.' : 'Giá hiển thị cho khách hàng.'}
+                    </p>
+                  </Field>
+                  <Field label="Số lượng tồn kho">
+                    <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputCls} />
+                  </Field>
+                </div>
               </div>
               <ImageListField
                 label="Ảnh sản phẩm"

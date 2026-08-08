@@ -9,6 +9,7 @@ import { getProducts, getCollections, addWishlist, removeWishlist, ApiProduct, C
 import { useShop } from '@/components/context/ShopContext'
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'rating'
+type CollectionFilter = string // 'all' | slug | 'uu-dai'
 
 export default function ProductsPage() {
   const router = useRouter()
@@ -19,9 +20,12 @@ export default function ProductsPage() {
 
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [maxPrice, setMaxPrice] = useState(1000000)
-  // Seed the initial filter from the URL ?collection= param (e.g. coming from homepage cards)
-  const [selectedCollection, setSelectedCollection] = useState<string>(
-    () => searchParams.get('collection') ?? 'all'
+  // Seed the initial filter from the URL ?collection= / ?isSale= param
+  const [selectedCollection, setSelectedCollection] = useState<CollectionFilter>(
+    () => {
+      if (searchParams.get('isSale') === 'true') return 'uu-dai'
+      return searchParams.get('collection') ?? 'all'
+    }
   )
   const [showFilters, setShowFilters] = useState(false)
 
@@ -38,9 +42,11 @@ export default function ProductsPage() {
   // Khi collection filter thay đổi → cập nhật URL để back-button / share hoạt động đúng
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
-    if (selectedCollection === 'all') {
-      params.delete('collection')
-    } else {
+    params.delete('collection')
+    params.delete('isSale')
+    if (selectedCollection === 'uu-dai') {
+      params.set('isSale', 'true')
+    } else if (selectedCollection !== 'all') {
       params.set('collection', selectedCollection)
     }
     router.replace(`/products?${params.toString()}`, { scroll: false })
@@ -55,7 +61,11 @@ export default function ProductsPage() {
       priceMax: maxPrice,
       limit: 50,
     }
-    if (selectedCollection !== 'all') query.collection = selectedCollection
+    if (selectedCollection === 'uu-dai') {
+      query.isSale = true
+    } else if (selectedCollection !== 'all') {
+      query.collection = selectedCollection
+    }
 
     getProducts(query)
       .then((res) => setProducts(res.items))
@@ -142,12 +152,18 @@ export default function ProductsPage() {
                       <input type="radio" checked={selectedCollection === 'all'} onChange={() => setSelectedCollection('all')} className="w-4 h-4 cursor-pointer" />
                       <span className="text-sm text-foreground">Tất Cả</span>
                     </label>
+                    {/* Danh mục thực từ API (ao-thun, ao-polo, quan) */}
                     {collections.map((col) => (
                       <label key={col.slug} className="flex items-center gap-2 cursor-pointer">
                         <input type="radio" checked={selectedCollection === col.slug} onChange={() => setSelectedCollection(col.slug)} className="w-4 h-4 cursor-pointer" />
                         <span className="text-sm text-foreground">{col.name} ({col.productCount})</span>
                       </label>
                     ))}
+                    {/* Tab Ưu Đãi — sử dụng ?isSale=true, không phải collection */}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={selectedCollection === 'uu-dai'} onChange={() => setSelectedCollection('uu-dai')} className="w-4 h-4 cursor-pointer" />
+                      <span className="text-sm text-red-500 font-semibold">🏷️ Ưu Đãi</span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -184,7 +200,7 @@ export default function ProductsPage() {
                     {products.map((product) => {
                       const wished = isWishlisted(product.id)
                       return (
-                        <div key={product.handle} className="group relative">
+                            <div key={product.handle} className="group relative">
                           {/* Nằm ngoài Link để không lồng button trong thẻ <a> */}
                           <button
                             onClick={() => handleWishlist(product)}
@@ -198,19 +214,32 @@ export default function ProductsPage() {
                             <Heart size={18} fill={wished ? 'currentColor' : 'none'} />
                           </button>
 
+                          {/* Badge giảm giá */}
+                          {product.discount > 0 && (
+                            <div className="absolute top-3 left-3 z-10 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow pointer-events-none">
+                              -{product.discount}%
+                            </div>
+                          )}
+
                           <Link href={`/products/${product.handle}`}>
                             <div className="cursor-pointer">
                               <div className="bg-secondary rounded-lg overflow-hidden mb-4 h-80 flex items-center justify-center">
                                 <img src={product.img} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                               </div>
-                              <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
+                              <h3 className="text-lg font-heading font-semibold text-foreground mb-1 group-hover:text-accent transition-colors">
                                 {product.name}
                               </h3>
-                              <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{product.description}</p>
+                              <p className="text-muted-foreground text-sm mb-2 line-clamp-2">{product.description}</p>
                               <div className="flex justify-between items-center">
-                                <span className="text-lg font-semibold text-foreground">{product.price.toLocaleString()} đ</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-lg font-semibold text-foreground">{product.price.toLocaleString('vi-VN')} đ</span>
+                                  {product.discount > 0 && product.originalPrice && (
+                                    <span className="text-sm text-muted-foreground line-through">{product.originalPrice.toLocaleString('vi-VN')} đ</span>
+                                  )}
+                                </div>
                                 <span className="text-accent group-hover:underline text-sm font-medium">Chi Tiết →</span>
                               </div>
+                              <p className="text-xs text-muted-foreground mt-1">★ {product.rating} · Đã bán {product.sold.toLocaleString('vi-VN')}</p>
                             </div>
                           </Link>
                         </div>
