@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown, Heart } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { getProducts, getCollections, addWishlist, removeWishlist, ApiProduct, Collection, ProductQuery } from '@/api'
@@ -12,13 +12,17 @@ type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'rating'
 
 export default function ProductsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: session } = useSession()
   const { syncWishlist, isWishlisted } = useShop()
   const [wishlistBusyId, setWishlistBusyId] = useState<number | null>(null)
 
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [maxPrice, setMaxPrice] = useState(1000000)
-  const [selectedCollection, setSelectedCollection] = useState<string>('all')
+  // Seed the initial filter from the URL ?collection= param (e.g. coming from homepage cards)
+  const [selectedCollection, setSelectedCollection] = useState<string>(
+    () => searchParams.get('collection') ?? 'all'
+  )
   const [showFilters, setShowFilters] = useState(false)
 
   const [products, setProducts] = useState<ApiProduct[]>([])
@@ -30,6 +34,17 @@ export default function ProductsPage() {
   useEffect(() => {
     getCollections().then(setCollections).catch(() => {})
   }, [])
+
+  // Khi collection filter thay đổi → cập nhật URL để back-button / share hoạt động đúng
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (selectedCollection === 'all') {
+      params.delete('collection')
+    } else {
+      params.set('collection', selectedCollection)
+    }
+    router.replace(`/products?${params.toString()}`, { scroll: false })
+  }, [selectedCollection]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tải sản phẩm mỗi khi filter thay đổi
   useEffect(() => {
