@@ -234,8 +234,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════
           3. FEATURED COLLECTIONS
       ═══════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
               Bộ Sưu Tập
@@ -245,7 +245,7 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
             {[
               {
                 title: 'Áo Thun',
@@ -269,7 +269,7 @@ export default function HomePage() {
                 count: 'Từ 399.000đ',
               },
             ].map((collection) => (
-              <Link key={collection.title} href={collection.href}>
+              <Link key={collection.title} href={collection.href} className="shrink-0 w-[85vw] snap-center md:w-auto">
                 <div className="group cursor-pointer relative overflow-hidden rounded-lg">
                   <div className="aspect-[3/4] bg-secondary overflow-hidden">
                     <img
