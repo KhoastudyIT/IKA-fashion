@@ -6,7 +6,7 @@ import { AppError } from '../../middleware/errorHandler.js';
 
 // Cột user trả cho client (bỏ password), alias sang camelCase
 const USER_COLS =
-  `id, name, email, role, phone, address, is_locked AS "isLocked", created_at AS "createdAt"`;
+  `id, name, email, role, phone, address, city, is_locked AS "isLocked", created_at AS "createdAt"`;
 
 function signToken(user) {
   return jwt.sign(
@@ -53,16 +53,17 @@ export async function getMe(userId) {
   return res.rows[0];
 }
 
-export async function updateProfile(userId, { name, phone, address }) {
+export async function updateProfile(userId, { name, phone, address, city }) {
   const res = await db.query(
     `UPDATE users SET
        name    = COALESCE($2, name),
        phone   = COALESCE($3, phone),
        address = COALESCE($4, address),
+       city    = COALESCE($5, city),
        updated_at = NOW()
      WHERE id = $1
      RETURNING ${USER_COLS}`,
-    [userId, name ?? null, phone ?? null, address ?? null],
+    [userId, name ?? null, phone ?? null, address ?? null, city ?? null],
   );
   if (!res.rows.length) throw new AppError('Không tìm thấy người dùng', 404);
   return res.rows[0];

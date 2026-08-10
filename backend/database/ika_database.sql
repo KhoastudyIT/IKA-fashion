@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
               CHECK (role IN ('customer', 'admin')),
   phone       VARCHAR(20)  NOT NULL DEFAULT '',
   address     VARCHAR(255) NOT NULL DEFAULT '',
+  city        VARCHAR(255) NOT NULL DEFAULT '',
   is_locked   BOOLEAN      NOT NULL DEFAULT false,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
