@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronDown, Heart } from 'lucide-react'
+import { ChevronDown, Heart, X } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { getProducts, getCollections, addWishlist, removeWishlist, ApiProduct, Collection, ProductQuery } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
@@ -94,6 +94,67 @@ export default function ProductsPage() {
     }
   }
 
+  // Nút đóng / mở, render lại bộ lọc chung cho cả Mobile và Desktop
+  const renderFilters = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Sắp Xếp</h3>
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent appearance-none cursor-pointer"
+          >
+            <option value="newest">Mới Nhất</option>
+            <option value="price_asc">Giá: Thấp → Cao</option>
+            <option value="price_desc">Giá: Cao → Thấp</option>
+            <option value="rating">Đánh Giá Cao</option>
+          </select>
+          <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 pointer-events-none text-foreground" />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Khoảng Giá</h3>
+        <input
+          type="range"
+          min="0"
+          max="1000000"
+          step="50000"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+          className="w-full h-1 bg-border rounded cursor-pointer"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <span>0đ</span>
+          <span>≤ {(maxPrice / 1000).toFixed(0)}k</span>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Bộ Sưu Tập</h3>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={selectedCollection === 'all'} onChange={() => setSelectedCollection('all')} className="w-4 h-4 cursor-pointer" />
+            <span className="text-sm text-foreground">Tất Cả</span>
+          </label>
+          {/* Danh mục thực từ API */}
+          {collections.map((col) => (
+            <label key={col.slug} className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" checked={selectedCollection === col.slug} onChange={() => setSelectedCollection(col.slug)} className="w-4 h-4 cursor-pointer" />
+              <span className="text-sm text-foreground">{col.name} ({col.productCount})</span>
+            </label>
+          ))}
+          {/* Tab Ưu Đãi */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" checked={selectedCollection === 'uu-dai'} onChange={() => setSelectedCollection('uu-dai')} className="w-4 h-4 cursor-pointer" />
+            <span className="text-sm text-red-500 font-semibold">🏷️ Ưu Đãi</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <>
       <main className="min-h-screen bg-background">
@@ -108,76 +169,22 @@ export default function ProductsPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex gap-8">
-            {/* Sidebar */}
-            <div className={`w-full md:w-64 flex-shrink-0 ${showFilters ? 'block' : 'hidden md:block'}`}>
-              <div className="space-y-6 sticky top-24">
-                <div>
-                  <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Sắp Xếp</h3>
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="w-full px-3 py-2 bg-secondary border border-border rounded text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent appearance-none cursor-pointer"
-                    >
-                      <option value="newest">Mới Nhất</option>
-                      <option value="price_asc">Giá: Thấp → Cao</option>
-                      <option value="price_desc">Giá: Cao → Thấp</option>
-                      <option value="rating">Đánh Giá Cao</option>
-                    </select>
-                    <ChevronDown className="absolute right-2 top-2.5 w-4 h-4 pointer-events-none text-foreground" />
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Khoảng Giá</h3>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1000000"
-                    step="50000"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(parseInt(e.target.value))}
-                    className="w-full h-1 bg-border rounded cursor-pointer"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>0đ</span>
-                    <span>≤ {(maxPrice / 1000).toFixed(0)}k</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Bộ Sưu Tập</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" checked={selectedCollection === 'all'} onChange={() => setSelectedCollection('all')} className="w-4 h-4 cursor-pointer" />
-                      <span className="text-sm text-foreground">Tất Cả</span>
-                    </label>
-                    {/* Danh mục thực từ API (ao-thun, ao-polo, quan) */}
-                    {collections.map((col) => (
-                      <label key={col.slug} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={selectedCollection === col.slug} onChange={() => setSelectedCollection(col.slug)} className="w-4 h-4 cursor-pointer" />
-                        <span className="text-sm text-foreground">{col.name} ({col.productCount})</span>
-                      </label>
-                    ))}
-                    {/* Tab Ưu Đãi — sử dụng ?isSale=true, không phải collection */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" checked={selectedCollection === 'uu-dai'} onChange={() => setSelectedCollection('uu-dai')} className="w-4 h-4 cursor-pointer" />
-                      <span className="text-sm text-red-500 font-semibold">🏷️ Ưu Đãi</span>
-                    </label>
-                  </div>
-                </div>
+            {/* Desktop Sidebar */}
+            <div className="hidden lg:block w-64 flex-shrink-0">
+              <div className="sticky top-24">
+                {renderFilters()}
               </div>
             </div>
 
             {/* Grid */}
             <div className="flex-1">
-              <div className="md:hidden mb-6">
+              <div className="lg:hidden mb-6">
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
+                  onClick={() => setShowFilters(true)}
                   className="flex items-center gap-2 px-4 py-2 border border-border rounded text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                 >
                   <span>Bộ Lọc</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+                  <ChevronDown className="w-4 h-4" />
                 </button>
               </div>
 
@@ -262,6 +269,32 @@ export default function ProductsPage() {
           </div>
         </div>
       </main>
+
+      {/* Mobile Filter Drawer */}
+      {showFilters && (
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
+            onClick={() => setShowFilters(false)}
+          ></div>
+
+          {/* Drawer */}
+          <div className="relative w-4/5 max-w-sm h-full bg-background p-6 overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-heading font-semibold text-foreground">Bộ Lọc</h2>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Đóng bộ lọc"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            {renderFilters()}
+          </div>
+        </div>
+      )}
     </>
   )
 }
