@@ -38,7 +38,7 @@ export async function login({ email, password }) {
   );
   const row = res.rows[0];
   if (!row) throw new AppError('Email hoặc mật khẩu không đúng', 401);
-  if (row.isLocked) throw new AppError('Tài khoản của bạn đã bị khóa bởi quản trị viên', 403);
+  if (row.isLocked) throw new AppError('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin để được hỗ trợ.', 403);
 
   const valid = await bcrypt.compare(password, row.password);
   if (!valid) throw new AppError('Email hoặc mật khẩu không đúng', 401);
