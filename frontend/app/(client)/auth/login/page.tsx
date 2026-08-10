@@ -21,7 +21,8 @@ export default function LoginPage() {
       const { user } = await signIn.email({ email, password })
       router.push(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer')
     } catch (err) {
-      setError('Email hoặc mật khẩu không đúng')
+      const msg = err instanceof Error ? err.message : ''
+      setError(msg || 'Email hoặc mật khẩu không đúng')
       console.error('Login error:', err)
     } finally {
       setLoading(false)
