@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RefreshCcw, Headphones, ArrowRight, Quote } from 'lucide-react'
 import { getProducts, getNews, ApiProduct, Article } from '@/api'
+import ProductCard from '@/components/ProductCard'
 
 /* ───────── Banner Data ───────── */
 const BANNERS = [
@@ -375,43 +376,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {bestSellers.map((product) => (
-                <Link key={product.id} href={`/products/${product.handle}`}>
-                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="relative aspect-square bg-secondary overflow-hidden">
-                      <img
-                        src={product.img}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {product.stock <= 0 && (
-                        <div className="absolute top-3 right-3 bg-destructive text-white px-2 py-0.5 text-[10px] font-semibold rounded">
-                          Hết hàng
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 bg-accent text-accent-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
-                        HOT
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-1">({product.sold} đã bán)</span>
-                      </div>
-                      <p className="text-base font-semibold text-accent">
-                        {product.price.toLocaleString()}đ
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} badge="HOT" />
               ))}
             </div>
 
@@ -488,38 +453,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {newArrivals.map((product) => (
-                <Link key={product.id} href={`/products/${product.handle}`}>
-                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="relative aspect-square bg-secondary overflow-hidden">
-                      <img
-                        src={product.img}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 left-3 bg-foreground text-primary-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
-                        MỚI
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-1">({product.rating})</span>
-                      </div>
-                      <p className="text-base font-semibold text-accent">
-                        {product.price.toLocaleString()}đ
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} badge="MỚI" />
               ))}
             </div>
           </div>

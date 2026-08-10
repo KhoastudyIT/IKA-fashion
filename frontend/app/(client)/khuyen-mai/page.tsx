@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import ProductCard from '@/components/ProductCard'
 
 // href trỏ đến /products/[handle] — handle khớp với sản phẩm giảm giá trong DB backend
 const initialProducts = [
@@ -152,9 +152,9 @@ export default function KhuyenMaiPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '28px' }}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {initialProducts.map((product) => (
-              <SaleCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} badge={product.tag} />
             ))}
             {showAll && extraProducts.map((product, i) => (
               <div
@@ -162,7 +162,7 @@ export default function KhuyenMaiPage() {
                 className="extra-card"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
-                <SaleCard product={product} />
+                <ProductCard product={product} badge={product.tag} />
               </div>
             ))}
           </div>
@@ -220,134 +220,3 @@ export default function KhuyenMaiPage() {
   )
 }
 
-function SaleCard({ product }: { product: typeof saleProducts[0] }) {
-  const [hovered, setHovered] = useState(false)
-  const tagColorMap: Record<string, { bg: string; color: string }> = {
-    'Bestseller': { bg: '#d1fae5', color: '#065f46' },
-    'Hot Deal': { bg: '#fee2e2', color: '#991b1b' },
-    'Flash Sale': { bg: '#ffedd5', color: '#9a3412' },
-    'Phổ biến': { bg: '#dbeafe', color: '#1e40af' },
-    'Mới giảm': { bg: '#ede9fe', color: '#5b21b6' },
-    'Combo': { bg: '#fce7f3', color: '#9d174d' },
-    'Mới về': { bg: '#ccfbf1', color: '#0f766e' },
-  }
-  const tc = tagColorMap[product.tag] ?? { bg: '#f3f4f6', color: '#374151' }
-
-  // Truyền dữ liệu sale qua query params để trang chi tiết hiển thị giá khuyến mãi
-  const saleHref = product.href
-    + '?oldPrice=' + encodeURIComponent(product.oldPrice)
-    + '&newPrice=' + encodeURIComponent(product.newPrice)
-    + '&discount=' + encodeURIComponent(product.discount)
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: '#fff',
-        borderRadius: '12px',
-        border: '1px solid #E5DFD8',
-        overflow: 'hidden',
-        transition: 'box-shadow 0.3s, transform 0.3s',
-        boxShadow: hovered ? '0 20px 40px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.05)',
-        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
-        cursor: 'pointer',
-      }}
-    >
-      {/* Image area — click anywhere on image → detail page */}
-      <Link href={saleHref} style={{ display: 'block', textDecoration: 'none' }}>
-        <div style={{ position: 'relative', background: '#F9F5F0', height: '260px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          {product.image ? (
-            <img
-              src={product.image}
-              alt={product.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                transition: 'transform 0.4s',
-                transform: hovered ? 'scale(1.07)' : 'scale(1)',
-                display: 'block',
-              }}
-            />
-          ) : (
-            <span style={{ fontSize: '80px', transition: 'transform 0.4s', transform: hovered ? 'scale(1.12)' : 'scale(1)', display: 'block' }}>{product.emoji}</span>
-          )}
-
-          {/* Discount badge */}
-          <div style={{ position: 'absolute', top: '14px', left: '14px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 800, fontSize: '13px', padding: '4px 10px', borderRadius: '20px' }}>
-            -{product.discount}%
-          </div>
-
-          {/* Tag */}
-          <span style={{ position: 'absolute', top: '14px', right: '14px', background: tc.bg, color: tc.color, fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '20px' }}>
-            {product.tag}
-          </span>
-
-          {/* Hover overlay CTA */}
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: hovered ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: hovered ? 'auto' : 'none' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', fontSize: '13px', letterSpacing: '1px' }}>
-              🛍️ Xem Chi Tiết
-            </span>
-          </div>
-        </div>
-      </Link>
-
-      {/* Body */}
-      <div style={{ padding: '18px 20px 20px' }}>
-        <p style={{ fontSize: '11px', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{product.type}</p>
-
-        {/* Product name — click → detail page */}
-        <Link href={saleHref} style={{ textDecoration: 'none' }}>
-          <h3 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '15px',
-            fontWeight: 600,
-            color: hovered ? '#D4AF37' : '#2C2C2C',
-            lineHeight: 1.4,
-            marginBottom: '12px',
-            minHeight: '42px',
-            transition: 'color 0.2s',
-            cursor: 'pointer',
-          }}>{product.name}</h3>
-        </Link>
-
-        {/* Price */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          <span style={{ textDecoration: 'line-through', color: '#aaa', fontSize: '13px' }}>{product.oldPrice.toLocaleString('vi-VN')}₫</span>
-          <span style={{ color: '#D4AF37', fontWeight: 800, fontSize: '17px' }}>{product.newPrice.toLocaleString('vi-VN')}₫</span>
-        </div>
-
-        {/* Rating + sold */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <span style={{ color: '#D4AF37', fontSize: '13px', fontWeight: 600 }}>★ {product.rating}</span>
-          <span style={{ color: '#7A7A7A', fontSize: '12px' }}>Đã bán {product.soldCount}</span>
-        </div>
-
-        {/* Detail button — "Xem Chi Tiết" */}
-        <Link
-          href={saleHref}
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            padding: '10px',
-            border: '1.5px solid #2C2C2C',
-            color: '#2C2C2C',
-            fontWeight: 600,
-            borderRadius: '4px',
-            textDecoration: 'none',
-            fontSize: '12px',
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase',
-            transition: 'background 0.2s, color 0.2s',
-            background: hovered ? '#2C2C2C' : 'transparent',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#2C2C2C'; e.currentTarget.style.color = '#fff' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2C2C2C' }}
-        >
-          Xem Chi Tiết
-        </Link>
-      </div>
-    </div>
-  )
-}
