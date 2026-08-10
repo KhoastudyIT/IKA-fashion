@@ -295,6 +295,9 @@ export function apiRegister(body: { name: string; email: string; password: strin
 export function apiLogout() {
   return request('/auth/logout', { method: 'POST', auth: true })
 }
+export function updateProfile(body: { name?: string; phone?: string; address?: string; city?: string }) {
+  return getData('/auth/me', { method: 'PUT', body, auth: true })
+}
 
 // ---------- Messages ----------
 

@@ -16,6 +16,7 @@ export interface SessionUser {
   role: string
   phone?: string
   address?: string
+  city?: string
 }
 export interface Session {
   user: SessionUser
@@ -69,6 +70,19 @@ export async function signOut() {
   }
   clearToken()
   localStorage.removeItem(USER_KEY)
+  emitAuthChange()
+}
+
+/**
+ * Patch the locally stored user object and notify all useSession() subscribers.
+ * Call this after a successful profile update so every page gets fresh data
+ * instantly, without requiring the user to log out and back in.
+ */
+export function updateSessionUser(patch: Partial<SessionUser>) {
+  const current = readSession()
+  if (!current) return
+  const updated = { ...current.user, ...patch }
+  localStorage.setItem(USER_KEY, JSON.stringify(updated))
   emitAuthChange()
 }
 
