@@ -7,7 +7,7 @@ import { createOrderSchema, updateOrderStatusSchema } from './order.schema.js';
 
 // Khách hàng — mount tại /api/v1/customer/orders
 export const orderCustomerRouter = Router();
-orderCustomerRouter.use(authenticate);
+orderCustomerRouter.use(authenticate, authorize('customer'));
 orderCustomerRouter.post('/',    validate(createOrderSchema), orderController.create);
 orderCustomerRouter.get('/',     orderController.listMine);
 orderCustomerRouter.get('/:id',  orderController.getById);

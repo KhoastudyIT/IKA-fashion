@@ -480,9 +480,47 @@ export function deleteReview(id: number): Promise<void> {
   return request(`/admin/reviews/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
+// ---------- Cấu hình cửa hàng ----------
+
+/** Thông tin cửa hàng dùng chung cho Header, Footer và trang Liên hệ. */
+export type StoreSettings = {
+  storeName: string
+  logo: string
+  hotline: string
+  email: string
+  address: string
+  workingHours: string
+  facebookUrl: string
+  instagramUrl: string
+  tiktokUrl: string
+  updatedAt?: string
+}
+
+/** Giá trị hiển thị khi chưa gọi được API — khớp dòng seed trong ika_database.sql. */
+export const DEFAULT_SETTINGS: StoreSettings = {
+  storeName: 'IKA Fashion',
+  logo: '',
+  hotline: '0987 654 321',
+  email: 'support@ika-fashion.vn',
+  address: 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh',
+  workingHours: 'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00',
+  facebookUrl: '',
+  instagramUrl: '',
+  tiktokUrl: '',
+}
+
+/** Công khai — không cần token. */
+export function getSettings(): Promise<StoreSettings> {
+  return getData('/settings')
+}
+
+export function updateSettings(body: Partial<StoreSettings>): Promise<StoreSettings> {
+  return getData('/admin/settings', { method: 'PUT', body, auth: true })
+}
+
 // ---------- Tải ảnh (admin) ----------
 
-export type UploadType = 'news' | 'products' | 'collections'
+export type UploadType = 'news' | 'products' | 'collections' | 'settings'
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']

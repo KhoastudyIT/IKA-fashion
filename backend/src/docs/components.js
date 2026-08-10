@@ -303,6 +303,38 @@ export const components = {
       },
     },
 
+    StoreSettings: {
+      type: 'object',
+      description: 'Cấu hình toàn cục của cửa hàng — bảng chỉ có đúng một dòng.',
+      properties: {
+        storeName: { type: 'string', example: 'IKA Fashion' },
+        logo: { type: 'string', description: 'Đường dẫn ảnh, rỗng thì FE hiện chữ thay logo', example: '/uploads/settings/1720051200000-logo.png' },
+        hotline: { type: 'string', example: '0987 654 321' },
+        email: { type: 'string', format: 'email', example: 'support@ika-fashion.vn' },
+        address: { type: 'string', example: 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh' },
+        workingHours: { type: 'string', example: 'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00' },
+        facebookUrl: { type: 'string', example: 'https://facebook.com/ikafashion' },
+        instagramUrl: { type: 'string', example: 'https://instagram.com/ikafashion' },
+        tiktokUrl: { type: 'string', example: 'https://tiktok.com/@ikafashion' },
+        updatedAt: { type: 'string', format: 'date-time', example: '2026-08-08T08:00:00.000Z' },
+      },
+    },
+    StoreSettingsUpdateBody: {
+      type: 'object',
+      description: 'Mọi trường đều tuỳ chọn — chỉ gửi cái muốn đổi. Link mạng xã hội nhận chuỗi rỗng (chưa khai báo) hoặc URL hợp lệ.',
+      properties: {
+        storeName: { type: 'string', minLength: 1, maxLength: 150, example: 'IKA Fashion' },
+        logo: { type: 'string', maxLength: 500, example: '/uploads/settings/1720051200000-logo.png' },
+        hotline: { type: 'string', maxLength: 30, example: '0987 654 321' },
+        email: { type: 'string', format: 'email', maxLength: 150, example: 'support@ika-fashion.vn' },
+        address: { type: 'string', maxLength: 255, example: 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh' },
+        workingHours: { type: 'string', maxLength: 255, example: 'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00' },
+        facebookUrl: { type: 'string', maxLength: 300, example: 'https://facebook.com/ikafashion' },
+        instagramUrl: { type: 'string', maxLength: 300, example: 'https://instagram.com/ikafashion' },
+        tiktokUrl: { type: 'string', maxLength: 300, example: 'https://tiktok.com/@ikafashion' },
+      },
+    },
+
     // ══════════════ Body gửi lên — Xác thực ══════════════
     RegisterBody: {
       type: 'object',

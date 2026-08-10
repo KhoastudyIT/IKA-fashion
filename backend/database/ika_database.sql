@@ -572,3 +572,41 @@ ON CONFLICT (slug) DO NOTHING;
 SELECT setval('news_categories_id_seq', (SELECT MAX(id) FROM news_categories));
 
 -- Bài viết mẫu seed ở src/db/seed-data/news.js (nạp bởi seed.js).
+
+
+
+-- =============================================================
+-- CẤU HÌNH CỬA HÀNG (store_settings)
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS store_settings (
+  id             INTEGER      PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  store_name     VARCHAR(150) NOT NULL DEFAULT 'IKA Fashion',
+  logo           VARCHAR(500) NOT NULL DEFAULT '',
+  hotline        VARCHAR(30)  NOT NULL DEFAULT '',
+  email          VARCHAR(150) NOT NULL DEFAULT '',
+  address        VARCHAR(255) NOT NULL DEFAULT '',
+  working_hours  VARCHAR(255) NOT NULL DEFAULT '',
+  facebook_url   VARCHAR(300) NOT NULL DEFAULT '',
+  instagram_url  VARCHAR(300) NOT NULL DEFAULT '',
+  tiktok_url     VARCHAR(300) NOT NULL DEFAULT '',
+  updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- Dòng mặc định.
+INSERT INTO store_settings (
+  id, store_name, logo, hotline, email, address,
+  working_hours, facebook_url, instagram_url, tiktok_url
+) VALUES (
+  1,
+  'IKA Fashion',
+  '',
+  '0987 654 321',
+  'support@ika-fashion.vn',
+  'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh',
+  'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00',
+  'https://facebook.com/ikafashion',
+  'https://instagram.com/ikafashion',
+  'https://tiktok.com/@ikafashion'
+)
+ON CONFLICT (id) DO NOTHING;

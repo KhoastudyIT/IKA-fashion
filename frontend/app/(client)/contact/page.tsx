@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Mail, Phone, MapPin, Clock, MessageSquare, Send, Globe, ChevronDown } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { sendMessage } from '@/api'
+import { useSettings } from '@/components/context/SettingsContext'
 
 const FAQ_ITEMS = [
   {
@@ -27,6 +28,7 @@ const FAQ_ITEMS = [
 
 export default function ContactPage() {
   const { data: session } = useSession()
+  const { settings } = useSettings()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -97,26 +99,26 @@ export default function ContactPage() {
               {
                 icon: Phone,
                 title: 'Hotline',
-                line1: '0123 456 789',
+                line1: settings.hotline,
                 line2: 'Miễn phí cuộc gọi',
               },
               {
                 icon: Mail,
                 title: 'Email',
-                line1: 'hello@ikafashion.com',
+                line1: settings.email,
                 line2: 'Phản hồi trong 24h',
               },
               {
                 icon: MapPin,
                 title: 'Showroom',
-                line1: '123 Phố Thời Trang',
-                line2: 'Hà Nội, Việt Nam',
+                line1: settings.address,
+                line2: 'Ghé thăm trực tiếp',
               },
               {
                 icon: Clock,
                 title: 'Giờ làm việc',
-                line1: 'T2–T6: 9:00 – 18:00',
-                line2: 'T7: 10:00 – 16:00',
+                line1: settings.workingHours,
+                line2: 'Ngoài giờ vui lòng nhắn tin',
               },
             ].map((item) => (
               <div

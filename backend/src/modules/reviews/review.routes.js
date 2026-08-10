@@ -11,7 +11,7 @@ reviewPublicRouter.get('/product/:productId', ctrl.listByProduct);
 
 // Khách hàng — mount tại /api/v1/customer/reviews
 export const reviewCustomerRouter = Router();
-reviewCustomerRouter.use(authenticate);
+reviewCustomerRouter.use(authenticate, authorize('customer'));
 reviewCustomerRouter.get('/eligibility/:productId', ctrl.eligibility);
 reviewCustomerRouter.post('/', validate(createReviewSchema), ctrl.create);
 
