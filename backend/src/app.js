@@ -19,6 +19,7 @@ import { couponCustomerRouter, couponAdminRouter }    from './modules/coupons/co
 import { reviewPublicRouter, reviewCustomerRouter, reviewAdminRouter } from './modules/reviews/review.routes.js';
 import { newsPublicRouter, newsAdminRouter }          from './modules/news/news.routes.js';
 import { settingsPublicRouter, settingsAdminRouter }  from './modules/settings/settings.routes.js';
+import { contactPublicRouter, contactAdminRouter }    from './modules/contacts/contact.routes.js';
 import { uploadAdminRouter }                          from './modules/uploads/upload.routes.js';
 import { UPLOAD_ROOT }                                from './modules/uploads/upload.service.js';
 
@@ -50,6 +51,7 @@ export function createApp() {
   app.use(`${v1}/reviews`,     reviewPublicRouter);
   app.use(`${v1}/news`,        newsPublicRouter);
   app.use(`${v1}/settings`,    settingsPublicRouter);
+  app.use(`${v1}/contacts`,    contactPublicRouter);
 
   // ── Customer (khách hàng đã đăng nhập) ────────────────────
   app.use(`${v1}/customer/cart`,     cartRouter);
@@ -69,6 +71,7 @@ export function createApp() {
   app.use(`${v1}/admin/messages`,    messageAdminRouter);
   app.use(`${v1}/admin/news`,        newsAdminRouter);
   app.use(`${v1}/admin/settings`,    settingsAdminRouter);
+  app.use(`${v1}/admin/contacts`,    contactAdminRouter);
   app.use(`${v1}/admin/uploads`,     uploadAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);

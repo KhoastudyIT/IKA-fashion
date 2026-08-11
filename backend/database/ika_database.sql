@@ -580,6 +580,32 @@ SELECT setval('news_categories_id_seq', (SELECT MAX(id) FROM news_categories));
 -- CẤU HÌNH CỬA HÀNG (store_settings)
 -- =============================================================
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Yêu cầu liên hệ từ trang "Liên Hệ Với Chúng Tôi"
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Không có user_id: phần lớn người gửi là khách vãng lai chưa đăng nhập.
+-- Khác với bảng messages (hộp thoại của khách ĐÃ đăng nhập, có bot trả lời),
+-- bảng này chỉ là hàng đợi một chiều để admin xử lý.
+CREATE TABLE IF NOT EXISTS contact_requests (
+  id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(100) NOT NULL,
+  email       VARCHAR(150) NOT NULL,
+  phone       VARCHAR(20)  NOT NULL DEFAULT '',
+  subject     VARCHAR(100) NOT NULL,
+  message     VARCHAR(2000) NOT NULL,
+  status      VARCHAR(20)  NOT NULL DEFAULT 'new'
+              CHECK (status IN ('new', 'processing', 'resolved')),
+  admin_note  VARCHAR(1000) NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- Admin lọc theo trạng thái và luôn sắp xếp mới nhất trước.
+CREATE INDEX IF NOT EXISTS idx_contact_requests_status  ON contact_requests(status);
+CREATE INDEX IF NOT EXISTS idx_contact_requests_created ON contact_requests(created_at DESC);
+-- Dùng cho việc chặn gửi trùng liên tục trong thời gian ngắn.
+CREATE INDEX IF NOT EXISTS idx_contact_requests_email   ON contact_requests(lower(email));
+
 CREATE TABLE IF NOT EXISTS store_settings (
   id             INTEGER      PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   store_name     VARCHAR(150) NOT NULL DEFAULT 'IKA Fashion',

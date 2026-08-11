@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Bell,
   Newspaper,
+  Mail,
 } from 'lucide-react'
 
 type Notification = { id: string; text: string; type: 'warning' | 'info'; date: Date }
@@ -105,6 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Khách Hàng', href: '/dashboard/admin/customers', icon: Users },
     { name: 'Đánh Giá', href: '/dashboard/admin/reviews', icon: MessageSquare },
     { name: 'Tin Nhắn', href: '/dashboard/admin/messages', icon: MessageSquare },
+    { name: 'Liên Hệ', href: '/dashboard/admin/contacts', icon: Mail },
     { name: 'Khuyến Mãi', href: '/dashboard/admin/promotions', icon: Ticket },
     { name: 'Tin Tức', href: '/dashboard/admin/news', icon: Newspaper },
     { name: 'Nhân Viên', href: '/dashboard/admin/staffs', icon: ShieldCheck },

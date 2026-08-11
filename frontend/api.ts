@@ -548,6 +548,76 @@ export function updateSettings(body: Partial<StoreSettings>): Promise<StoreSetti
   return getData('/admin/settings', { method: 'PUT', body, auth: true })
 }
 
+// ---------- Liên hệ ----------
+
+export type ContactStatus = 'new' | 'processing' | 'resolved'
+
+export const CONTACT_STATUS_LABEL: Record<ContactStatus, string> = {
+  new:        'Mới',
+  processing: 'Đang xử lý',
+  resolved:   'Đã xử lý',
+}
+
+export interface ContactRequest {
+  id: string
+  name: string
+  email: string
+  phone: string
+  subject: string
+  message: string
+  status: ContactStatus
+  adminNote: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ContactInput {
+  name: string
+  email: string
+  phone?: string
+  subject: string
+  message: string
+}
+
+export interface ContactQuery {
+  page?: number
+  limit?: number
+  status?: ContactStatus
+  search?: string
+  sort?: 'newest' | 'oldest'
+}
+
+/** Công khai — khách chưa đăng nhập vẫn gửi được. */
+export function createContact(body: ContactInput): Promise<ContactRequest> {
+  return getData('/contacts', { method: 'POST', body })
+}
+
+export async function getContacts(
+  query: ContactQuery = {},
+): Promise<{ items: ContactRequest[]; meta: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  const json = await request(`/admin/contacts${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+  return { items: json.data, meta: json.meta }
+}
+
+export function getContactStats(): Promise<{ total: number; new: number; processing: number; resolved: number }> {
+  return getData('/admin/contacts/stats', { auth: true })
+}
+
+export function updateContact(
+  id: string,
+  body: { status?: ContactStatus; adminNote?: string },
+): Promise<ContactRequest> {
+  return getData(`/admin/contacts/${id}`, { method: 'PUT', body, auth: true })
+}
+
+export function deleteContact(id: string) {
+  return request(`/admin/contacts/${id}`, { method: 'DELETE', auth: true })
+}
+
 // ---------- Tải ảnh (admin) ----------
 
 export type UploadType = 'news' | 'products' | 'collections' | 'settings'

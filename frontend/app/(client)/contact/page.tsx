@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Mail, Phone, MapPin, Clock, MessageSquare, Send, Globe, ChevronDown } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { sendMessage, isMapEmbed, mapEmbedFromAddress } from '@/api'
+import { createContact, isMapEmbed, mapEmbedFromAddress } from '@/api'
 import { useSettings } from '@/components/context/SettingsContext'
 
 const FAQ_ITEMS = [
@@ -32,9 +32,21 @@ export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
   })
+
+  // Đã đăng nhập thì điền sẵn — khách không phải gõ lại thứ hệ thống đã biết.
+  useEffect(() => {
+    if (!session?.user) return
+    setFormData((prev) => ({
+      ...prev,
+      name:  prev.name  || session.user.name  || '',
+      email: prev.email || session.user.email || '',
+      phone: prev.phone || session.user.phone || '',
+    }))
+  }, [session])
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -52,16 +64,16 @@ export default function ContactPage() {
     setError('')
     setLoading(true)
     try {
-      const content = `[Liên hệ từ trang Contact]\nTên: ${formData.name}\nEmail: ${formData.email}\nTiêu đề: ${formData.subject}\n\n${formData.message}`
-
-      if (session) {
-        await sendMessage({ content })
-      }
+      // Endpoint công khai: khách chưa đăng nhập cũng gửi được. Trước đây form
+      // chỉ gửi khi có session nhưng vẫn báo thành công, nên tin của khách vãng
+      // lai biến mất không dấu vết.
+      await createContact(formData)
       setSubmitted(true)
-      setFormData({ name: '', email: '', subject: '', message: '' })
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
       setTimeout(() => setSubmitted(false), 7000)
-    } catch (err: any) {
-      setError('Không thể gửi tin nhắn. Vui lòng thử lại sau.')
+    } catch (err) {
+      // Hiện đúng lý do từ backend (email sai, gửi quá nhanh, nội dung quá ngắn...)
+      setError(err instanceof Error ? err.message : 'Không thể gửi tin nhắn. Vui lòng thử lại sau.')
     } finally {
       setLoading(false)
     }
@@ -196,6 +208,24 @@ export default function ContactPage() {
                         className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+                      Số điện thoại <span className="text-muted-foreground font-normal">(không bắt buộc)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="0912345678"
+                      className="w-full px-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
+                    />
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Để lại số nếu bạn muốn được gọi lại nhanh hơn.
+                    </p>
                   </div>
 
                   <div>
