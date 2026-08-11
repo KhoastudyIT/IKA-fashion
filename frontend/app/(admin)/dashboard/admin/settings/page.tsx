@@ -5,9 +5,12 @@
 // vào web luôn nhận giá trị hardcode. Giờ mọi thay đổi ở đây hiện thẳng lên
 // Header, Footer và trang Liên hệ của web khách.
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Save, CheckCircle } from 'lucide-react'
-import { getSettings, updateSettings, StoreSettings, DEFAULT_SETTINGS } from '@/api'
+import {
+  getSettings, updateSettings, StoreSettings, DEFAULT_SETTINGS,
+  normalizeMapEmbed, isMapEmbed, MAP_EMBED_PREFIX,
+} from '@/api'
 import ImageField from '@/components/ImageField'
 
 export default function AdminSettingsPage() {
@@ -18,12 +21,24 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    getSettings()
-      .then(setSettings)
-      .catch((err: any) => setError(err.message || 'Không tải được cấu hình'))
-      .finally(() => setLoading(false))
+  // Dùng cho cả lần tải đầu lẫn nút Hoàn tác — bỏ mọi sửa đổi chưa lưu
+  // bằng cách đọc lại đúng bản đang nằm trong DB.
+  const loadSettings = useCallback(async () => {
+    setError('')
+    setSaved(false)
+    setLoading(true)
+    try {
+      setSettings(await getSettings())
+    } catch (err: any) {
+      setError(err.message || 'Không tải được cấu hình')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
 
   const set = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) =>
     setSettings((prev) => ({ ...prev, [key]: value }))
@@ -92,6 +107,7 @@ export default function AdminSettingsPage() {
               <label className={labelCls}>Tên Cửa Hàng</label>
               <input
                 required
+                maxLength={150}
                 value={settings.storeName}
                 onChange={(e) => set('storeName', e.target.value)}
                 className={inputCls}
@@ -109,6 +125,7 @@ export default function AdminSettingsPage() {
             <div>
               <label className={labelCls}>Hotline</label>
               <input
+                maxLength={30}
                 value={settings.hotline}
                 onChange={(e) => set('hotline', e.target.value)}
                 className={inputCls}
@@ -119,6 +136,7 @@ export default function AdminSettingsPage() {
               <label className={labelCls}>Email Hỗ Trợ</label>
               <input
                 type="email"
+                maxLength={150}
                 value={settings.email}
                 onChange={(e) => set('email', e.target.value)}
                 className={inputCls}
@@ -128,6 +146,7 @@ export default function AdminSettingsPage() {
             <div>
               <label className={labelCls}>Địa Chỉ Cửa Hàng</label>
               <textarea
+                maxLength={255}
                 value={settings.address}
                 onChange={(e) => set('address', e.target.value)}
                 rows={2}
@@ -136,8 +155,42 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
+              <label className={labelCls}>Bản Đồ Google (mã nhúng)</label>
+              <textarea
+                value={settings.mapUrl}
+                onChange={(e) => set('mapUrl', normalizeMapEmbed(e.target.value))}
+                rows={3}
+                className={inputCls}
+                placeholder="https://www.google.com/maps/embed?pb=..."
+              />
+              <p className={hintCls}>
+                Google Maps → <b>Chia sẻ</b> → <b>Nhúng bản đồ</b> → <b>SAO CHÉP HTML</b>. Dán cả thẻ
+                &lt;iframe&gt; cũng được, hệ thống tự lấy phần cần thiết. Bỏ trống thì trang Liên hệ
+                dựng bản đồ từ địa chỉ ở trên.
+              </p>
+
+              {settings.mapUrl && (
+                isMapEmbed(settings.mapUrl) ? (
+                  <div className="mt-2 rounded overflow-hidden border border-[#E5DFD8] h-56">
+                    <iframe
+                      src={settings.mapUrl}
+                      title="Xem trước bản đồ"
+                      loading="lazy"
+                      className="block w-full h-full border-0"
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-2 px-3 py-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs">
+                    Chưa đúng mã nhúng — phải bắt đầu bằng <b>{MAP_EMBED_PREFIX}</b>. Lưu sẽ bị từ chối.
+                  </p>
+                )
+              )}
+            </div>
+
+            <div>
               <label className={labelCls}>Giờ Làm Việc</label>
               <input
+                maxLength={255}
                 value={settings.workingHours}
                 onChange={(e) => set('workingHours', e.target.value)}
                 className={inputCls}
@@ -159,6 +212,7 @@ export default function AdminSettingsPage() {
               <label className={labelCls}>Facebook</label>
               <input
                 type="url"
+                maxLength={300}
                 value={settings.facebookUrl}
                 onChange={(e) => set('facebookUrl', e.target.value)}
                 className={inputCls}
@@ -170,6 +224,7 @@ export default function AdminSettingsPage() {
               <label className={labelCls}>Instagram</label>
               <input
                 type="url"
+                maxLength={300}
                 value={settings.instagramUrl}
                 onChange={(e) => set('instagramUrl', e.target.value)}
                 className={inputCls}
@@ -181,6 +236,7 @@ export default function AdminSettingsPage() {
               <label className={labelCls}>TikTok</label>
               <input
                 type="url"
+                maxLength={300}
                 value={settings.tiktokUrl}
                 onChange={(e) => set('tiktokUrl', e.target.value)}
                 className={inputCls}
@@ -191,7 +247,15 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={loadSettings}
+            disabled={saving || uploading}
+            className="px-6 py-3 border border-[#E5DFD8] text-[#2C2C2C] hover:bg-[#F9F5F0] font-semibold rounded transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            Hoàn tác
+          </button>
           <button
             type="submit"
             disabled={saving || uploading}

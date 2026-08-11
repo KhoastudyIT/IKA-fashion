@@ -587,6 +587,9 @@ CREATE TABLE IF NOT EXISTS store_settings (
   hotline        VARCHAR(30)  NOT NULL DEFAULT '',
   email          VARCHAR(150) NOT NULL DEFAULT '',
   address        VARCHAR(255) NOT NULL DEFAULT '',
+  -- URL nhúng Google Maps (https://www.google.com/maps/embed?pb=...).
+  -- Chuỗi này rất dài nên dùng TEXT thay vì VARCHAR có giới hạn.
+  map_url        TEXT         NOT NULL DEFAULT '',
   working_hours  VARCHAR(255) NOT NULL DEFAULT '',
   facebook_url   VARCHAR(300) NOT NULL DEFAULT '',
   instagram_url  VARCHAR(300) NOT NULL DEFAULT '',

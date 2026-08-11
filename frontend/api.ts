@@ -496,11 +496,33 @@ export type StoreSettings = {
   hotline: string
   email: string
   address: string
+  mapUrl: string
   workingHours: string
   facebookUrl: string
   instagramUrl: string
   tiktokUrl: string
   updatedAt?: string
+}
+
+export const MAP_EMBED_PREFIX = 'https://www.google.com/maps/embed'
+
+/** Admin thường dán nguyên thẻ <iframe> từ Google Maps — rút lấy src. */
+export function normalizeMapEmbed(value: string): string {
+  const iframe = String(value ?? '').match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i)
+  return (iframe ? iframe[1] : String(value ?? '')).trim()
+}
+
+export function isMapEmbed(url: string): boolean {
+  return String(url ?? '').startsWith(MAP_EMBED_PREFIX)
+}
+
+/**
+ * Dự phòng khi admin chưa nhập mã nhúng: dựng bản đồ từ chính địa chỉ cửa hàng.
+ * Dạng ?output=embed không cần API key, nhưng kém chính xác hơn mã nhúng thật
+ * vì Google phải tự đoán vị trí từ chuỗi địa chỉ.
+ */
+export function mapEmbedFromAddress(address: string): string {
+  return `https://maps.google.com/maps?q=${encodeURIComponent(address || '')}&output=embed`
 }
 
 /** Giá trị hiển thị khi chưa gọi được API — khớp dòng seed trong ika_database.sql. */
@@ -510,6 +532,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   hotline: '0987 654 321',
   email: 'support@ika-fashion.vn',
   address: 'Số 123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh',
+  mapUrl: '',
   workingHours: 'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00',
   facebookUrl: '',
   instagramUrl: '',

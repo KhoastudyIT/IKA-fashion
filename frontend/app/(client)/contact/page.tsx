@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Mail, Phone, MapPin, Clock, MessageSquare, Send, Globe, ChevronDown } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { sendMessage } from '@/api'
+import { sendMessage, isMapEmbed, mapEmbedFromAddress } from '@/api'
 import { useSettings } from '@/components/context/SettingsContext'
 
 const FAQ_ITEMS = [
@@ -263,10 +263,12 @@ export default function ContactPage() {
 
             {/* Sidebar — 2 cột */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Map placeholder */}
+              {/* Bản đồ — lấy từ Cài Đặt Hệ Thống. Trước đây hardcode một điểm ở
+                  Hoàn Kiếm, Hà Nội trong khi địa chỉ cấu hình lại ở TP.HCM.
+                  Chưa nhập mã nhúng thì dựng tạm từ chính địa chỉ cửa hàng. */}
               <div className="rounded-xl overflow-hidden border border-border aspect-[4/3]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.6942476416997!2d105.84117907503158!3d21.007091088638414!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ac76a0b3ad21%3A0x9b9b47ab0a84e0f0!2zSG_DoG4gS2nhur9tLCBIw6AgTuG7mWksIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1690000000000!5m2!1svi!2s"
+                  src={isMapEmbed(settings.mapUrl) ? settings.mapUrl : mapEmbedFromAddress(settings.address)}
                   className="w-full h-full border-0"
                   allowFullScreen
                   loading="lazy"

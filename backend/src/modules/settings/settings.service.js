@@ -1,4 +1,10 @@
 import db from '../../db/index.js';
+import { dbCache } from '../../db/store.js';
+
+// Cấu hình đọc trên mọi lượt tải trang nhưng gần như không đổi → cache 10 phút,
+// xóa ngay khi admin lưu nên không bao giờ thấy dữ liệu cũ sau khi sửa.
+const CACHE_KEY = 'settings:store';
+const CACHE_TTL = 600000;
 
 // Alias camelCase cho FE, giống các module khác.
 const COLS = `
@@ -7,6 +13,7 @@ const COLS = `
   hotline,
   email,
   address,
+  map_url       AS "mapUrl",
   working_hours AS "workingHours",
   facebook_url  AS "facebookUrl",
   instagram_url AS "instagramUrl",
@@ -22,6 +29,7 @@ const COLUMN_OF = {
   hotline:      'hotline',
   email:        'email',
   address:      'address',
+  mapUrl:       'map_url',
   workingHours: 'working_hours',
   facebookUrl:  'facebook_url',
   instagramUrl: 'instagram_url',
@@ -34,19 +42,25 @@ const COLUMN_OF = {
  * không nên vỡ chỉ vì admin chưa vào Cài Đặt lần nào.
  */
 export async function getSettings() {
+  const cached = dbCache.get(CACHE_KEY);
+  if (cached) return cached;
+
   const res = await db.query(`SELECT ${COLS} FROM store_settings WHERE id = 1`);
-  if (res.rows.length) return res.rows[0];
+  let row = res.rows[0];
 
-  const created = await db.query(
-    `INSERT INTO store_settings (id) VALUES (1)
-     ON CONFLICT (id) DO NOTHING
-     RETURNING ${COLS}`,
-  );
-  if (created.rows.length) return created.rows[0];
+  if (!row) {
+    const created = await db.query(
+      `INSERT INTO store_settings (id) VALUES (1)
+       ON CONFLICT (id) DO NOTHING
+       RETURNING ${COLS}`,
+    );
+    // Có request khác chèn trước trong lúc chạy — đọc lại là chắc chắn có.
+    row = created.rows[0]
+      ?? (await db.query(`SELECT ${COLS} FROM store_settings WHERE id = 1`)).rows[0];
+  }
 
-  // Có request khác chèn trước trong lúc chạy — đọc lại là chắc chắn có.
-  const again = await db.query(`SELECT ${COLS} FROM store_settings WHERE id = 1`);
-  return again.rows[0];
+  dbCache.set(CACHE_KEY, row, CACHE_TTL);
+  return row;
 }
 
 /** Chỉ cập nhật field được gửi lên; field bỏ trống giữ nguyên giá trị cũ. */
@@ -70,5 +84,7 @@ export async function updateSettings(data) {
     `UPDATE store_settings SET ${sets.join(', ')} WHERE id = 1 RETURNING ${COLS}`,
     params,
   );
+
+  dbCache.delete(CACHE_KEY);
   return res.rows[0];
 }
