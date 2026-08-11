@@ -21,6 +21,7 @@ import { newsPublicRouter, newsAdminRouter }          from './modules/news/news.
 import { settingsPublicRouter, settingsAdminRouter }  from './modules/settings/settings.routes.js';
 import { uploadAdminRouter }                          from './modules/uploads/upload.routes.js';
 import { UPLOAD_ROOT }                                from './modules/uploads/upload.service.js';
+import { flashSalePublicRouter, flashSaleAdminRouter } from './modules/flash-sales/flash_sale.routes.js';
 
 export function createApp() {
   const app = express();
@@ -43,13 +44,14 @@ export function createApp() {
 
   const v1 = '/api/v1';
 
-  // ── Public (không cần đăng nhập) ──────────────────────────
+  // ── Public (được phép không đăng nhập) ─────────────────────────────────────
   app.use(`${v1}/auth`,        authRouter);
   app.use(`${v1}/products`,    productPublicRouter);
   app.use(`${v1}/collections`, collectionPublicRouter);
   app.use(`${v1}/reviews`,     reviewPublicRouter);
   app.use(`${v1}/news`,        newsPublicRouter);
   app.use(`${v1}/settings`,    settingsPublicRouter);
+  app.use(`${v1}/flash-sales`, flashSalePublicRouter);
 
   // ── Customer (khách hàng đã đăng nhập) ────────────────────
   app.use(`${v1}/customer/cart`,     cartRouter);
@@ -59,17 +61,18 @@ export function createApp() {
   app.use(`${v1}/customer/reviews`,  reviewCustomerRouter);
   app.use(`${v1}/customer/messages`, messageCustomerRouter);
 
-  // ── Admin (quản trị) ──────────────────────────────────────
-  app.use(`${v1}/admin/products`,    productAdminRouter);
-  app.use(`${v1}/admin/collections`, collectionAdminRouter);
-  app.use(`${v1}/admin/orders`,      orderAdminRouter);
-  app.use(`${v1}/admin/users`,       userAdminRouter);
-  app.use(`${v1}/admin/coupons`,     couponAdminRouter);
-  app.use(`${v1}/admin/reviews`,     reviewAdminRouter);
-  app.use(`${v1}/admin/messages`,    messageAdminRouter);
-  app.use(`${v1}/admin/news`,        newsAdminRouter);
-  app.use(`${v1}/admin/settings`,    settingsAdminRouter);
-  app.use(`${v1}/admin/uploads`,     uploadAdminRouter);
+  // ── Admin (quản trị) ────────────────────────────────────────────────
+  app.use(`${v1}/admin/products`,     productAdminRouter);
+  app.use(`${v1}/admin/collections`,  collectionAdminRouter);
+  app.use(`${v1}/admin/orders`,       orderAdminRouter);
+  app.use(`${v1}/admin/users`,        userAdminRouter);
+  app.use(`${v1}/admin/coupons`,      couponAdminRouter);
+  app.use(`${v1}/admin/reviews`,      reviewAdminRouter);
+  app.use(`${v1}/admin/messages`,     messageAdminRouter);
+  app.use(`${v1}/admin/news`,         newsAdminRouter);
+  app.use(`${v1}/admin/settings`,     settingsAdminRouter);
+  app.use(`${v1}/admin/uploads`,      uploadAdminRouter);
+  app.use(`${v1}/admin/flash-sales`,  flashSaleAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 
