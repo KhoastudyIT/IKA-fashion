@@ -501,6 +501,7 @@ export type StoreSettings = {
   facebookUrl: string
   instagramUrl: string
   tiktokUrl: string
+  youtubeUrl: string
   updatedAt?: string
 }
 
@@ -537,6 +538,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   facebookUrl: '',
   instagramUrl: '',
   tiktokUrl: '',
+  youtubeUrl: '',
 }
 
 /** Công khai — không cần token. */

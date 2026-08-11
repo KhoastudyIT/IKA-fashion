@@ -620,13 +620,14 @@ CREATE TABLE IF NOT EXISTS store_settings (
   facebook_url   VARCHAR(300) NOT NULL DEFAULT '',
   instagram_url  VARCHAR(300) NOT NULL DEFAULT '',
   tiktok_url     VARCHAR(300) NOT NULL DEFAULT '',
+  youtube_url    VARCHAR(300) NOT NULL DEFAULT '',
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 -- Dòng mặc định.
 INSERT INTO store_settings (
   id, store_name, logo, hotline, email, address,
-  working_hours, facebook_url, instagram_url, tiktok_url
+  working_hours, facebook_url, instagram_url, tiktok_url, youtube_url
 ) VALUES (
   1,
   'IKA Fashion',
@@ -637,6 +638,7 @@ INSERT INTO store_settings (
   'T2–T6: 9:00 – 18:00 · T7: 10:00 – 16:00',
   'https://facebook.com/ikafashion',
   'https://instagram.com/ikafashion',
-  'https://tiktok.com/@ikafashion'
+  'https://tiktok.com/@ikafashion',
+  'https://youtube.com/@ikafashion'
 )
 ON CONFLICT (id) DO NOTHING;

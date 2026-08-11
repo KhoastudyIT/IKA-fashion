@@ -48,4 +48,5 @@ export const updateSettingsSchema = z.object({
   facebookUrl:  optionalUrl.optional(),
   instagramUrl: optionalUrl.optional(),
   tiktokUrl:    optionalUrl.optional(),
+  youtubeUrl:   optionalUrl.optional(),
 });

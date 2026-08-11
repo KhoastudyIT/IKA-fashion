@@ -49,10 +49,11 @@ const supportLinks = [
 ]
 
 // Link mạng xã hội lấy từ Cài Đặt Hệ Thống; mục nào admin bỏ trống thì ẩn luôn
-// thay vì trỏ tới trang không tồn tại. YouTube chưa có trong cấu hình nên vẫn cố định.
-const buildSocialLinks = (s: { tiktokUrl: string; facebookUrl: string; instagramUrl: string }) => [
+const buildSocialLinks = (s: {
+  tiktokUrl: string; facebookUrl: string; instagramUrl: string; youtubeUrl: string
+}) => [
   { label: 'TikTok', href: s.tiktokUrl, icon: <TikTokIcon />, color: '#010101' },
-  { label: 'YouTube', href: 'https://youtube.com/@ikafashion', icon: <YouTubeIcon />, color: '#FF0000' },
+  { label: 'YouTube', href: s.youtubeUrl, icon: <YouTubeIcon />, color: '#FF0000' },
   { label: 'Facebook', href: s.facebookUrl, icon: <FacebookIcon />, color: '#1877F2' },
   { label: 'Instagram', href: s.instagramUrl, icon: <InstagramIcon />, color: '#E1306C' },
 ].filter((link) => link.href)

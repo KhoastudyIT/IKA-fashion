@@ -18,6 +18,7 @@ const COLS = `
   facebook_url  AS "facebookUrl",
   instagram_url AS "instagramUrl",
   tiktok_url    AS "tiktokUrl",
+  youtube_url   AS "youtubeUrl",
   updated_at    AS "updatedAt"
 `;
 
@@ -34,6 +35,7 @@ const COLUMN_OF = {
   facebookUrl:  'facebook_url',
   instagramUrl: 'instagram_url',
   tiktokUrl:    'tiktok_url',
+  youtubeUrl:   'youtube_url',
 };
 
 /**

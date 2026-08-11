@@ -207,7 +207,7 @@ export default function AdminSettingsPage() {
           </h2>
           <p className={hintCls}>Bỏ trống mục nào thì Footer ẩn luôn icon đó. Phải nhập URL đầy đủ kèm https://</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className={labelCls}>Facebook</label>
               <input
@@ -241,6 +241,18 @@ export default function AdminSettingsPage() {
                 onChange={(e) => set('tiktokUrl', e.target.value)}
                 className={inputCls}
                 placeholder="https://tiktok.com/@..."
+              />
+            </div>
+
+            <div>
+              <label className={labelCls}>YouTube</label>
+              <input
+                type="url"
+                maxLength={300}
+                value={settings.youtubeUrl}
+                onChange={(e) => set('youtubeUrl', e.target.value)}
+                className={inputCls}
+                placeholder="https://youtube.com/@..."
               />
             </div>
           </div>
