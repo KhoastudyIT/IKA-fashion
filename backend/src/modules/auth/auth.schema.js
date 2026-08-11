@@ -13,8 +13,10 @@ export const loginSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name:    z.string().min(2).max(100).optional(),
+  // Chuỗi rỗng được chấp nhận: users.phone là NOT NULL DEFAULT '',
+  // nên user chưa nhập SĐT vẫn phải lưu được các trường khác.
   phone:   z.string()
-             .regex(/^(0[35789])[0-9]{8}$/, 'Số điện thoại không hợp lệ (phải gồm 10 chữ số, bắt đầu bằng 03/05/07/08/09)')
+             .regex(/^$|^(0[35789])[0-9]{8}$/, 'Số điện thoại không hợp lệ (phải gồm 10 chữ số, bắt đầu bằng 03/05/07/08/09)')
              .optional(),
   address: z.string().max(255).optional(),
   city:    z.string().max(255).optional(),
