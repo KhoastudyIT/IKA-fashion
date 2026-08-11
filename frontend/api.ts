@@ -298,6 +298,10 @@ export function apiLogout() {
 export function updateProfile(body: { name?: string; phone?: string; address?: string; city?: string }) {
   return getData('/auth/me', { method: 'PUT', body, auth: true })
 }
+// Không trả data — chỉ cần biết thành công hay không, lỗi ném ra qua request()
+export function changePassword(body: { currentPassword: string; newPassword: string }) {
+  return request('/auth/password', { method: 'PUT', body, auth: true })
+}
 
 // ---------- Messages ----------
 

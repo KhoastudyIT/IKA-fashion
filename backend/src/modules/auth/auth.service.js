@@ -71,6 +71,25 @@ export async function updateProfile(userId, { name, phone, address, city }) {
 
 // ─── Admin: quản lý người dùng ──────────────────────────────────────────────
 
+export async function changePassword(userId, { currentPassword, newPassword }) {
+  const res = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
+  const row = res.rows[0];
+  if (!row) throw new AppError('Không tìm thấy người dùng', 404);
+
+  const valid = await bcrypt.compare(currentPassword, row.password);
+  if (!valid) throw new AppError('Mật khẩu hiện tại không đúng', 400);
+
+  if (currentPassword === newPassword) {
+    throw new AppError('Mật khẩu mới phải khác mật khẩu hiện tại', 400);
+  }
+
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await db.query(
+    'UPDATE users SET password = $2, updated_at = NOW() WHERE id = $1',
+    [userId, hashed],
+  );
+}
+
 export async function listUsers() {
   const res = await db.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at DESC`);
   return res.rows;

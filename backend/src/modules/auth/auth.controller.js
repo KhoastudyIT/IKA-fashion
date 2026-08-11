@@ -20,6 +20,11 @@ export async function updateProfile(req, res) {
   ok(res, user, 'Cập nhật thông tin thành công');
 }
 
+export async function changePassword(req, res) {
+  await authService.changePassword(req.user.id, req.body);
+  ok(res, null, 'Đổi mật khẩu thành công');
+}
+
 export function logout(_req, res) {
   ok(res, null, 'Đăng xuất thành công');
 }
