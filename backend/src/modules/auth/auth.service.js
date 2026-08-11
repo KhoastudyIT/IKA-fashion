@@ -69,8 +69,6 @@ export async function updateProfile(userId, { name, phone, address, city }) {
   return res.rows[0];
 }
 
-// ─── Admin: quản lý người dùng ──────────────────────────────────────────────
-
 export async function changePassword(userId, { currentPassword, newPassword }) {
   const res = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
   const row = res.rows[0];
@@ -89,6 +87,8 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
     [userId, hashed],
   );
 }
+
+// ─── Admin: quản lý người dùng ──────────────────────────────────────────────
 
 export async function listUsers() {
   const res = await db.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at DESC`);
