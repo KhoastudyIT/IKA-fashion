@@ -105,9 +105,22 @@ export default function CustomerCartPage() {
                         {item.img && <img src={item.img} alt={item.name} className="w-full h-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-heading font-semibold text-foreground mb-1 truncate">{item.name}</h3>
+                        <h3 className="font-heading font-semibold text-foreground mb-1 truncate flex items-center gap-2">
+                          {item.name}
+                          {item.isFlashSale && (
+                            <span className="text-xs px-2 py-0.5 bg-orange-600 text-white rounded-full font-medium whitespace-nowrap">
+                              ⚡ Flash Sale
+                            </span>
+                          )}
+                        </h3>
                         <p className="text-sm text-muted-foreground mb-1">Màu: {item.color} · Size: {item.size}</p>
-                        <p className="text-sm text-muted-foreground mb-3">{item.price.toLocaleString()} đ / sản phẩm</p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-sm font-medium text-foreground">{item.price.toLocaleString()} đ</span>
+                          {item.originalPrice != null && item.originalPrice > item.price && (
+                            <span className="text-xs text-muted-foreground line-through">{item.originalPrice.toLocaleString()} đ</span>
+                          )}
+                          <span className="text-sm text-muted-foreground">/ sản phẩm</span>
+                        </div>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center border border-border rounded w-fit">
                             <button onClick={() => handleUpdate(key, item.quantity - 1)} className="px-3 py-1 text-foreground hover:bg-secondary transition-colors">−</button>
@@ -121,6 +134,11 @@ export default function CustomerCartPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="font-semibold text-foreground">{item.lineTotal.toLocaleString()} đ</p>
+                        {item.originalPrice != null && item.originalPrice > item.price && (
+                          <p className="text-xs text-muted-foreground line-through mt-1">
+                            {item.originalLineTotal.toLocaleString()} đ
+                          </p>
+                        )}
                       </div>
                     </div>
                   )
