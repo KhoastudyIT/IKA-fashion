@@ -7,6 +7,7 @@ import { useSession } from '@/auth-client'
 import { getCart, createOrder, applyCoupon, Cart, AppliedCoupon } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
 import { Check, ChevronRight, MapPin, Phone, CreditCard, Package, Truck } from 'lucide-react'
+import { VN_CITIES, isValidPhone } from '@/lib/validation'
 
 type Step = 1 | 2 | 3
 
@@ -80,6 +81,7 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null)
   const [couponError, setCouponError] = useState('')
   const [applyingCoupon, setApplyingCoupon] = useState(false)
+  const [phoneError, setPhoneError] = useState('')
 
   useEffect(() => {
     if (isPending) return
@@ -88,7 +90,11 @@ export default function CheckoutPage() {
       .then((c) => {
         if (!c || c.items.length === 0) { router.push('/dashboard/customer/cart'); return }
         setCart(c)
-        if (session.user.name) setName(session.user.name)
+        // Pre-fill shipping info from the user's saved profile
+        if (session.user.name)    setName(session.user.name)
+        if (session.user.phone)   setPhone(session.user.phone)
+        if (session.user.address) setAddress(session.user.address)
+        if (session.user.city)    setCity(session.user.city)
       })
       .catch(() => router.push('/dashboard/customer/cart'))
       .finally(() => setLoading(false))
@@ -209,9 +215,18 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label style={labelStyle}>Số điện thoại *</label>
-                      <input style={inputStyle} value={phone} onChange={e => setPhone(e.target.value)} placeholder="0912 345 678" type="tel"
-                        onFocus={e => e.target.style.borderColor = '#D4AF37'}
-                        onBlur={e => e.target.style.borderColor = '#E5DFD8'} />
+                      <input
+                        style={{ ...inputStyle, borderColor: phoneError ? '#DC2626' : '#E5DFD8' }}
+                        value={phone}
+                        onChange={e => { setPhone(e.target.value); setPhoneError('') }}
+                        placeholder="0912 345 678"
+                        type="tel"
+                        onFocus={e => e.target.style.borderColor = phoneError ? '#DC2626' : '#D4AF37'}
+                        onBlur={e => e.target.style.borderColor = phoneError ? '#DC2626' : '#E5DFD8'}
+                      />
+                      {phoneError && (
+                        <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '6px', marginBottom: 0 }}>{phoneError}</p>
+                      )}
                     </div>
                     <div>
                       <label style={labelStyle}>Tỉnh / Thành phố *</label>
@@ -219,7 +234,7 @@ export default function CheckoutPage() {
                         onFocus={e => e.target.style.borderColor = '#D4AF37'}
                         onBlur={e => e.target.style.borderColor = '#E5DFD8'}>
                         <option value="">Chọn tỉnh/thành</option>
-                        {['Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Bình Dương', 'Đồng Nai', 'Hưng Yên', 'Thái Nguyên', 'Nghệ An'].map(c => (
+                        {VN_CITIES.map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
                       </select>
@@ -240,7 +255,15 @@ export default function CheckoutPage() {
                   </div>
 
                   <button
-                    onClick={() => { if (name && phone && address && city) setStep(2) }}
+                    onClick={() => {
+                      if (!name || !phone || !address || !city) return
+                      if (!isValidPhone(phone)) {
+                        setPhoneError('Số điện thoại không hợp lệ (phải gồm 10 chữ số, bắt đầu bằng 03/05/07/08/09).')
+                        return
+                      }
+                      setPhoneError('')
+                      setStep(2)
+                    }}
                     disabled={!name || !phone || !address || !city}
                     style={{ marginTop: '24px', width: '100%', padding: '14px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '1px', opacity: (!name || !phone || !address || !city) ? 0.5 : 1 }}
                   >

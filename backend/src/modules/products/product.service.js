@@ -6,7 +6,8 @@ const csv = (s) => (s ? s.split(',').map(v => v.trim()).filter(Boolean) : []);
 
 // rating là NUMERIC → pg trả về string, cast ::float để client nhận number
 const PRODUCT_COLS =
-  `id, name, handle, collection, type, price, img, images, colors, sizes, features,
+  `id, name, handle, collection, type, price, original_price, discount,
+   img, images, colors, sizes, features,
    rating::float AS rating, sold, stock, description`;
 
 // Cột JSONB — khi ghi phải stringify
@@ -14,7 +15,7 @@ const JSON_FIELDS = new Set(['images', 'colors', 'sizes', 'features']);
 
 export async function listProducts({
   collection, search, sort = 'newest', page = 1, limit = 12,
-  priceMin, priceMax, colors, sizes,
+  priceMin, priceMax, colors, sizes, isSale,
 }) {
   page = Number(page) || 1;
   limit = Number(limit) || 12;
@@ -37,6 +38,10 @@ export async function listProducts({
   if (priceMax != null) {
     params.push(priceMax);
     where.push(`price <= $${params.length}`);
+  }
+  // Lọc Ưu Đãi: discount > 0
+  if (isSale === 'true') {
+    where.push(`discount > 0`);
   }
   // Facet đa lựa chọn trên JSONB: '?|' = mảng chứa BẤT KỲ phần tử nào
   const fColors = csv(colors);
@@ -96,11 +101,14 @@ export async function createProduct(data) {
 
   const res = await db.query(
     `INSERT INTO products
-       (name, handle, collection, type, price, img, images, colors, sizes, features, stock, description)
-     VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12)
+       (name, handle, collection, type, price, original_price, discount,
+        img, images, colors, sizes, features, stock, description)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13,$14)
      RETURNING ${PRODUCT_COLS}`,
     [
       data.name, data.handle, data.collection, data.type, data.price,
+      data.original_price ?? null,
+      data.discount ?? 0,
       data.img ?? '/products/placeholder.png',
       JSON.stringify(data.images ?? []),
       JSON.stringify(data.colors ?? []),
@@ -113,8 +121,8 @@ export async function createProduct(data) {
 }
 
 export async function updateProduct(id, data) {
-  const allowed = ['name', 'handle', 'collection', 'type', 'price', 'img',
-    'images', 'colors', 'sizes', 'features', 'rating', 'sold', 'stock', 'description'];
+  const allowed = ['name', 'handle', 'collection', 'type', 'price', 'original_price', 'discount',
+    'img', 'images', 'colors', 'sizes', 'features', 'rating', 'sold', 'stock', 'description'];
 
   const sets = [];
   const params = [Number(id)];

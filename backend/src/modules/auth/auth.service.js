@@ -6,7 +6,7 @@ import { AppError } from '../../middleware/errorHandler.js';
 
 // Cột user trả cho client (bỏ password), alias sang camelCase
 const USER_COLS =
-  `id, name, email, role, phone, address, is_locked AS "isLocked", created_at AS "createdAt"`;
+  `id, name, email, role, phone, address, city, is_locked AS "isLocked", created_at AS "createdAt"`;
 
 function signToken(user) {
   return jwt.sign(
@@ -38,7 +38,7 @@ export async function login({ email, password }) {
   );
   const row = res.rows[0];
   if (!row) throw new AppError('Email hoặc mật khẩu không đúng', 401);
-  if (row.isLocked) throw new AppError('Tài khoản của bạn đã bị khóa bởi quản trị viên', 403);
+  if (row.isLocked) throw new AppError('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin để được hỗ trợ.', 403);
 
   const valid = await bcrypt.compare(password, row.password);
   if (!valid) throw new AppError('Email hoặc mật khẩu không đúng', 401);
@@ -53,16 +53,17 @@ export async function getMe(userId) {
   return res.rows[0];
 }
 
-export async function updateProfile(userId, { name, phone, address }) {
+export async function updateProfile(userId, { name, phone, address, city }) {
   const res = await db.query(
     `UPDATE users SET
        name    = COALESCE($2, name),
        phone   = COALESCE($3, phone),
        address = COALESCE($4, address),
+       city    = COALESCE($5, city),
        updated_at = NOW()
      WHERE id = $1
      RETURNING ${USER_COLS}`,
-    [userId, name ?? null, phone ?? null, address ?? null],
+    [userId, name ?? null, phone ?? null, address ?? null, city ?? null],
   );
   if (!res.rows.length) throw new AppError('Không tìm thấy người dùng', 404);
   return res.rows[0];
@@ -76,7 +77,43 @@ export async function listUsers() {
 }
 
 export async function deleteUser(id) {
-  await db.query('DELETE FROM users WHERE id = $1', [id]);
+  // ── 1. Guard: block deletion if the user has any order history ────────────
+  // orders.user_id has no ON DELETE rule, so Postgres would throw 23503.
+  // Business rule: lock the account instead of deleting it.
+  const orderCheck = await db.query(
+    'SELECT 1 FROM orders WHERE user_id = $1 LIMIT 1',
+    [id],
+  );
+  if (orderCheck.rows.length) {
+    throw new AppError(
+      'Không thể xóa khách hàng đã có lịch sử mua hàng. Vui lòng sử dụng chức năng Khóa tài khoản.',
+      400,
+    );
+  }
+
+  // ── 2. Delete inside a transaction ───────────────────────────────────────
+  // cart_items, wishlist, conversations, messages → ON DELETE CASCADE (Postgres handles them).
+  // reviews.user_id                               → ON DELETE SET NULL  (Postgres handles it).
+  // No manual pre-deletion needed; just delete the user and let the DB cascade.
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM users WHERE id = $1', [id]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+
+    // ── 3. Fallback: catch any remaining FK violation (23503) ────────────
+    if (err.code === '23503') {
+      throw new AppError(
+        'Không thể xóa người dùng do dữ liệu đang được liên kết với hệ thống.',
+        400,
+      );
+    }
+    throw err; // re-throw unexpected errors as 500
+  } finally {
+    client.release();
+  }
 }
 
 export async function toggleLockUser(id) {

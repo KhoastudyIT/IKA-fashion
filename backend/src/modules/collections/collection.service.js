@@ -2,16 +2,20 @@ import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
 
 const PRODUCT_COLS =
-  `id, name, handle, collection, type, price, img, images, colors, sizes, features,
+  `id, name, handle, collection, type, price, original_price, discount,
+   img, images, colors, sizes, features,
    rating::float AS rating, sold, stock, description`;
 
 export async function listCollections() {
-  // Kèm số lượng sản phẩm mỗi danh mục
+  // Kèm số lượng sản phẩm mỗi danh mục.
+  // Loại trừ slug 'sale' — Ưu Đãi không phải danh mục thật,
+  // được lọc riêng qua ?isSale=true trên API products.
   const res = await db.query(`
     SELECT c.id, c.slug, c.name, c.img,
            COUNT(p.id)::int AS "productCount"
     FROM collections c
     LEFT JOIN products p ON p.collection = c.slug
+    WHERE c.slug != 'sale'
     GROUP BY c.id, c.slug, c.name, c.img
     ORDER BY c.id
   `);

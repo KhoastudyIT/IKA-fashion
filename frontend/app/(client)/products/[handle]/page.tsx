@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { getProductByHandle, getProducts, addToCart, addWishlist, removeWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
@@ -12,16 +12,11 @@ import { useShop } from '@/components/context/ShopContext'
 export default function ProductDetailPage() {
   const params = useParams<{ handle: string }>()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { data: session } = useSession()
   const chat = useChat()
   const { syncCart, syncWishlist, isWishlisted } = useShop()
 
-  // Đọc thông tin khuyến mãi từ URL (nếu vào từ trang Ưu Đãi)
-  const saleOldPrice = searchParams.get('oldPrice') ? Number(searchParams.get('oldPrice')) : null
-  const saleNewPrice = searchParams.get('newPrice') ? Number(searchParams.get('newPrice')) : null
-  const saleDiscount = searchParams.get('discount') ? Number(searchParams.get('discount')) : null
-  const isSale = saleOldPrice !== null && saleNewPrice !== null && saleDiscount !== null
+  // Thông tin giảm giá đọc từ dữ liệu sản phẩm (không cần URL param nữa)
 
   const [product, setProduct] = useState<ApiProduct | null>(null)
   const [related, setRelated] = useState<ApiProduct[]>([])
@@ -130,8 +125,8 @@ export default function ProductDetailPage() {
           <div className="max-w-7xl mx-auto flex items-center gap-2 text-sm">
             <Link href="/" className="text-accent hover:underline">Trang Chủ</Link>
             <span className="text-muted-foreground">/</span>
-            {isSale ? (
-              <Link href="/khuyen-mai" className="text-accent hover:underline">Ưu Đãi & Giảm Giá</Link>
+            {product.discount > 0 ? (
+              <Link href="/products?isSale=true" className="text-accent hover:underline">Ưu Đãi & Giảm Giá</Link>
             ) : (
               <Link href="/products" className="text-accent hover:underline">Sản Phẩm</Link>
             )}
@@ -146,8 +141,8 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               <div className="bg-secondary rounded-lg overflow-hidden h-96 md:h-[600px] flex items-center justify-center relative">
                 <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
-                {/* Badge giảm giá — chỉ hiển thị khi đến từ trang Ưu Đãi */}
-                {isSale && (
+                {/* Badge giảm giá — lấy từ dữ liệu product */}
+                {product.discount > 0 && (
                   <div style={{
                     position: 'absolute', top: '16px', left: '16px',
                     background: '#D4AF37', color: '#1a1a1a',
@@ -155,7 +150,7 @@ export default function ProductDetailPage() {
                     padding: '6px 14px', borderRadius: '24px',
                     letterSpacing: '0.5px', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                   }}>
-                    -{saleDiscount}%
+                    -{product.discount}%
                   </div>
                 )}
               </div>
@@ -185,27 +180,27 @@ export default function ProductDetailPage() {
                   </button>
                 </div>
 
-                {/* Giá — hiển thị giá khuyến mãi nếu đến từ trang Ưu Đãi, ngược lại hiển thị giá thường */}
-                {isSale ? (
+                {/* Giá — hiển thị giá khuyến mãi nếu product có discount */}
+                {product.discount > 0 && product.originalPrice ? (
                   <div className="mb-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-3xl font-semibold text-accent">
-                        {saleNewPrice!.toLocaleString('vi-VN')} đ
+                        {product.price.toLocaleString('vi-VN')} đ
                       </span>
                       <span className="text-lg text-muted-foreground line-through">
-                        {saleOldPrice!.toLocaleString('vi-VN')} đ
+                        {product.originalPrice.toLocaleString('vi-VN')} đ
                       </span>
                       <span style={{
                         background: '#fee2e2', color: '#991b1b',
                         fontSize: '13px', fontWeight: 700,
                         padding: '3px 10px', borderRadius: '20px',
                       }}>
-                        Tiết kiệm {(saleOldPrice! - saleNewPrice!).toLocaleString('vi-VN')} đ
+                        Tiết kiệm {(product.originalPrice - product.price).toLocaleString('vi-VN')} đ
                       </span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-3xl font-semibold text-accent mb-2">{product.price.toLocaleString()} đ</p>
+                  <p className="text-3xl font-semibold text-accent mb-2">{product.price.toLocaleString('vi-VN')} đ</p>
                 )}
 
                 <p className="text-sm text-muted-foreground mb-4">★ {product.rating} · Đã bán {product.sold} · Còn {product.stock} sản phẩm</p>

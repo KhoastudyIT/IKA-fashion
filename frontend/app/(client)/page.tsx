@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Star, Truck, ShieldCheck, RefreshCcw, Headphones, ArrowRight, Quote } from 'lucide-react'
 import { getProducts, getNews, ApiProduct, Article } from '@/api'
+import ProductCard from '@/components/ProductCard'
 
 /* ───────── Banner Data ───────── */
 const BANNERS = [
@@ -69,10 +70,47 @@ const INSTAGRAM_IMAGES = [
   '/products/quan-xam.png',
 ]
 
+/* ───────── Carousel Utilities ───────── */
+const CAROUSEL_SCROLLBAR_CLASSES =
+  '[&::-webkit-scrollbar]:h-[2px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-black/15'
+
+const CarouselArrow = ({ direction, onClick }: { direction: 'left' | 'right'; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={`absolute ${direction === 'left' ? 'left-2' : 'right-2'} top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-black/30 backdrop-blur-md text-white hover:bg-black/50 rounded-full flex items-center justify-center md:hidden shadow-md`}
+    aria-label={direction === 'left' ? 'Cuộn trái' : 'Cuộn phải'}
+  >
+    {direction === 'left' ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+  </button>
+)
+
 export default function HomePage() {
   /* ── Banner Slider State ── */
   const [currentBanner, setCurrentBanner] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+
+  /* ── Mobile Carousel Refs ── */
+  const collectionsRef = useRef<HTMLDivElement>(null)
+  const reviewsRef = useRef<HTMLDivElement>(null)
+  const newsRef = useRef<HTMLDivElement>(null)
+
+  const scrollCollections = (dir: 'left' | 'right') => {
+    if (collectionsRef.current) {
+      collectionsRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' })
+    }
+  }
+
+  const scrollReviews = (dir: 'left' | 'right') => {
+    if (reviewsRef.current) {
+      reviewsRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' })
+    }
+  }
+
+  const scrollNews = (dir: 'left' | 'right') => {
+    if (newsRef.current) {
+      newsRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' })
+    }
+  }
 
   /* ── Featured Products ── */
   const [bestSellers, setBestSellers] = useState<ApiProduct[]>([])
@@ -250,58 +288,65 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
-            {[
-              {
-                title: 'Áo Thun',
-                description: 'Vải mát, nhanh khô, công nghệ AirDry™ thoáng khí',
-                href: '/products?collection=ao-thun',
-                image: '/products/ao-thun-trang.png',
-                count: 'Từ 199.000đ',
-              },
-              {
-                title: 'Áo Polo & Sơ Mi',
-                description: 'Khí chất trưởng thành, thoải mái mặc đi làm',
-                href: '/products?collection=ao-polo',
-                image: '/products/ao-polo-white.png',
-                count: 'Từ 349.000đ',
-              },
-              {
-                title: 'Quần & Kaki',
-                description: 'Bền bỉ, tôn dáng, công nghệ co giãn FlexFit™',
-                href: '/products?collection=quan',
-                image: '/products/quan-kaki.png',
-                count: 'Từ 399.000đ',
-              },
-            ].map((collection) => (
-              <Link key={collection.title} href={collection.href} className="shrink-0 w-[85vw] snap-center md:w-auto">
-                <div className="group cursor-pointer relative overflow-hidden rounded-lg">
-                  <div className="aspect-[3/4] bg-secondary overflow-hidden">
-                    <img
-                      src={collection.image}
-                      alt={collection.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                    <span className="text-xs tracking-widest text-accent font-medium uppercase">
-                      {collection.count}
-                    </span>
-                    <h3 className="text-2xl font-heading font-semibold mt-1 mb-2 group-hover:text-accent transition-colors">
-                      {collection.title}
-                    </h3>
-                    <p className="text-sm text-white/70 font-light">
-                      {collection.description}
-                    </p>
-                    <div className="mt-4 flex items-center gap-2 text-sm font-medium text-accent opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      Xem ngay <ArrowRight size={14} />
+          <div className="relative group">
+            <CarouselArrow direction="left" onClick={() => scrollCollections('left')} />
+            <div
+              ref={collectionsRef}
+              className={`flex flex-nowrap overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:pb-0 ${CAROUSEL_SCROLLBAR_CLASSES} -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0`}
+            >
+              {[
+                {
+                  title: 'Áo Thun',
+                  description: 'Vải mát, nhanh khô, công nghệ AirDry™ thoáng khí',
+                  href: '/products?collection=ao-thun',
+                  image: '/products/ao-thun-trang.png',
+                  count: 'Từ 199.000đ',
+                },
+                {
+                  title: 'Áo Polo & Sơ Mi',
+                  description: 'Khí chất trưởng thành, thoải mái mặc đi làm',
+                  href: '/products?collection=ao-polo',
+                  image: '/products/ao-polo-white.png',
+                  count: 'Từ 349.000đ',
+                },
+                {
+                  title: 'Quần & Kaki',
+                  description: 'Bền bỉ, tôn dáng, công nghệ co giãn FlexFit™',
+                  href: '/products?collection=quan',
+                  image: '/products/quan-kaki.png',
+                  count: 'Từ 399.000đ',
+                },
+              ].map((collection) => (
+                <Link key={collection.title} href={collection.href} className="w-[80vw] max-w-[300px] snap-center shrink-0 flex-none md:w-auto md:max-w-none">
+                  <div className="group cursor-pointer relative overflow-hidden rounded-lg">
+                    <div className="aspect-[3/4] bg-secondary overflow-hidden">
+                      <img
+                        src={collection.image}
+                        alt={collection.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <span className="text-xs tracking-widest text-accent font-medium uppercase">
+                        {collection.count}
+                      </span>
+                      <h3 className="text-2xl font-heading font-semibold mt-1 mb-2 group-hover:text-accent transition-colors">
+                        {collection.title}
+                      </h3>
+                      <p className="text-sm text-white/70 font-light">
+                        {collection.description}
+                      </p>
+                      <div className="mt-4 flex items-center gap-2 text-sm font-medium text-accent opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                        Xem ngay <ArrowRight size={14} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
+            <CarouselArrow direction="right" onClick={() => scrollCollections('right')} />
           </div>
         </div>
       </section>
@@ -331,43 +376,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {bestSellers.map((product) => (
-                <Link key={product.id} href={`/products/${product.handle}`}>
-                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="relative aspect-square bg-secondary overflow-hidden">
-                      <img
-                        src={product.img}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {product.stock <= 0 && (
-                        <div className="absolute top-3 right-3 bg-destructive text-white px-2 py-0.5 text-[10px] font-semibold rounded">
-                          Hết hàng
-                        </div>
-                      )}
-                      <div className="absolute top-3 left-3 bg-accent text-accent-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
-                        HOT
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-1">({product.sold} đã bán)</span>
-                      </div>
-                      <p className="text-base font-semibold text-accent">
-                        {product.price.toLocaleString()}đ
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} badge="HOT" />
               ))}
             </div>
 
@@ -444,38 +453,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {newArrivals.map((product) => (
-                <Link key={product.id} href={`/products/${product.handle}`}>
-                  <div className="group cursor-pointer bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="relative aspect-square bg-secondary overflow-hidden">
-                      <img
-                        src={product.img}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 left-3 bg-foreground text-primary-foreground px-2 py-0.5 text-[10px] font-semibold rounded">
-                        MỚI
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-2">
-                      <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            size={12}
-                            className={i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-border'}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-1">({product.rating})</span>
-                      </div>
-                      <p className="text-base font-semibold text-accent">
-                        {product.price.toLocaleString()}đ
-                      </p>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product} badge="MỚI" />
               ))}
             </div>
           </div>
@@ -496,7 +474,7 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
             {[
               {
                 icon: '🧪',
@@ -520,13 +498,13 @@ export default function HomePage() {
               },
             ].map((feature) => (
               <div key={feature.title} className="text-center group">
-                <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl group-hover:bg-accent/20 transition-colors">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-5 text-xl md:text-2xl group-hover:bg-accent/20 transition-colors">
                   {feature.icon}
                 </div>
-                <h3 className="text-lg font-heading font-semibold mb-3">
+                <h3 className="text-sm md:text-lg font-heading font-semibold mb-2 md:mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-primary-foreground/60 text-sm leading-relaxed">
+                <p className="text-primary-foreground/60 text-[11px] md:text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -549,36 +527,43 @@ export default function HomePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {TESTIMONIALS.map((t) => (
-              <div
-                key={t.name}
-                className="relative bg-card border border-border rounded-xl p-8 hover:shadow-lg transition-shadow"
-              >
-                <Quote size={32} className="text-accent/20 absolute top-6 right-6" />
-                <div className="flex items-center gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      className={i < t.rating ? 'text-accent fill-accent' : 'text-border'}
-                    />
-                  ))}
-                </div>
-                <p className="text-foreground/80 text-sm leading-relaxed mb-6 italic">
-                  &ldquo;{t.content}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-xl">
-                    {t.avatar}
+          <div className="relative group">
+            <CarouselArrow direction="left" onClick={() => scrollReviews('left')} />
+            <div
+              ref={reviewsRef}
+              className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:gap-8 md:pb-0 ${CAROUSEL_SCROLLBAR_CLASSES} -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0`}
+            >
+              {TESTIMONIALS.map((t) => (
+                <div
+                  key={t.name}
+                  className="relative bg-card border border-border rounded-xl p-6 md:p-8 hover:shadow-lg transition-shadow w-[80vw] max-w-[300px] snap-center shrink-0 flex-none md:w-auto md:max-w-none"
+                >
+                  <Quote size={32} className="text-accent/20 absolute top-6 right-6" />
+                  <div className="flex items-center gap-1 mb-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={14}
+                        className={i < t.rating ? 'text-accent fill-accent' : 'text-border'}
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                  <p className="text-foreground/80 text-sm leading-relaxed mb-6 italic">
+                    &ldquo;{t.content}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-xl">
+                      {t.avatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <CarouselArrow direction="right" onClick={() => scrollReviews('right')} />
           </div>
         </div>
       </section>
@@ -606,38 +591,45 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {latestNews.map((post) => (
-                <Link key={post.id} href={`/tin-tuc/${post.slug}`}>
-                  <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="aspect-[16/10] overflow-hidden bg-secondary">
-                      {post.img && (
-                        <img
-                          src={post.img}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
-                          {post.category?.name ?? 'TIN TỨC'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {post.publishDate ? post.publishDate.split('-').reverse().join('/') : ''}
-                        </span>
+            <div className="relative group">
+              <CarouselArrow direction="left" onClick={() => scrollNews('left')} />
+              <div
+                ref={newsRef}
+                className={`flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:gap-8 md:pb-0 ${CAROUSEL_SCROLLBAR_CLASSES} -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0`}
+              >
+                {latestNews.map((post) => (
+                  <Link key={post.id} href={`/tin-tuc/${post.slug}`} className="w-[80vw] max-w-[300px] snap-center shrink-0 flex-none md:w-auto md:max-w-none">
+                    <article className="group bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full">
+                      <div className="h-48 sm:h-56 w-full relative overflow-hidden bg-secondary">
+                        {post.img && (
+                          <img
+                            src={post.img}
+                            alt={post.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
                       </div>
-                      <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground font-light line-clamp-2">
-                        {post.excerpt}
-                      </p>
-                    </div>
-                  </article>
-                </Link>
-              ))}
+                      <div className="p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
+                            {post.category?.name ?? 'TIN TỨC'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {post.publishDate ? post.publishDate.split('-').reverse().join('/') : ''}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-heading font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
+                          {post.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground font-light line-clamp-2">
+                          {post.excerpt}
+                        </p>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+              </div>
+              <CarouselArrow direction="right" onClick={() => scrollNews('right')} />
             </div>
           </div>
         </section>

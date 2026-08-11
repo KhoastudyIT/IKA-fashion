@@ -1,18 +1,20 @@
 import { z } from 'zod';
 
 export const createProductSchema = z.object({
-  name:        z.string().min(1).max(200),
-  handle:      z.string().min(1).max(200),
-  collection:  z.string().min(1).max(100),   // ao-thun | ao-polo | quan
-  type:        z.string().min(1).max(100),
-  price:       z.number().int().positive(),  // VND
-  img:         z.string().optional().default('/products/placeholder.png'),
-  images:      z.array(z.string()).optional().default([]),
-  colors:      z.array(z.string()).optional().default([]),
-  sizes:       z.array(z.string()).optional().default([]),
-  features:    z.array(z.string()).optional().default([]),
-  stock:       z.number().int().nonnegative().optional().default(0),
-  description: z.string().max(1000).optional().default(''),
+  name:           z.string().min(1).max(200),
+  handle:         z.string().min(1).max(200),
+  collection:     z.string().min(1).max(100),   // ao-thun | ao-polo | quan
+  type:           z.string().min(1).max(100),
+  price:          z.number().int().positive(),   // VND — giá bán cuối
+  original_price: z.number().int().positive().optional().nullable(), // VND — giá gốc trước giảm
+  discount:       z.number().int().min(0).max(100).optional().default(0), // % giảm (0 = không giảm)
+  img:            z.string().optional().default('/products/placeholder.png'),
+  images:         z.array(z.string()).optional().default([]),
+  colors:         z.array(z.string()).optional().default([]),
+  sizes:          z.array(z.string()).optional().default([]),
+  features:       z.array(z.string()).optional().default([]),
+  stock:          z.number().int().nonnegative().optional().default(0),
+  description:    z.string().max(1000).optional().default(''),
 });
 
 export const updateProductSchema = createProductSchema.partial();
@@ -25,6 +27,7 @@ export const productQuerySchema = z.object({
   limit:      z.coerce.number().int().positive().max(100).optional().default(12),
   priceMin:   z.coerce.number().nonnegative().optional(),
   priceMax:   z.coerce.number().positive().optional(),
-  colors:     z.string().optional(),  // CSV: "Đen,Trắng"
-  sizes:      z.string().optional(),  // CSV: "M,L"
+  colors:     z.string().optional(),   // CSV: "Đen,Trắng"
+  sizes:      z.string().optional(),   // CSV: "M,L"
+  isSale:     z.enum(['true', 'false']).optional(), // "true" → lọc discount > 0
 });
