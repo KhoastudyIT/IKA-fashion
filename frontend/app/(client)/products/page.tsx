@@ -36,7 +36,7 @@ export default function ProductsPage() {
 
   // Tải danh mục 1 lần
   useEffect(() => {
-    getCollections().then(setCollections).catch(() => {})
+    getCollections().then(res => setCollections(res.items || [])).catch(() => { })
   }, [])
 
   // Khi collection filter thay đổi → cập nhật URL để back-button / share hoạt động đúng
@@ -134,15 +134,14 @@ export default function ProductsPage() {
       <div>
         <h3 className="text-sm font-heading font-semibold text-foreground mb-4">Bộ Sưu Tập</h3>
         <div className="space-y-2">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 mb-2 group">
             <input type="radio" checked={selectedCollection === 'all'} onChange={() => setSelectedCollection('all')} className="w-4 h-4 cursor-pointer" />
-            <span className="text-sm text-foreground">Tất Cả</span>
+            <span className="text-sm text-foreground group-hover:text-accent transition-colors">Tất cả sản phẩm</span>
           </label>
-          {/* Danh mục thực từ API */}
-          {collections.map((col) => (
-            <label key={col.slug} className="flex items-center gap-2 cursor-pointer">
+          {(collections || []).map((col) => (
+            <label key={col.id} className="flex items-center gap-2 mb-2 group">
               <input type="radio" checked={selectedCollection === col.slug} onChange={() => setSelectedCollection(col.slug)} className="w-4 h-4 cursor-pointer" />
-              <span className="text-sm text-foreground">{col.name} ({col.productCount})</span>
+              <span className="text-sm text-foreground group-hover:text-accent transition-colors capitalize">{col.name}</span>
             </label>
           ))}
           {/* Tab Ưu Đãi */}
@@ -209,7 +208,7 @@ export default function ProductsPage() {
                 <>
                   <p className="text-sm text-muted-foreground mb-6">Hiển thị {products.length} sản phẩm</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-                    {products.map((product) => (
+                    {(products || []).map((product) => (
                       <ProductCard
                         key={product.handle}
                         product={product}

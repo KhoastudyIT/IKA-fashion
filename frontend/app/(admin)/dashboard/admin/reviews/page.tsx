@@ -6,8 +6,14 @@ import {
   getAdminReviews, approveReview, replyReview, deleteReview,
   type Review,
 } from '@/api'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
 
 export default function AdminReviewsPage() {
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -18,14 +24,19 @@ export default function AdminReviewsPage() {
   const [replyText, setReplyText] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const load = () => {
+  const load = (pageToLoad: number) => {
     setLoading(true)
-    getAdminReviews()
-      .then(setReviews)
+    getAdminReviews({ page: pageToLoad, limit: 10 })
+      .then((res) => {
+        const { items: data, pagination } = res
+        setReviews(data ?? [])
+        setTotalPages(pagination?.totalPages ?? 1)
+        setTotal(pagination?.total ?? (data?.length || 0))
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }
-  useEffect(load, [])
+  useEffect(() => { load(currentPage) }, [currentPage])
 
   const handleToggleApprove = async (id: number) => {
     try {
@@ -191,6 +202,12 @@ export default function AdminReviewsPage() {
           ))
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-end">
+          <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+        </div>
+      )}
 
       {/* Reply Modal */}
       {replyTarget && (

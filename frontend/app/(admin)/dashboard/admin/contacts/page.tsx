@@ -5,11 +5,13 @@
 // còn đây là yêu cầu một chiều, phần lớn đến từ khách vãng lai.
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, Trash2, Mail, Phone, RefreshCw } from 'lucide-react'
 import {
   getContacts, getContactStats, updateContact, deleteContact,
   ContactRequest, ContactStatus, CONTACT_STATUS_LABEL,
 } from '@/api'
+import AdminPagination from '@/components/ui/AdminPagination'
 
 type StatusFilter = ContactStatus | 'all'
 
@@ -26,7 +28,6 @@ export default function AdminContactsPage() {
   const [stats, setStats] = useState(emptyStats)
   const [status, setStatus] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -34,11 +35,14 @@ export default function AdminContactsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [noteDraft, setNoteDraft] = useState('')
 
+  const searchParams = useSearchParams()
+  const page = Math.max(1, Number(searchParams.get('page')) || 1)
+
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [list, s] = await Promise.all([
+      const [listRes, s] = await Promise.all([
         getContacts({
           page,
           limit: 20,
@@ -47,8 +51,9 @@ export default function AdminContactsPage() {
         }),
         getContactStats(),
       ])
-      setItems(list.items)
-      setTotalPages(list.meta?.totalPages ?? 1)
+      const { items: data, pagination } = listRes
+      setItems(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
       setStats(s)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được danh sách liên hệ')
@@ -59,13 +64,11 @@ export default function AdminContactsPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Đổi bộ lọc thì phải quay về trang 1, nếu không sẽ rơi vào trang trống
-  // khi kết quả mới ít hơn trang đang đứng.
-  const changeStatus = (next: StatusFilter) => { setStatus(next); setPage(1) }
+  // Changing status filter resets to page 1 via URL
+  const changeStatus = (next: StatusFilter) => { setStatus(next) }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1)
     load()
   }
 
@@ -287,25 +290,13 @@ export default function AdminContactsPage() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 border border-[#E5DFD8] rounded text-sm disabled:opacity-40 hover:bg-[#F9F5F0] transition-colors"
-          >
-            Trước
-          </button>
-          <span className="text-sm text-muted-foreground">Trang {page} / {totalPages}</span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-4 py-2 border border-[#E5DFD8] rounded text-sm disabled:opacity-40 hover:bg-[#F9F5F0] transition-colors"
-          >
-            Sau
-          </button>
+      {/* Pagination */}
+      <div className="bg-white border border-[#E5DFD8] rounded-lg">
+        <div className="px-4 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">Trang {page} / {totalPages}</span>
+          <AdminPagination currentPage={page} totalPages={totalPages} />
         </div>
-      )}
+      </div>
     </div>
   )
 }

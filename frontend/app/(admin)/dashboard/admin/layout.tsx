@@ -51,7 +51,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           }
         })
         // Đơn hàng chờ xử lý
-        ords.filter(o => o.status === 'pending').forEach(o => {
+        const orderItems = ords.items ?? []
+        orderItems.filter(o => o.status === 'pending').forEach(o => {
           list.push({
             id: `order-${o.id}`,
             text: `Đơn hàng #${o.id.slice(0, 8)} đang chờ xử lý`,

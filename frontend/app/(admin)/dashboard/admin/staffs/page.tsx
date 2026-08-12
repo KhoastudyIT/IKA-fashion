@@ -3,9 +3,18 @@
 import { useEffect, useState } from 'react'
 import { getAdminCustomers, updateUserRole, ApiUser } from '@/api'
 import { Users, Shield, User, ArrowRight, RefreshCw, X, ShieldCheck } from 'lucide-react'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
+import { useSession } from '@/auth-client'
 
 export default function AdminStaffPage() {
+  const { data: session } = useSession()
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [usersList, setUsersList] = useState<ApiUser[]>([])
+  const [customerList, setCustomerList] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -15,11 +24,18 @@ export default function AdminStaffPage() {
   const [selectedRole, setSelectedRole] = useState('customer')
   const [saving, setSaving] = useState(false)
 
-  const loadUsers = async () => {
+  const loadUsers = async (pageToLoad: number) => {
     try {
       setLoading(true)
-      const res = await getAdminCustomers()
-      setUsersList(res)
+      const resAdmins = await getAdminCustomers({ page: pageToLoad, limit: 10, role: 'admin' })
+      const resCustomers = await getAdminCustomers({ page: 1, limit: 100, role: 'customer' })
+      
+      const { items: adminData, pagination } = resAdmins
+      setUsersList(adminData ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (adminData?.length || 0))
+      
+      setCustomerList(resCustomers.items ?? [])
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách thành viên')
     } finally {
@@ -28,8 +44,8 @@ export default function AdminStaffPage() {
   }
 
   useEffect(() => {
-    loadUsers()
-  }, [])
+    loadUsers(currentPage)
+  }, [currentPage])
 
   const handleUpdateRole = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,8 +53,9 @@ export default function AdminStaffPage() {
     setSaving(true)
     setError('')
     try {
-      const updated = await updateUserRole(selectedUser.id, selectedRole)
-      setUsersList((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)))
+      await updateUserRole(selectedUser.id, selectedRole)
+      // Reload everything to reflect changes
+      await loadUsers(currentPage)
       setSelectedUser(null)
     } catch (err: any) {
       setError(err.message || 'Cập nhật vai trò thất bại')
@@ -48,11 +65,10 @@ export default function AdminStaffPage() {
   }
 
   // Filter only staffs/admins or show all with role change
-  const filteredAdmins = usersList.filter((u) => u.role === 'admin')
-  const filteredCustomers = usersList.filter((u) => {
+  const filteredAdmins = usersList
+  const filteredCustomers = customerList.filter((u) => {
     const term = searchTerm.toLowerCase()
     return (
-      u.role === 'customer' &&
       (u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term))
     )
   })
@@ -113,15 +129,19 @@ export default function AdminStaffPage() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-right">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user)
-                            setSelectedRole(user.role)
-                          }}
-                          className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
-                        >
-                          Thay đổi vai trò
-                        </button>
+                        {user.email === session?.user?.email ? (
+                          <span className="text-muted-foreground text-[10px] italic">Bạn (Đang đăng nhập)</span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setSelectedRole(user.role)
+                            }}
+                            className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
+                          >
+                            Thay đổi vai trò
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -129,6 +149,12 @@ export default function AdminStaffPage() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50/50 rounded-b-lg">
+              <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+            </div>
+          )}
         </div>
 
         {/* Right: Promote customer to admin card */}

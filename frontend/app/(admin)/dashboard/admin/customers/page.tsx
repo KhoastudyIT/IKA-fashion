@@ -3,18 +3,27 @@
 import { useEffect, useState } from 'react'
 import { getAdminCustomers, deleteCustomer, toggleLockCustomer, ApiUser } from '@/api'
 import { Users, Search, Trash2, RefreshCw, Lock, Unlock } from 'lucide-react'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
 
 export default function AdminCustomersPage() {
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [customers, setCustomers] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const loadCustomers = async () => {
+  const loadCustomers = async (pageToLoad: number) => {
     try {
       setLoading(true)
-      const res = await getAdminCustomers()
-      setCustomers(res)
+      const res = await getAdminCustomers({ page: pageToLoad, limit: 10 })
+      const { items: data, pagination } = res
+      setCustomers(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (data?.length || 0))
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách người dùng')
     } finally {
@@ -23,8 +32,8 @@ export default function AdminCustomersPage() {
   }
 
   useEffect(() => {
-    loadCustomers()
-  }, [])
+    loadCustomers(currentPage)
+  }, [currentPage])
 
   const handleDeleteCustomer = async (userId: string, name: string) => {
     if (!confirm(`Bạn chắc chắn muốn xóa tài khoản "${name}"? Thao tác này không thể hoàn tác.`)) return
@@ -196,6 +205,12 @@ export default function AdminCustomersPage() {
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50/50 rounded-b-xl">
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+        )}
       </div>
     </div>
   )
