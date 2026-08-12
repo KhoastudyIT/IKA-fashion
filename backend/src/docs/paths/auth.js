@@ -59,6 +59,25 @@ export const authPaths = {
     },
   },
 
+  '/api/v1/auth/password': {
+    put: {
+      tags: ['Xác thực'],
+      summary: 'Đổi mật khẩu',
+      description: 'Phải nhập đúng mật khẩu hiện tại; mật khẩu mới bắt buộc khác mật khẩu cũ.',
+      security: bearer,
+      requestBody: jsonBody('ChangePasswordBody'),
+      responses: {
+        200: okMessage('Đổi mật khẩu thành công', 'Đổi mật khẩu thành công'),
+        400: {
+          description: 'Sai mật khẩu hiện tại, hoặc mật khẩu mới trùng mật khẩu cũ',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Mật khẩu hiện tại không đúng' } } },
+        },
+        401: unauthorized,
+        422: validationError,
+      },
+    },
+  },
+
   '/api/v1/auth/logout': {
     post: {
       tags: ['Xác thực'],

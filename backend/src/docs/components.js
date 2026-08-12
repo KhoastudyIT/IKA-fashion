@@ -68,7 +68,26 @@ export const components = {
         handle: { type: 'string', example: 'ao-thun-cotton-basic' },
         collection: { type: 'string', example: 'ao-thun' },
         type: { type: 'string', example: 'Áo thun' },
-        price: { type: 'integer', description: 'Đơn vị VND', example: 199000 },
+        price: {
+          type: 'integer',
+          description: 'Giá niêm yết trong bảng products (VND). Form sửa sản phẩm của admin đọc cột này.',
+          example: 199000,
+        },
+        original_price: { type: 'integer', nullable: true, description: 'Giá gốc trước giảm', example: 249000 },
+        discount: { type: 'integer', description: '% giảm ở cấp sản phẩm', example: 20 },
+        effective_price: {
+          type: 'integer',
+          description:
+            'Giá khách THẬT SỰ trả = giá flash nếu sản phẩm đang trong chương trình còn suất, '
+            + 'không thì bằng `price`. Backend tính bằng đúng biểu thức dùng lúc chốt đơn.',
+          example: 149000,
+        },
+        flash_price: {
+          type: 'integer', nullable: true,
+          description: 'null = sản phẩm không nằm trong flash sale nào đang chạy',
+          example: 149000,
+        },
+        flash_remaining: { type: 'integer', nullable: true, description: 'Số suất giá flash còn lại', example: 7 },
         img: { type: 'string', example: '/products/ao-thun-trang.png' },
         images: { type: 'array', items: { type: 'string' }, example: ['/products/ao-thun-trang.png'] },
         colors: { type: 'array', items: { type: 'string' }, example: ['Trắng', 'Đen'] },
@@ -177,17 +196,38 @@ export const components = {
       properties: {
         id: { type: 'string', example: 'DH1720051200000' },
         userId: { type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+        customerName: { type: 'string', example: 'Nguyễn Văn A' },
+        customerEmail: { type: 'string', format: 'email', example: 'vana@example.com' },
         totalPrice: { type: 'integer', description: 'Đã trừ discount (VND)', example: 358200 },
         discount: { type: 'integer', example: 39800 },
         couponCode: { type: 'string', nullable: true, example: 'IKANEW10' },
-        status: { type: 'string', enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled'], example: 'pending' },
-        paymentStatus: { type: 'string', enum: ['unpaid', 'paid'], example: 'unpaid' },
+        status: {
+          type: 'string',
+          enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled', 'returned'],
+          description:
+            '`returned` chỉ đến được qua luồng duyệt yêu cầu trả hàng, không đặt tay bằng '
+            + 'PUT /admin/orders/{id}/status — để không ai đổi trạng thái mà quên hoàn kho.',
+          example: 'pending',
+        },
+        paymentStatus: {
+          type: 'string',
+          enum: ['unpaid', 'paid', 'refunded'],
+          description:
+            'Cửa hàng thu tiền khi giao, nên đơn chuyển sang `completed` sẽ tự thành `paid`. '
+            + '`refunded` do luồng trả hàng đặt.',
+          example: 'unpaid',
+        },
         shippingAddress: { type: 'string', example: '123 Lê Lợi, Quận 1, TP.HCM' },
         phone: { type: 'string', example: '0901234567' },
         notes: { type: 'string', example: 'Giao giờ hành chính' },
         createdAt: { type: 'string', format: 'date-time', example: '2026-07-15T08:00:00.000Z' },
         updatedAt: { type: 'string', format: 'date-time', example: '2026-07-15T08:00:00.000Z' },
         items: { type: 'array', items: { $ref: '#/components/schemas/OrderItem' } },
+        returnRequest: {
+          allOf: [{ $ref: '#/components/schemas/OrderReturn' }],
+          nullable: true,
+          description: 'Yêu cầu trả/đổi mới nhất của đơn. null = khách chưa gửi lần nào.',
+        },
       },
     },
     Review: {
@@ -224,6 +264,165 @@ export const components = {
         token: { type: 'string', description: 'Dán vào ô Authentication để test các endpoint có khóa', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
       },
     },
+    // ── Flash sale ─────────────────────────────────────────────────────────
+    // Mỗi dòng là MỘT sản phẩm với giá ưu đãi, số suất và khung giờ riêng.
+    FlashSale: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer', description: 'Mã chương trình, hiển thị dạng FS-0001', example: 1 },
+        productId: { type: 'integer', example: 21 },
+        price: { type: 'integer', description: 'Giá flash (VND)', example: 149000 },
+        originalPrice: { type: 'integer', description: 'Ảnh chụp giá niêm yết lúc tạo chương trình', example: 299000 },
+        stock: { type: 'integer', description: 'Tổng số suất', example: 20 },
+        sold: { type: 'integer', description: 'Số suất đã bán', example: 13 },
+        remaining: { type: 'integer', description: 'stock − sold', example: 7 },
+        discountPercent: {
+          type: 'integer',
+          description: 'Tính trên giá niêm yết HIỆN TẠI của sản phẩm, không dùng originalPrice đã chụp',
+          example: 50,
+        },
+        startsAt: { type: 'string', format: 'date-time', example: '2026-08-12T09:00:00.000Z' },
+        endsAt: { type: 'string', format: 'date-time', nullable: true, description: 'null = chạy tới khi tắt tay', example: '2026-08-13T09:00:00.000Z' },
+        active: { type: 'boolean', example: true },
+        createdAt: { type: 'string', format: 'date-time', example: '2026-08-12T08:00:00.000Z' },
+        name: { type: 'string', description: 'Tên sản phẩm đi kèm', example: 'Áo Thun Trắng Premium' },
+        handle: { type: 'string', example: 'ao-thun-trang-premium' },
+        img: { type: 'string', example: '/products/ao-thun-trang.png' },
+        productPrice: { type: 'integer', description: 'Giá niêm yết hiện tại của sản phẩm', example: 299000 },
+        productStock: { type: 'integer', example: 113 },
+        orderItemCount: { type: 'integer', description: 'Số dòng đơn đã mua theo chương trình (chỉ ở danh sách admin)', example: 2 },
+      },
+    },
+    FlashSaleCreateBody: {
+      type: 'object',
+      required: ['productId', 'price', 'stock'],
+      properties: {
+        productId: { type: 'integer', example: 21 },
+        price: { type: 'integer', description: 'Phải THẤP HƠN giá đang bán của sản phẩm', example: 149000 },
+        stock: { type: 'integer', minimum: 1, description: 'Số suất; bán hết là chương trình tự dừng', example: 20 },
+        startsAt: { type: 'string', format: 'date-time', description: 'Bỏ trống = chạy ngay', example: '2026-08-12T09:00:00.000Z' },
+        endsAt: { type: 'string', format: 'date-time', nullable: true, description: 'Bỏ trống = chạy tới khi tắt tay', example: '2026-08-13T09:00:00.000Z' },
+        active: { type: 'boolean', default: true, example: true },
+      },
+    },
+    FlashSaleUpdateBody: {
+      type: 'object',
+      description: 'Chỉ gửi trường muốn đổi. Chương trình ĐÃ KẾT THÚC thì không sửa được nữa.',
+      properties: {
+        productId: { type: 'integer', example: 21 },
+        price: { type: 'integer', example: 139000 },
+        stock: { type: 'integer', minimum: 1, description: 'Không được thấp hơn số suất đã bán', example: 25 },
+        startsAt: { type: 'string', format: 'date-time' },
+        endsAt: { type: 'string', format: 'date-time', nullable: true },
+        active: { type: 'boolean', example: false },
+      },
+    },
+
+    // ── Trả hàng / Đổi mới ─────────────────────────────────────────────────
+    OrderReturn: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer', example: 12 },
+        orderId: { type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+        type: {
+          type: 'string', enum: ['return', 'exchange'],
+          description: '`return` = trả hàng hoàn tiền và hoàn kho; `exchange` = đổi mới, kho không đổi',
+          example: 'return',
+        },
+        reason: { type: 'string', example: 'Áo bị lỗi đường may ở tay phải' },
+        images: {
+          type: 'array', items: { type: 'string' },
+          description: 'Ảnh khách gửi để cửa hàng đối chiếu với lý do',
+          example: ['/uploads/returns/1786552323984-17a10225.png', '/uploads/returns/1786552323991-3ff8200f.png'],
+        },
+        status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'completed'], example: 'pending' },
+        adminNote: { type: 'string', description: 'Phản hồi của cửa hàng, khách đọc được', example: 'Đã nhận được hàng gửi về' },
+        resolvedAt: { type: 'string', format: 'date-time', nullable: true, example: null },
+        createdAt: { type: 'string', format: 'date-time', example: '2026-08-13T02:00:00.000Z' },
+        orderTotal: { type: 'integer', description: 'Kèm theo ở endpoint danh sách', example: 358200 },
+        orderStatus: { type: 'string', example: 'completed' },
+        customerName: { type: 'string', example: 'Nguyễn Văn A' },
+        customerEmail: { type: 'string', format: 'email', example: 'vana@example.com' },
+        customerPhone: { type: 'string', example: '0901234567' },
+      },
+    },
+    OrderReturnCreateBody: {
+      type: 'object',
+      required: ['orderId', 'type', 'reason', 'images'],
+      properties: {
+        orderId: { type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+        type: { type: 'string', enum: ['return', 'exchange'], example: 'return' },
+        reason: { type: 'string', minLength: 10, maxLength: 500, example: 'Áo bị lỗi đường may ở tay phải' },
+        images: {
+          type: 'array', minItems: 2, maxItems: 5,
+          items: { type: 'string', pattern: '^/uploads/returns/[\\w.-]+$' },
+          description:
+            'BẮT BUỘC ít nhất 2 ảnh. Chỉ nhận đường dẫn do POST /customer/uploads/returns sinh ra, '
+            + 'không nhận URL ngoài.',
+          example: ['/uploads/returns/a.png', '/uploads/returns/b.png'],
+        },
+      },
+    },
+    OrderReturnStatusBody: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string', enum: ['pending', 'approved', 'rejected', 'completed'],
+          description: 'Chỉ đi tới được: pending → approved|rejected, approved → completed|rejected',
+          example: 'approved',
+        },
+        adminNote: { type: 'string', maxLength: 500, example: 'Đã nhận được hàng gửi về' },
+      },
+    },
+
+    // ── Liên hệ ────────────────────────────────────────────────────────────
+    Contact: {
+      type: 'object',
+      properties: {
+        id: { type: 'integer', example: 5 },
+        name: { type: 'string', example: 'Nguyễn Văn A' },
+        email: { type: 'string', format: 'email', example: 'vana@example.com' },
+        phone: { type: 'string', example: '0901234567' },
+        subject: { type: 'string', example: 'Hỏi về chính sách đổi trả' },
+        message: { type: 'string', example: 'Cho mình hỏi áo mua hôm qua đổi size được không ạ?' },
+        status: { type: 'string', enum: ['new', 'processing', 'resolved'], example: 'new' },
+        adminNote: { type: 'string', example: '' },
+        createdAt: { type: 'string', format: 'date-time', example: '2026-08-13T02:00:00.000Z' },
+        updatedAt: { type: 'string', format: 'date-time', example: '2026-08-13T02:00:00.000Z' },
+      },
+    },
+    ContactCreateBody: {
+      type: 'object',
+      required: ['name', 'email', 'subject', 'message'],
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 100, example: 'Nguyễn Văn A' },
+        email: { type: 'string', format: 'email', maxLength: 150, example: 'vana@example.com' },
+        phone: {
+          type: 'string',
+          description: 'Không bắt buộc, nhưng đã nhập thì phải gồm 10 chữ số bắt đầu bằng 03/05/07/08/09',
+          example: '0901234567',
+        },
+        subject: { type: 'string', maxLength: 100, example: 'Hỏi về chính sách đổi trả' },
+        message: { type: 'string', minLength: 10, maxLength: 2000, example: 'Cho mình hỏi áo mua hôm qua đổi size được không ạ?' },
+      },
+    },
+    ContactUpdateBody: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['new', 'processing', 'resolved'], example: 'processing' },
+        adminNote: { type: 'string', maxLength: 1000, example: 'Đã gọi lại cho khách' },
+      },
+    },
+    ContactStats: {
+      type: 'object',
+      properties: {
+        total: { type: 'integer', example: 42 },
+        new: { type: 'integer', example: 5 },
+        processing: { type: 'integer', example: 3 },
+        resolved: { type: 'integer', example: 34 },
+      },
+    },
+
     Coupon: {
       type: 'object',
       properties: {
@@ -399,8 +598,13 @@ export const components = {
       type: 'object',
       description: 'Gửi một hoặc cả hai trường.',
       properties: {
-        status: { type: 'string', enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled'], example: 'completed' },
-        paymentStatus: { type: 'string', enum: ['unpaid', 'paid'], example: 'paid' },
+        status: {
+          type: 'string',
+          enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled'],
+          description: '`returned` KHÔNG có ở đây — chỉ đặt được qua luồng duyệt yêu cầu trả hàng',
+          example: 'completed',
+        },
+        paymentStatus: { type: 'string', enum: ['unpaid', 'paid', 'refunded'], example: 'paid' },
       },
     },
 
@@ -585,6 +789,14 @@ export const components = {
       required: ['role'],
       properties: {
         role: { type: 'string', enum: ['customer', 'staff', 'admin'], example: 'staff' },
+      },
+    },
+    ChangePasswordBody: {
+      type: 'object',
+      required: ['currentPassword', 'newPassword'],
+      properties: {
+        currentPassword: { type: 'string', example: 'matkhaucu123' },
+        newPassword: { type: 'string', minLength: 6, maxLength: 100, example: 'matkhaumoi456' },
       },
     },
     CreateUserBody: {

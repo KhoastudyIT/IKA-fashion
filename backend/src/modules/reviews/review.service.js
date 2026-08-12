@@ -25,6 +25,23 @@ export async function listProductReviews(productId) {
   return res.rows;
 }
 
+/**
+ * Đánh giá của CHÍNH khách đang đăng nhập về một sản phẩm — kể cả cái chưa duyệt.
+ *
+ * Danh sách công khai chỉ hiện `approved = true`, nên khách vừa gửi xong không
+ * thấy bài của mình đâu và tưởng bị mất. Endpoint này trả về kèm cờ `approved`
+ * để giao diện đánh dấu "đang chờ duyệt".
+ */
+export async function listMyProductReviews(userId, productId) {
+  const res = await db.query(
+    `SELECT ${PUBLIC_COLS}, approved FROM reviews
+     WHERE product_id = $1 AND user_id = $2
+     ORDER BY created_at DESC`,
+    [Number(productId), userId],
+  );
+  return res.rows;
+}
+
 // Tính lại rating trung bình của sản phẩm = AVG(đánh giá ĐÃ DUYỆT), 5.0 nếu chưa có
 async function recomputeProductRating(productId) {
   await db.query(

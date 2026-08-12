@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, jsonBody,
-  okData, okList, createdData, okMessage,
+  okData, okList, okPaginated, createdData, okMessage,
   adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
@@ -19,6 +19,24 @@ export const reviewPaths = {
   },
 
   // ══════════════ Khách hàng ══════════════
+  '/api/v1/customer/reviews/mine/{productId}': {
+    get: {
+      tags: ['Tài khoản - Đánh giá'],
+      summary: 'Đánh giá của chính tôi về sản phẩm này',
+      description:
+        'Trả về CẢ bài chưa được duyệt — danh sách công khai `/reviews/product/{productId}` lọc '
+        + '`approved` nên khách vừa gửi xong sẽ không thấy bài của mình ở đó. Trang chi tiết sản '
+        + 'phẩm dùng endpoint này để hiện khối "Đánh Giá Của Bạn".',
+      security: bearer,
+      parameters: [pathParam('productId', { type: 'integer', example: 1 })],
+      responses: {
+        200: okList('Đánh giá của khách đang đăng nhập, mới nhất lên trước', 'Review'),
+        401: unauthorized,
+        403: forbidden,
+      },
+    },
+  },
+
   '/api/v1/customer/reviews/eligibility/{productId}': {
     get: {
       tags: ['Tài khoản - Đánh giá'],
@@ -41,7 +59,7 @@ export const reviewPaths = {
           },
         },
         401: unauthorized,
-      403: forbidden,
+        403: forbidden,
       },
     },
   },
@@ -56,7 +74,8 @@ export const reviewPaths = {
       responses: {
         201: createdData('Đánh giá vừa gửi — chờ admin duyệt', 'Review'),
         401: unauthorized,
-       403: forbidden,
+        // Một key 403 duy nhất: bản mô tả chi tiết bên dưới đã bao trùm cả
+        // trường hợp không phải tài khoản khách hàng.
         403: {
           description: 'Chưa mua hoặc chưa nhận hàng sản phẩm này',
           content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Bạn cần mua và nhận hàng trước khi đánh giá' } } },
@@ -74,7 +93,7 @@ export const reviewPaths = {
       description: 'Kèm `productName` và `approved` để lọc ngay trên dashboard.',
       security: bearer,
       responses: {
-        200: okList('Toàn bộ đánh giá', 'Review'),
+        200: okPaginated('Toàn bộ đánh giá', 'Review'),
         ...adminErrors,
       },
     },

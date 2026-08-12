@@ -12,6 +12,11 @@ export async function eligibility(req, res) {
   ok(res, { canReview });
 }
 
+/** Đánh giá của chính khách về một sản phẩm — kể cả cái đang chờ duyệt. */
+export async function listMine(req, res) {
+  ok(res, await reviewService.listMyProductReviews(req.user.id, req.params.productId));
+}
+
 export async function create(req, res) {
   // Tên hiển thị lấy từ hồ sơ người dùng đang đăng nhập
   const me = await authService.getMe(req.user.id);

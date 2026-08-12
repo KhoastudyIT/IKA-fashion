@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<string, string> = {
   shipped: 'Đang giao',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
+  returned: 'Đã trả hàng',
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -21,6 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
   shipped: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   cancelled: 'bg-red-50 text-red-700 border-red-200',
+  returned: 'bg-orange-50 text-orange-700 border-orange-200',
 }
 
 export default function CustomerDashboard() {
@@ -37,9 +39,9 @@ export default function CustomerDashboard() {
       .finally(() => setLoading(false))
   }, [session])
 
-  // Đơn đã huỷ không phải tiền đã tiêu, không tính vào tổng chi tiêu.
+  // Đơn đã huỷ và đơn đã trả (được hoàn tiền) đều không phải tiền đã tiêu.
   const totalSpent = orders
-    .filter(o => o.status !== 'cancelled')
+    .filter(o => o.status !== 'cancelled' && o.status !== 'returned')
     .reduce((sum, o) => sum + o.totalPrice, 0)
 
   const stats = [

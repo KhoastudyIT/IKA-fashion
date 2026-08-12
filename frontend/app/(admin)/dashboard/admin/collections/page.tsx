@@ -200,21 +200,35 @@ export default function AdminCollectionsPage() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-xl max-h-[92vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-heading font-semibold text-[#2C2C2C]">
-                {editingId ? 'Sửa Danh Mục' : 'Thêm Danh Mục'}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-[#F9F5F0] rounded-full">
+          {/* Bố cục 3 tầng: tiêu đề và hàng nút đứng yên, chỉ phần giữa cuộn —
+              khung tải ảnh khá cao, không nên đẩy nút Lưu ra khỏi màn hình. */}
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center px-8 py-5 border-b border-[#E5DFD8] shrink-0">
+              <div>
+                <h2 className="text-2xl font-heading font-semibold text-[#2C2C2C]">
+                  {editingId ? 'Sửa Danh Mục' : 'Thêm Danh Mục'}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Danh mục hiển thị trên menu và trang danh sách sản phẩm.
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowForm(false)} className="p-2 hover:bg-[#F9F5F0] rounded-full cursor-pointer">
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
-            {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
+            <div className="px-8 py-6 space-y-5 overflow-y-auto">
+              {error && (
+                <p className="text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm">{error}</p>
+              )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Tên Danh Mục *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                <label className="block text-sm font-semibold text-[#2C2C2C] mb-2">Tên Danh Mục *</label>
                 <input
                   required
                   value={form.name}
@@ -232,18 +246,24 @@ export default function AdminCollectionsPage() {
                           .replace(/\s+/g, '-')
                     setForm({ ...form, name, slug })
                   }}
-                  className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                  placeholder="Vd: Áo Khoác"
+                  className="w-full px-4 py-3 bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg text-sm text-[#2C2C2C] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37]"
                 />
-              </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Slug (đường dẫn rút gọn) *</label>
-                <input
-                  required
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
-                />
+                <div>
+                  <label className="block text-sm font-semibold text-[#2C2C2C] mb-2">Slug (đường dẫn rút gọn) *</label>
+                  <input
+                    required
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                    placeholder="vd: ao-khoac"
+                    className="w-full px-4 py-3 bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg text-sm text-[#2C2C2C] font-mono focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37]"
+                  />
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                    Dùng trong đường dẫn: /products?collection={form.slug || '...'}
+                  </p>
+                </div>
               </div>
 
               <ImageField
@@ -255,24 +275,25 @@ export default function AdminCollectionsPage() {
                 onUploadingChange={setUploading}
               />
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving || uploading}
-                  className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {uploading ? 'Đang tải ảnh...' : saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2.5 border border-[#E5DFD8] text-[#2C2C2C] font-medium rounded hover:bg-[#F9F5F0] transition-colors cursor-pointer"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+
+            <div className="flex gap-3 px-8 py-5 border-t border-[#E5DFD8] bg-[#FFFDFA] shrink-0">
+              <button
+                type="submit"
+                disabled={saving || uploading}
+                className="flex-1 px-5 py-3 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-semibold rounded-lg transition-colors disabled:opacity-50 cursor-pointer text-sm"
+              >
+                {uploading ? 'Đang tải ảnh...' : saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-6 py-3 border border-[#E5DFD8] text-[#2C2C2C] font-semibold rounded-lg hover:bg-[#F9F5F0] transition-colors cursor-pointer text-sm"
+              >
+                Hủy
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

@@ -37,9 +37,9 @@ export default function AdminDashboard() {
         const orders = ordersRes.items ?? []
         const totalOrders = ordersRes.pagination?.total ?? orders.length
         const totalCustomers = custRes.pagination?.total ?? custRes.items.length
-        // Chỉ tính doanh thu từ các đơn hàng không bị hủy (status !== 'cancelled')
+        // Đơn đã hủy và đơn khách trả lại (đã hoàn tiền) đều không tính doanh thu.
         const totalRevenue = orders
-          .filter(o => o.status !== 'cancelled')
+          .filter(o => o.status !== 'cancelled' && o.status !== 'returned')
           .reduce((sum, o) => sum + o.totalPrice, 0)
 
         setStats({
@@ -73,6 +73,8 @@ export default function AdminDashboard() {
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Đã hoàn thành</span>
       case 'cancelled':
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Đã hủy</span>
+      case 'returned':
+        return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">Đã trả hàng</span>
       default:
         return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">{status}</span>
     }
@@ -182,7 +184,10 @@ export default function AdminDashboard() {
                       <td className="py-4 px-4 font-medium text-[#2C2C2C] max-w-[120px] truncate" title={order.id}>
                         #{order.id.slice(0, 8)}
                       </td>
-                      <td className="py-4 px-4 text-[#2C2C2C]">{order.phone}</td>
+                      <td className="py-4 px-4">
+                        <p className="text-[#2C2C2C]">{order.customerName}</p>
+                        <p className="text-[11px] text-muted-foreground">{order.phone}</p>
+                      </td>
                       <td className="py-4 px-4 text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString('vi-VN')}
                       </td>

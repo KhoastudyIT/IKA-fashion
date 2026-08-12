@@ -12,6 +12,9 @@ import { messagePaths } from './messages.js';
 import { userPaths } from './users.js';
 import { settingsPaths } from './settings.js';
 import { uploadPaths } from './uploads.js';
+import { flashSalePaths } from './flash-sales.js';
+import { returnPaths } from './returns.js';
+import { contactPaths } from './contacts.js';
 
 export const paths = {
   ...systemPaths,
@@ -28,4 +31,7 @@ export const paths = {
   ...userPaths,
   ...settingsPaths,
   ...uploadPaths,
+  ...flashSalePaths,
+  ...returnPaths,
+  ...contactPaths,
 };

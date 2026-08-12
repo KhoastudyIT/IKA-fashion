@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, jsonBody,
-  okData, okList, createdData, okMessage,
+  okData, okList, okPaginated, createdData, okMessage,
   adminErrors, notFound, conflict,
 } from '../helpers.js';
 
@@ -12,7 +12,7 @@ export const collectionPaths = {
       summary: 'Danh sách danh mục',
       description: 'Kèm `productCount` để hiển thị số sản phẩm ngay trên bộ lọc.',
       responses: {
-        200: okList('Toàn bộ danh mục', 'Collection'),
+        200: okPaginated('Toàn bộ danh mục', 'Collection'),
       },
     },
   },

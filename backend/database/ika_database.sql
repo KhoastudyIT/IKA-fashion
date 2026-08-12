@@ -109,10 +109,11 @@ CREATE TABLE IF NOT EXISTS orders (
   total_price      INTEGER      NOT NULL CHECK (total_price >= 0),
   discount         INTEGER      NOT NULL DEFAULT 0 CHECK (discount >= 0),
   coupon_code      VARCHAR(50)  NOT NULL DEFAULT '',
+  -- 'returned' = khách đã trả hàng và yêu cầu được duyệt xong.
   status           VARCHAR(20)  NOT NULL DEFAULT 'pending'
-                   CHECK (status IN ('pending', 'confirmed', 'shipped', 'completed', 'cancelled')),
+                   CHECK (status IN ('pending', 'confirmed', 'shipped', 'completed', 'cancelled', 'returned')),
   payment_status   VARCHAR(20)  NOT NULL DEFAULT 'unpaid'
-                   CHECK (payment_status IN ('unpaid', 'paid')),
+                   CHECK (payment_status IN ('unpaid', 'paid', 'refunded')),
   shipping_address VARCHAR(255) NOT NULL,
   phone            VARCHAR(20)  NOT NULL,
   notes            VARCHAR(500) NOT NULL DEFAULT '',
@@ -139,6 +140,27 @@ CREATE TABLE IF NOT EXISTS order_items (
   color       VARCHAR(50) NOT NULL,
   quantity    INTEGER     NOT NULL CHECK (quantity > 0)
 );
+
+-- Yêu cầu trả hàng / đổi mới. Mỗi yêu cầu áp cho CẢ ĐƠN.
+
+CREATE TABLE IF NOT EXISTS order_returns (
+  id           SERIAL       PRIMARY KEY,
+  order_id     UUID         NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  type         VARCHAR(20)  NOT NULL CHECK (type IN ('return', 'exchange')),
+  reason       VARCHAR(500) NOT NULL,
+  images       JSONB        NOT NULL DEFAULT '[]'::jsonb,
+  status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
+               CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
+  admin_note   VARCHAR(500) NOT NULL DEFAULT '',
+  resolved_at  TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- Một đơn chỉ được có MỘT yêu cầu đang mở tại một thời điểm. Yêu cầu đã bị từ
+-- chối hoặc đã xử lý xong thì không tính, nhờ đó khách gửi lại được.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_order_returns_one_open
+  ON order_returns (order_id) WHERE status IN ('pending', 'approved');
 
 -- Danh sách yêu thích
 CREATE TABLE IF NOT EXISTS wishlist (
@@ -186,6 +208,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv       ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_flash_sales_product     ON flash_sales (product_id);
 CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (active, starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_flash       ON order_items (flash_sale_id);
+CREATE INDEX IF NOT EXISTS idx_order_returns_order     ON order_returns (order_id);
+CREATE INDEX IF NOT EXISTS idx_order_returns_status    ON order_returns (status, created_at DESC);
 
 -- =============================================================
 -- SEED DỮ LIỆU (tài khoản admin được backend seed lúc khởi động)
