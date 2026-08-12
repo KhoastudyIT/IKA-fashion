@@ -8,7 +8,11 @@ import { AppError } from '../../middleware/errorHandler.js';
 export const UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads');
 
 // Client chỉ chọn được thư mục trong danh sách này — không tự đặt đường dẫn lưu.
-export const IMAGE_FOLDERS = ['news', 'products', 'collections', 'settings'];
+export const IMAGE_FOLDERS = ['news', 'products', 'collections', 'settings', 'returns'];
+
+// Thư mục khách hàng được phép ghi vào (ảnh kèm yêu cầu trả/đổi hàng).
+// Mọi thư mục còn lại chỉ dành cho admin.
+export const CUSTOMER_IMAGE_FOLDERS = ['returns'];
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 

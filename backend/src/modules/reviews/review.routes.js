@@ -13,6 +13,7 @@ reviewPublicRouter.get('/product/:productId', ctrl.listByProduct);
 export const reviewCustomerRouter = Router();
 reviewCustomerRouter.use(authenticate, authorize('customer'));
 reviewCustomerRouter.get('/eligibility/:productId', ctrl.eligibility);
+reviewCustomerRouter.get('/mine/:productId',        ctrl.listMine);
 reviewCustomerRouter.post('/', validate(createReviewSchema), ctrl.create);
 
 // Admin kiểm duyệt — mount tại /api/v1/admin/reviews

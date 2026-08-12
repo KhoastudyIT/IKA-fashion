@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, queryParam, jsonBody,
-  okData, okList, createdData,
+  okData, okList, okPaginated, createdData,
   adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
@@ -58,13 +58,28 @@ export const orderPaths = {
     get: {
       tags: ['Admin - Đơn hàng'],
       summary: 'Tất cả đơn hàng',
+      description:
+        'Tìm kiếm chạy ở SERVER trên toàn bộ đơn, không phải lọc trong trang đang xem — '
+        + 'nên tra được đơn nằm ở trang bất kỳ.',
       security: bearer,
       parameters: [
-        queryParam('status', { type: 'string', enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled'] }, 'Bỏ trống thì lấy hết'),
+        queryParam(
+          'status',
+          { type: 'string', enum: ['pending', 'confirmed', 'shipped', 'completed', 'cancelled', 'returned'] },
+          'Bỏ trống thì lấy hết',
+        ),
+        queryParam(
+          'search',
+          { type: 'string', example: 'D73020C9' },
+          'Tìm theo mã đơn (8 ký tự đầu hoặc UUID đầy đủ, có thể kèm dấu #), SĐT, địa chỉ, tên hoặc email khách',
+        ),
+        queryParam('page', { type: 'integer', default: 1 }, 'Trang, bắt đầu từ 1'),
+        queryParam('limit', { type: 'integer', default: 15, maximum: 100 }, 'Số đơn mỗi trang'),
       ],
       responses: {
-        200: okList('Toàn bộ đơn hàng', 'Order'),
+        200: okPaginated('Đơn hàng khớp bộ lọc, mới nhất lên trước', 'Order'),
         ...adminErrors,
+        422: validationError,
       },
     },
   },
@@ -87,12 +102,28 @@ export const orderPaths = {
     put: {
       tags: ['Admin - Đơn hàng'],
       summary: 'Cập nhật trạng thái đơn',
-      description: 'Gửi `status`, `paymentStatus`, hoặc cả hai.',
+      description:
+        'Gửi `status`, `paymentStatus`, hoặc cả hai.\n\n'
+        + '- Chuyển sang `cancelled` sẽ HOÀN tồn kho và hoàn suất flash sale; chỉ hoàn một lần '
+        + 'kể cả bấm nhiều lần.\n'
+        + '- Chuyển sang `completed` tự đặt `paymentStatus = paid` (cửa hàng thu tiền khi giao). '
+        + 'Ngược lại, gỡ thanh toán của đơn đã hoàn thành bị từ chối.\n'
+        + '- KHÔNG đặt được `returned` ở đây — trạng thái đó chỉ đến qua luồng duyệt yêu cầu '
+        + 'trả hàng, để không ai đổi trạng thái mà quên hoàn kho.',
       security: bearer,
       parameters: [pathParam('id', { example: 'DH1720051200000' })],
       requestBody: jsonBody('OrderUpdateStatusBody'),
       responses: {
         200: okData('Đơn hàng sau khi cập nhật', 'Order'),
+        400: {
+          description: 'Gỡ thanh toán của đơn đã hoàn thành',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' },
+              example: { success: false, message: 'Đơn đã hoàn thành thì phải ở trạng thái đã thanh toán. Nếu cần hoàn tiền, hãy xử lý qua yêu cầu trả hàng.' },
+            },
+          },
+        },
         ...adminErrors,
         404: notFound,
         422: validationError,

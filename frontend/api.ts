@@ -130,6 +130,8 @@ export interface Cart {
 export interface Order {
   id: string
   userId: string
+  customerName: string
+  customerEmail: string
   items: Array<{ productId: number; name: string; img: string | null; price: number; size: string; color: string; quantity: number; lineTotal: number }>
   totalPrice: number
   discount: number
@@ -141,6 +143,89 @@ export interface Order {
   notes: string
   createdAt: string
   updatedAt: string
+  /** Yêu cầu trả/đổi mới nhất của đơn — null nếu khách chưa gửi lần nào. */
+  returnRequest: OrderReturn | null
+}
+
+// ---------- Trả hàng / Đổi mới ----------
+// Mỗi yêu cầu áp cho CẢ ĐƠN. Một đơn chỉ có một yêu cầu đang mở tại một thời điểm.
+
+export type ReturnType = 'return' | 'exchange'
+export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'completed'
+
+export interface OrderReturn {
+  id: number
+  orderId: string
+  type: ReturnType
+  reason: string
+  /** Ảnh khách đính kèm để cửa hàng đối chiếu với lý do. */
+  images: string[]
+  status: ReturnStatus
+  adminNote: string
+  createdAt: string
+  resolvedAt: string | null
+  // Kèm theo khi lấy từ danh sách quản trị
+  orderTotal?: number
+  orderStatus?: string
+  orderCreatedAt?: string
+  customerName?: string
+  customerEmail?: string
+  customerPhone?: string
+}
+
+/** Số ngày kể từ khi đơn hoàn thành mà khách còn được yêu cầu — khớp với backend. */
+export const RETURN_WINDOW_DAYS = 7
+
+export const RETURN_TYPE_LABEL: Record<ReturnType, string> = {
+  return: 'Trả hàng',
+  exchange: 'Đổi mới',
+}
+
+export const RETURN_STATUS_LABEL: Record<ReturnStatus, string> = {
+  pending: 'Chờ duyệt',
+  approved: 'Đã duyệt',
+  rejected: 'Bị từ chối',
+  completed: 'Đã xử lý xong',
+}
+
+/** Đơn có còn trong hạn đổi trả không — đối xứng với kiểm tra ở backend. */
+export function canRequestReturn(order: Order) {
+  if (order.status !== 'completed') return false
+  if (order.returnRequest && ['pending', 'approved'].includes(order.returnRequest.status)) return false
+  const days = (Date.now() - new Date(order.updatedAt).getTime()) / 86400000
+  return days <= RETURN_WINDOW_DAYS
+}
+
+export function createReturnRequest(body: {
+  orderId: string
+  type: ReturnType
+  reason: string
+  images?: string[]
+}): Promise<OrderReturn> {
+  return getData('/customer/returns', { method: 'POST', body, auth: true })
+}
+
+export function getMyReturns(): Promise<OrderReturn[]> {
+  return getData('/customer/returns', { auth: true })
+}
+
+export async function getAdminReturns(
+  query: { status?: ReturnStatus; page?: number; limit?: number } = {},
+): Promise<{ items: OrderReturn[]; pagination: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) qs.set(k, String(v))
+  })
+  const json = await request(`/admin/returns${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+  const items = json.data?.data || json.data || []
+  return { items: items as OrderReturn[], pagination: json.data?.pagination || json.pagination || {} }
+}
+
+export function updateReturnStatus(
+  id: number,
+  body: { status?: ReturnStatus; adminNote?: string },
+): Promise<OrderReturn> {
+  return getData(`/admin/returns/${id}/status`, { method: 'PUT', body, auth: true })
 }
 
 // Khóa định danh 1 dòng giỏ hàng để gọi update/remove
@@ -276,6 +361,8 @@ export interface ApiUser {
 
 export interface AdminOrderQuery {
   status?: string
+  /** Tìm trên toàn bộ đơn: mã đơn, SĐT, địa chỉ, tên và email khách. */
+  search?: string
   page?: number
   limit?: number
 }
@@ -561,6 +648,14 @@ export function getProductReviews(productId: number): Promise<Review[]> {
 export function canReviewProduct(productId: number): Promise<{ canReview: boolean }> {
   return getData(`/customer/reviews/eligibility/${productId}`, { auth: true })
 }
+/**
+ * Đánh giá của chính khách về sản phẩm này, KỂ CẢ cái chưa được duyệt.
+ * Danh sách công khai lọc `approved` nên khách vừa gửi xong sẽ không thấy bài
+ * của mình nếu chỉ dựa vào getProductReviews().
+ */
+export function getMyProductReviews(productId: number): Promise<Review[]> {
+  return getData(`/customer/reviews/mine/${productId}`, { auth: true })
+}
 /** Khách đã đăng nhập: gửi đánh giá */
 export function createReview(body: { productId: number; rating: number; comment?: string }): Promise<Review> {
   return getData('/customer/reviews', { method: 'POST', body, auth: true })
@@ -726,7 +821,9 @@ export function deleteContact(id: string) {
 
 // ---------- Tải ảnh (admin) ----------
 
-export type UploadType = 'news' | 'products' | 'collections' | 'settings'
+// 'returns' là thư mục duy nhất khách hàng được ghi vào (ảnh kèm yêu cầu
+// trả/đổi); các thư mục còn lại chỉ admin tải được.
+export type UploadType = 'news' | 'products' | 'collections' | 'settings' | 'returns'
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
@@ -751,7 +848,9 @@ export async function uploadImage(file: File, type: UploadType): Promise<string>
   body.append('file', file)
 
   const token = getToken()
-  const res = await fetch(`${API_URL}/admin/uploads/${type}`, {
+  // Ảnh yêu cầu trả/đổi do chính khách tải nên đi qua router của khách hàng.
+  const scope = type === 'returns' ? 'customer' : 'admin'
+  const res = await fetch(`${API_URL}/${scope}/uploads/${type}`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body,

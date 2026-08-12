@@ -98,6 +98,38 @@ const STATEMENTS = [
   `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS flash_sale_id INTEGER
      REFERENCES flash_sales(id) ON DELETE SET NULL`,
   `CREATE INDEX IF NOT EXISTS idx_order_items_flash ON order_items (flash_sale_id)`,
+
+  // Trả hàng / đổi mới — thêm sau nên DB cũ chưa có bảng và chưa có hai giá trị
+  // trạng thái mới.
+  `ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check`,
+  `ALTER TABLE orders ADD CONSTRAINT orders_status_check
+     CHECK (status IN ('pending', 'confirmed', 'shipped', 'completed', 'cancelled', 'returned'))`,
+  `ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_status_check`,
+  `ALTER TABLE orders ADD CONSTRAINT orders_payment_status_check
+     CHECK (payment_status IN ('unpaid', 'paid', 'refunded'))`,
+
+  `CREATE TABLE IF NOT EXISTS order_returns (
+     id           SERIAL       PRIMARY KEY,
+     order_id     UUID         NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+     type         VARCHAR(20)  NOT NULL CHECK (type IN ('return', 'exchange')),
+     reason       VARCHAR(500) NOT NULL,
+     status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
+     admin_note   VARCHAR(500) NOT NULL DEFAULT '',
+     resolved_at  TIMESTAMPTZ,
+     created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+     updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+   )`,
+  `ALTER TABLE order_returns ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_order_returns_one_open
+     ON order_returns (order_id) WHERE status IN ('pending', 'approved')`,
+  `CREATE INDEX IF NOT EXISTS idx_order_returns_order ON order_returns (order_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_order_returns_status ON order_returns (status, created_at DESC)`,
+
+  // Cửa hàng thu tiền khi giao, nên đơn đã hoàn thành phải là đã thanh toán.
+  // Dọn các đơn cũ còn mắc kẹt ở trạng thái mâu thuẫn này.
+  `UPDATE orders SET payment_status = 'paid'
+   WHERE status = 'completed' AND payment_status = 'unpaid'`,
 ];
 
 export async function runMigrations() {

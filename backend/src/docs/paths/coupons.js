@@ -1,6 +1,6 @@
 import {
   bearer, pathParam, jsonBody,
-  okData, okList, createdData, okMessage,
+  okData, okList, okPaginated, createdData, okMessage,
   adminErrors, unauthorized, forbidden, notFound, validationError,
 } from '../helpers.js';
 
@@ -33,7 +33,7 @@ export const couponPaths = {
       summary: 'Danh sách mã giảm giá',
       security: bearer,
       responses: {
-        200: okList('Toàn bộ mã, kể cả mã đã tắt', 'Coupon'),
+        200: okPaginated('Toàn bộ mã, kể cả mã đã tắt', 'Coupon'),
         ...adminErrors,
       },
     },

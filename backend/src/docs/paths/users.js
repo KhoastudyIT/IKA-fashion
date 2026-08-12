@@ -1,5 +1,5 @@
 import {
-  bearer, pathParam, queryParam, jsonBody, okData, okList, okMessage, createdData,
+  bearer, pathParam, queryParam, jsonBody, okData, okList, okPaginated, okMessage, createdData,
   adminErrors, notFound, conflict, validationError,
 } from '../helpers.js';
 
@@ -20,9 +20,11 @@ export const userPaths = {
           { type: 'string', example: 'staff,admin' },
           'Lọc theo vai trò, phân tách bằng dấu phẩy: customer | staff | admin',
         ),
+        queryParam('page', { type: 'integer', default: 1 }, 'Trang, bắt đầu từ 1'),
+        queryParam('limit', { type: 'integer', default: 10, maximum: 100 }, 'Số tài khoản mỗi trang'),
       ],
       responses: {
-        200: okList('Tài khoản khớp bộ lọc', 'User'),
+        200: okPaginated('Tài khoản khớp bộ lọc, mới nhất lên trước', 'User'),
         ...adminErrors,
         422: validationError,
       },

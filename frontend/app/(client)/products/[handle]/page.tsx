@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { getProductByHandle, getProducts, addToCart, addWishlist, removeWishlist, getProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
+import { getProductByHandle, getProducts, addToCart, addWishlist, removeWishlist, getProductReviews, getMyProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
 import { useChat } from '@/components/ChatContext'
 import { useShop } from '@/components/context/ShopContext'
 
@@ -460,6 +460,9 @@ function QASection() {
 function ReviewsSection({ productId, productRating, productSold }: { productId: number; productRating: number; productSold: number }) {
   const { data: session } = useSession()
   const [reviews, setReviews] = useState<Review[]>([])
+  // Đánh giá của chính khách, kể cả cái chưa duyệt — danh sách công khai lọc
+  // approved nên không có chúng.
+  const [myReviews, setMyReviews] = useState<Review[]>([])
   const [myRating, setMyRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [myReview, setMyReview] = useState('')
@@ -472,9 +475,16 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
     getProductReviews(productId).then(setReviews).catch(() => setReviews([]))
   }, [productId])
 
+  const loadMyReviews = () => {
+    if (!session) { setMyReviews([]); return }
+    getMyProductReviews(productId).then(setMyReviews).catch(() => setMyReviews([]))
+  }
+
   useEffect(() => {
-    if (!session) { setCanReview(false); return }
+    if (!session) { setCanReview(false); setMyReviews([]); return }
     canReviewProduct(productId).then(r => setCanReview(r.canReview)).catch(() => setCanReview(false))
+    loadMyReviews()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, session])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -487,6 +497,7 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
       setSubmitted(true)
       setMyReview('')
       setMyRating(0)
+      loadMyReviews() // hiện ngay bài vừa gửi cho khách thấy
     } catch (err: any) {
       setError(err.message || 'Gửi đánh giá thất bại')
     } finally {
@@ -522,6 +533,39 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
           ))}
         </div>
       </div>
+
+      {/* Đánh giá của chính khách — hiện cả bài đang chờ duyệt */}
+      {myReviews.length > 0 && (
+        <div style={{ marginBottom: '32px' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '17px', fontWeight: 600, color: '#2C2C2C', marginBottom: '14px' }}>
+            Đánh Giá Của Bạn
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {myReviews.map((review) => (
+              <div key={review.id} style={{ background: '#FDF9F0', borderRadius: '12px', padding: '22px', border: '1px solid #D4AF37' }}>
+                {/* Không hiện trạng thái duyệt: khâu kiểm duyệt là việc nội bộ
+                    của cửa hàng, khách chỉ cần thấy bài mình đã gửi. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  <StarRow rating={review.rating} size={14} />
+                  <span style={{ fontSize: '12px', color: '#9A9A9A' }}>
+                    {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                  </span>
+                </div>
+                <p style={{ fontSize: '14px', color: '#4A4A4A', lineHeight: 1.7, margin: 0 }}>{review.comment}</p>
+                {review.reply && (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: '#FFFFFF', padding: '14px', borderRadius: '8px', borderLeft: '2px solid #D4AF37', marginTop: '12px' }}>
+                    <MessageCircle size={16} style={{ color: '#D4AF37', marginTop: '2px', flexShrink: 0 }} />
+                    <div>
+                      <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#2C2C2C', fontSize: '12px' }}>Phản hồi từ IKA Fashion</p>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#4A4A4A', lineHeight: 1.6 }}>{review.reply}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Review cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '48px' }}>
@@ -578,7 +622,7 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
           </div>
         ) : submitted ? (
           <div style={{ background: '#d1fae5', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <p style={{ color: '#065f46', fontWeight: 600 }}>✓ Cảm ơn bạn! Đánh giá sẽ hiển thị sau khi được quản trị viên duyệt.</p>
+            <p style={{ color: '#065f46', fontWeight: 600 }}>✓ Cảm ơn bạn đã gửi đánh giá!</p>
             <button onClick={() => setSubmitted(false)} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}>Viết thêm đánh giá</button>
           </div>
         ) : (

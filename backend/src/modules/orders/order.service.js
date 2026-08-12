@@ -8,6 +8,8 @@ import { assertUsable, computeDiscount } from '../coupons/coupon.service.js';
 // SELECT chung: 1 đơn kèm mảng items (json_agg), alias camelCase cho FE
 const ORDER_SELECT = `
   SELECT o.id, o.user_id AS "userId", o.total_price AS "totalPrice",
+         u.name  AS "customerName",
+         u.email AS "customerEmail",
          o.discount, o.coupon_code AS "couponCode",
          o.status, o.payment_status AS "paymentStatus",
          o.shipping_address AS "shippingAddress", o.phone, o.notes,
@@ -21,13 +23,27 @@ const ORDER_SELECT = `
              ) ORDER BY oi.id
            ) FILTER (WHERE oi.id IS NOT NULL),
            '[]'
-         ) AS items
+         ) AS items,
+         -- Yêu cầu trả/đổi mới nhất của đơn (NULL = chưa có). Gắn kèm ở đây để
+         -- trang chi tiết đơn của khách không phải gọi thêm một API nữa.
+         (SELECT json_build_object(
+                   'id', r.id, 'type', r.type, 'reason', r.reason, 'images', r.images,
+                   'status', r.status, 'adminNote', r.admin_note,
+                   'createdAt', r.created_at, 'resolvedAt', r.resolved_at)
+          FROM order_returns r
+          WHERE r.order_id = o.id
+          ORDER BY r.created_at DESC LIMIT 1) AS "returnRequest"
   FROM orders o
+  LEFT JOIN users u ON u.id = o.user_id
   LEFT JOIN order_items oi ON oi.order_id = o.id
 `;
 
+// json_agg gom order_items nên phải GROUP BY. o.id là khóa chính của orders nên
+// Postgres tự suy ra các cột o.*, nhưng cột của users thì phải liệt kê tay.
+const ORDER_GROUP_BY = 'GROUP BY o.id, u.name, u.email';
+
 async function getOrderRow(id) {
-  const res = await db.query(`${ORDER_SELECT} WHERE o.id = $1 GROUP BY o.id`, [id]);
+  const res = await db.query(`${ORDER_SELECT} WHERE o.id = $1 ${ORDER_GROUP_BY}`, [id]);
   return res.rows[0] ?? null;
 }
 
@@ -143,7 +159,7 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
 
 export async function listMyOrders(userId) {
   const res = await db.query(
-    `${ORDER_SELECT} WHERE o.user_id = $1 GROUP BY o.id ORDER BY o.created_at DESC`,
+    `${ORDER_SELECT} WHERE o.user_id = $1 ${ORDER_GROUP_BY} ORDER BY o.created_at DESC`,
     [userId],
   );
   return res.rows;
@@ -158,19 +174,40 @@ export async function getOrder(id, user) {
   return order;
 }
 
-export async function listAllOrders({ status, page = 1, limit = 15 } = {}) {
+export async function listAllOrders({ status, search, page = 1, limit = 15 } = {}) {
   page  = Math.max(1, Number(page)  || 1);
   limit = Math.max(1, Number(limit) || 15);
 
   const params = [];
-  let whereSql = '';
+  const where = [];
+
   if (status) {
     params.push(status);
-    whereSql = `WHERE o.status = $1`;
+    where.push(`o.status = $${params.length}`);
   }
 
+  // Tìm trên TOÀN BỘ đơn chứ không chỉ trang đang xem. Mã đơn hiển thị cho admin
+  // là 8 ký tự đầu của UUID nên phải so bằng ILIKE trên dạng text; bỏ '#' ở đầu
+  // để admin dán thẳng mã nhìn thấy trên bảng cũng tra được.
+  const term = String(search ?? '').trim().replace(/^#/, '');
+  if (term) {
+    params.push(`%${term}%`);
+    const i = params.length;
+    where.push(`(
+      o.id::text ILIKE $${i}
+      OR o.phone ILIKE $${i}
+      OR o.shipping_address ILIKE $${i}
+      OR u.name ILIKE $${i}
+      OR u.email ILIKE $${i}
+    )`);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
   const countRes = await db.query(
-    `SELECT COUNT(*)::int AS total FROM orders o ${whereSql}`,
+    `SELECT COUNT(*)::int AS total
+     FROM orders o LEFT JOIN users u ON u.id = o.user_id
+     ${whereSql}`,
     params,
   );
   const total = countRes.rows[0].total;
@@ -178,7 +215,7 @@ export async function listAllOrders({ status, page = 1, limit = 15 } = {}) {
 
   const listParams = [...params, limit, (page - 1) * limit];
   const res = await db.query(
-    `${ORDER_SELECT} ${whereSql} GROUP BY o.id ORDER BY o.created_at DESC
+    `${ORDER_SELECT} ${whereSql} ${ORDER_GROUP_BY} ORDER BY o.created_at DESC
      LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
     listParams,
   );
@@ -193,12 +230,29 @@ export async function updateOrderStatus(id, { status, paymentStatus }) {
 
     // Khóa đơn để hai lần bấm "Hủy" liên tiếp không hoàn kho hai lần.
     const cur = await client.query(
-      'SELECT status FROM orders WHERE id = $1 FOR UPDATE', [id],
+      'SELECT status, payment_status FROM orders WHERE id = $1 FOR UPDATE', [id],
     );
     if (!cur.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
 
     const wasCancelled = cur.rows[0].status === 'cancelled';
     const nowCancelled = status === 'cancelled';
+
+    // Cửa hàng thu tiền khi giao (COD), nên đơn đã giao xong thì đương nhiên đã
+    // thanh toán — không để tồn tại đơn vừa "hoàn thành" vừa "chưa thanh toán".
+    // Chỉ nâng từ 'unpaid'; 'refunded' là trạng thái đã chốt, không đụng tới.
+    let nextPayment = paymentStatus ?? null;
+    if (status === 'completed' && !nextPayment && cur.rows[0].payment_status === 'unpaid') {
+      nextPayment = 'paid';
+    }
+    // Chặn cả chiều ngược lại: không cho gỡ thanh toán của đơn đã giao xong.
+    const finalStatus = status ?? cur.rows[0].status;
+    if (nextPayment === 'unpaid' && finalStatus === 'completed') {
+      throw new AppError(
+        'Đơn đã hoàn thành thì phải ở trạng thái đã thanh toán. '
+        + 'Nếu cần hoàn tiền, hãy xử lý qua yêu cầu trả hàng.',
+        400,
+      );
+    }
 
     const upd = await client.query(
       `UPDATE orders SET
@@ -206,7 +260,7 @@ export async function updateOrderStatus(id, { status, paymentStatus }) {
          payment_status = COALESCE($3, payment_status),
          updated_at = NOW()
        WHERE id = $1 RETURNING id`,
-      [id, status ?? null, paymentStatus ?? null],
+      [id, status ?? null, nextPayment],
     );
     if (!upd.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
 

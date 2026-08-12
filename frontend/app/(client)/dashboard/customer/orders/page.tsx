@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<string, string> = {
   shipped: 'Đang giao',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
+  returned: 'Đã trả hàng',
 }
 
 export default function CustomerOrdersPage() {
