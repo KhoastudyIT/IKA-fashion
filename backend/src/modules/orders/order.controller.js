@@ -15,7 +15,8 @@ export async function getById(req, res) {
 }
 
 export async function listAll(req, res) {
-  ok(res, await orderService.listAllOrders(req.query));
+  const result = await orderService.listAllOrders(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function updateStatus(req, res) {

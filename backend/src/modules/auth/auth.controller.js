@@ -29,8 +29,9 @@ export function logout(_req, res) {
   ok(res, null, 'Đăng xuất thành công');
 }
 
-export async function listUsers(_req, res) {
-  ok(res, await authService.listUsers());
+export async function listUsers(req, res) {
+  const result = await authService.listUsers(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function deleteUser(req, res) {

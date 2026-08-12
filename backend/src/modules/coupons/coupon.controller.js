@@ -6,8 +6,9 @@ export async function apply(req, res) {
   ok(res, result, 'Áp dụng mã thành công');
 }
 
-export async function list(_req, res) {
-  ok(res, await couponService.listCoupons());
+export async function list(req, res) {
+  const result = await couponService.listCoupons(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function create(req, res) {

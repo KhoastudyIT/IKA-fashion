@@ -90,9 +90,31 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
 
 // ─── Admin: quản lý người dùng ──────────────────────────────────────────────
 
-export async function listUsers() {
-  const res = await db.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at DESC`);
-  return res.rows;
+export async function listUsers(query = {}) {
+  const page = parseInt(query.page, 10) || 1;
+  const limit = parseInt(query.limit, 10) || 10;
+  
+  let whereSql = '';
+  const params = [];
+  
+  if (query.role) {
+    params.push(query.role);
+    whereSql = ` WHERE role = $${params.length}`;
+  }
+
+  const countRes = await db.query(`SELECT COUNT(*)::int AS total FROM users${whereSql}`, params);
+  const total = countRes.rows[0].total;
+
+  const listParams = [...params, limit, (page - 1) * limit];
+  const res = await db.query(
+    `SELECT ${USER_COLS} FROM users${whereSql} ORDER BY created_at DESC LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+    listParams
+  );
+  
+  return {
+    data: res.rows,
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+  };
 }
 
 export async function deleteUser(id) {

@@ -80,7 +80,7 @@ export async function listProducts({
     params,
   );
 
-  return { data: res.rows, meta: { total, page, limit, totalPages } };
+  return { data: res.rows, pagination: { page, limit, total, totalPages } };
 }
 
 export async function getProductById(id) {

@@ -69,12 +69,23 @@ export async function createReview({ productId, userId, userName, rating, commen
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────────
-export async function listAllReviews() {
+export async function listAllReviews(query = {}) {
+  const page = parseInt(query.page, 10) || 1;
+  const limit = parseInt(query.limit, 10) || 10;
+
+  const countRes = await db.query("SELECT COUNT(*)::int AS total FROM reviews");
+  const total = countRes.rows[0].total;
+
   const res = await db.query(
     `SELECT ${ADMIN_COLS} FROM reviews r JOIN products p ON p.id = r.product_id
-     ORDER BY r.created_at DESC`,
+     ORDER BY r.created_at DESC LIMIT $1 OFFSET $2`,
+     [limit, (page - 1) * limit]
   );
-  return res.rows;
+  
+  return {
+    data: res.rows,
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
+  };
 }
 
 export async function toggleApprove(id) {
