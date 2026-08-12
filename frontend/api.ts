@@ -105,15 +105,19 @@ export interface CartLine {
   name: string
   handle: string | null
   img: string | null
-  price: number
+  price: number           // Giá bán cuối (sau giảm cá nhân)
+  originalPrice: number | null  // Giá gốc trước giảm (null nếu không giảm)
   size: string
   color: string
   quantity: number
-  lineTotal: number
+  lineTotal: number         // price × quantity
+  originalLineTotal: number // originalPrice (hoặc price) × quantity
+  isFlashSale?: boolean
 }
 export interface Cart {
   items: CartLine[]
-  subtotal: number
+  subtotal: number          // Tổng price (giá sau giảm cá nhân)
+  originalSubtotal: number  // Tổng originalPrice (giá gốc, trước giảm cá nhân)
   totalItems: number
 }
 
@@ -838,4 +842,61 @@ export function updateArticleStatus(id: number, status: 'draft' | 'published'): 
 }
 export function deleteArticle(id: number): Promise<void> {
   return request(`/admin/news/${id}`, { method: 'DELETE', auth: true }).then(() => { })
+}
+
+// ---------- Flash Sales (Admin) ----------
+
+export interface FlashSaleProduct {
+  flashSaleProductId: number
+  productId: number
+  name: string
+  handle: string
+  img: string
+  originalPrice: number
+  discountedPrice: number
+  stockLimit: number
+  soldCount: number
+  remaining: number
+}
+
+export interface FlashSale {
+  id: number
+  name: string
+  startTime: string
+  endTime: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  products?: FlashSaleProduct[]
+}
+
+export function getAdminFlashSales(): Promise<FlashSale[]> {
+  return getData('/admin/flash-sales', { auth: true })
+}
+export function getAdminFlashSale(id: number): Promise<FlashSale> {
+  return getData(`/admin/flash-sales/${id}`, { auth: true })
+}
+export function createFlashSale(body: { name: string; startTime: string; endTime: string; isActive?: boolean }): Promise<FlashSale> {
+  return getData('/admin/flash-sales', { method: 'POST', body, auth: true })
+}
+export function updateFlashSale(id: number, body: Partial<{ name: string; startTime: string; endTime: string; isActive: boolean }>): Promise<FlashSale> {
+  return getData(`/admin/flash-sales/${id}`, { method: 'PUT', body, auth: true })
+}
+export function toggleFlashSale(id: number): Promise<FlashSale> {
+  return getData(`/admin/flash-sales/${id}/toggle`, { method: 'PATCH', auth: true })
+}
+export function deleteFlashSale(id: number): Promise<void> {
+  return request(`/admin/flash-sales/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+}
+
+// ---------- Flash Sale Products (Admin) ----------
+
+export function addProductToFlashSale(flashSaleId: number, body: { productId: number; discountedPrice: number; stockLimit: number }): Promise<FlashSaleProduct> {
+  return getData(`/admin/flash-sales/${flashSaleId}/products`, { method: 'POST', body, auth: true })
+}
+export function updateFlashSaleProduct(flashSaleId: number, productId: number, body: { discountedPrice?: number; stockLimit?: number }): Promise<FlashSaleProduct> {
+  return getData(`/admin/flash-sales/${flashSaleId}/products/${productId}`, { method: 'PUT', body, auth: true })
+}
+export function removeProductFromFlashSale(flashSaleId: number, productId: number): Promise<void> {
+  return request(`/admin/flash-sales/${flashSaleId}/products/${productId}`, { method: 'DELETE', auth: true }).then(() => {})
 }

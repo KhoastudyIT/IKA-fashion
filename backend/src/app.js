@@ -22,6 +22,7 @@ import { settingsPublicRouter, settingsAdminRouter } from './modules/settings/se
 import { contactPublicRouter, contactAdminRouter } from './modules/contacts/contact.routes.js';
 import { uploadAdminRouter } from './modules/uploads/upload.routes.js';
 import { UPLOAD_ROOT } from './modules/uploads/upload.service.js';
+import { flashSalePublicRouter, flashSaleAdminRouter } from './modules/flash-sales/flash_sale.routes.js';
 
 export function createApp() {
   const app = express();
@@ -52,6 +53,7 @@ export function createApp() {
   app.use(`${v1}/news`, newsPublicRouter);
   app.use(`${v1}/settings`, settingsPublicRouter);
   app.use(`${v1}/contacts`, contactPublicRouter);
+  app.use(`${v1}/flash-sales`, flashSalePublicRouter);
 
   // ── Customer (khách hàng đã đăng nhập) ────────────────────
   app.use(`${v1}/customer/cart`, cartRouter);
@@ -73,6 +75,7 @@ export function createApp() {
   app.use(`${v1}/admin/settings`, settingsAdminRouter);
   app.use(`${v1}/admin/contacts`, contactAdminRouter);
   app.use(`${v1}/admin/uploads`, uploadAdminRouter);
+  app.use(`${v1}/admin/flash-sales`, flashSaleAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 

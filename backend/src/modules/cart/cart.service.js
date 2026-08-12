@@ -1,5 +1,6 @@
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
+import { checkFlashSaleForProduct } from '../flash-sales/flash_sale.service.js';
 
 // Khóa định danh 1 dòng giỏ hàng = product + size + color (giữ nguyên format cho FE)
 const parseKey = (key) => {
@@ -11,18 +12,51 @@ async function present(userId) {
   const res = await db.query(
     `SELECT ci.product_id AS "productId",
             p.name, p.handle, p.img, p.price,
+            p.original_price AS "originalPrice",
             ci.size, ci.color, ci.quantity,
-            (p.price * ci.quantity) AS "lineTotal"
+            (p.price * ci.quantity)                                          AS "lineTotal",
+            (COALESCE(p.original_price, p.price) * ci.quantity)              AS "originalLineTotal"
      FROM cart_items ci
      JOIN products p ON p.id = ci.product_id
      WHERE ci.user_id = $1
      ORDER BY ci.created_at`,
     [userId],
   );
-  const items = res.rows.map(r => ({ ...r, price: Number(r.price), lineTotal: Number(r.lineTotal) }));
-  const subtotal = items.reduce((s, it) => s + it.lineTotal, 0);
-  const totalItems = items.reduce((s, it) => s + it.quantity, 0);
-  return { items, subtotal, totalItems };
+  const items = await Promise.all(res.rows.map(async (r) => {
+    let price = Number(r.price);
+    let originalPrice = r.originalPrice != null ? Number(r.originalPrice) : price;
+    let isFlashSale = false;
+
+    // Check if product is in an active flash sale
+    const fs = await checkFlashSaleForProduct(r.productId);
+    if (fs && fs.soldCount < fs.stockLimit) {
+      price = fs.discountedPrice;
+      isFlashSale = true;
+    }
+
+    const lineTotal = price * r.quantity;
+    const originalLineTotal = originalPrice * r.quantity;
+
+    return {
+      productId: r.productId,
+      name: r.name,
+      handle: r.handle,
+      img: r.img,
+      size: r.size,
+      color: r.color,
+      quantity: r.quantity,
+      price,
+      originalPrice,
+      lineTotal,
+      originalLineTotal,
+      isFlashSale,
+    };
+  }));
+
+  const subtotal         = items.reduce((s, it) => s + it.lineTotal,         0);
+  const originalSubtotal = items.reduce((s, it) => s + it.originalLineTotal, 0);
+  const totalItems       = items.reduce((s, it) => s + it.quantity,          0);
+  return { items, subtotal, originalSubtotal, totalItems };
 }
 
 export async function getCart(userId) {
