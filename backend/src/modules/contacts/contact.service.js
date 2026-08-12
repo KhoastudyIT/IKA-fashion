@@ -82,7 +82,7 @@ export async function listContacts({ page, limit, status, search, sort }) {
 
   return {
     data: res.rows,
-    meta: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
   };
 }
 

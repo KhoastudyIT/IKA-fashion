@@ -34,10 +34,11 @@ export default function AdminDashboard() {
         ])
 
         const totalProducts = prodRes.items.length
-        const totalOrders = ordersRes.length
-        const totalCustomers = custRes.length
+        const orders = ordersRes.items ?? []
+        const totalOrders = ordersRes.pagination?.total ?? orders.length
+        const totalCustomers = custRes.pagination?.total ?? custRes.items.length
         // Chỉ tính doanh thu từ các đơn hàng không bị hủy (status !== 'cancelled')
-        const totalRevenue = ordersRes
+        const totalRevenue = orders
           .filter(o => o.status !== 'cancelled')
           .reduce((sum, o) => sum + o.totalPrice, 0)
 
@@ -49,7 +50,7 @@ export default function AdminDashboard() {
         })
 
         // Lấy tối đa 5 đơn hàng gần đây nhất
-        setRecentOrders(ordersRes.slice(0, 5))
+        setRecentOrders(orders.slice(0, 5))
       } catch (err: any) {
         setError(err.message || 'Lỗi tải dữ liệu bảng điều khiển')
       } finally {

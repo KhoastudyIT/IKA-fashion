@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   getAdminNews, getAdminArticle, createArticle, updateArticle, updateArticleStatus,
   deleteArticle, getNewsCategories, Article, NewsCategory,
@@ -8,6 +9,7 @@ import {
 import { Plus, X, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import ImageField from '@/components/ImageField'
 import ContentEditor from '@/components/ContentEditor'
+import AdminPagination from '@/components/ui/AdminPagination'
 
 type FormState = {
   title: string
@@ -69,7 +71,10 @@ export default function AdminNewsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<'' | 'draft' | 'published'>('')
   const [categoryFilter, setCategoryFilter] = useState('')
-  const [page, setPage] = useState(1)
+
+  // Read page from URL
+  const searchParams = useSearchParams()
+  const page = Math.max(1, Number(searchParams.get('page')) || 1)
 
   // Form
   const [showForm, setShowForm] = useState(false)
@@ -90,9 +95,10 @@ export default function AdminNewsPage() {
         page,
         limit: LIMIT,
       })
-      setArticles(res.items)
-      setTotalPages(res.meta?.totalPages ?? 1)
-      setTotal(res.meta?.total ?? res.items.length)
+      const { items: data, pagination } = res
+      setArticles(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (data?.length || 0))
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách bài viết')
     } finally {
@@ -106,8 +112,8 @@ export default function AdminNewsPage() {
     getNewsCategories().then(setCategories).catch(() => {})
   }, [])
 
-  // Đổi bộ lọc thì quay về trang 1, không thì đang ở trang 5 mà kết quả chỉ có 2 trang
-  const applyFilter = (fn: () => void) => { fn(); setPage(1) }
+  // Changing a filter navigates to page 1 (URL param will update)
+  const applyFilter = (fn: () => void) => { fn() }
 
   const openCreate = () => {
     setEditingId(null)
@@ -318,30 +324,13 @@ export default function AdminNewsPage() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[#E5DFD8] text-sm">
-            <span className="text-muted-foreground">Tổng {total} bài viết</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="p-1.5 rounded border border-[#E5DFD8] disabled:opacity-40 hover:bg-[#F9F5F0] cursor-pointer disabled:cursor-not-allowed"
-                aria-label="Trang trước"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-[#2C2C2C]">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded border border-[#E5DFD8] disabled:opacity-40 hover:bg-[#F9F5F0] cursor-pointer disabled:cursor-not-allowed"
-                aria-label="Trang sau"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+        {/* Pagination */}
+        <div className="border-t border-[#E5DFD8] bg-[#F9F5F0] px-6">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Tổng {total} bài viết</span>
+            <AdminPagination currentPage={page} totalPages={totalPages} />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Modal form */}

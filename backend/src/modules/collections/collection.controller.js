@@ -1,8 +1,9 @@
 import * as collectionService from './collection.service.js';
 import { ok, created } from '../../utils/response.js';
 
-export async function list(_req, res) {
-  ok(res, await collectionService.listCollections());
+export async function list(req, res) {
+  const result = await collectionService.listCollections(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function getBySlug(req, res) {

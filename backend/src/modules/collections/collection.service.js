@@ -6,10 +6,13 @@ const PRODUCT_COLS =
    img, images, colors, sizes, features,
    rating::float AS rating, sold, stock, description`;
 
-export async function listCollections() {
-  // Kèm số lượng sản phẩm mỗi danh mục.
-  // Loại trừ slug 'sale' — Ưu Đãi không phải danh mục thật,
-  // được lọc riêng qua ?isSale=true trên API products.
+export async function listCollections(query = {}) {
+  const page = parseInt(query.page, 10) || 1;
+  const limit = parseInt(query.limit, 10) || 10;
+
+  const countRes = await db.query("SELECT COUNT(*)::int AS total FROM collections WHERE slug != 'sale'");
+  const total = countRes.rows[0].total;
+
   const res = await db.query(`
     SELECT c.id, c.slug, c.name, c.img,
            COUNT(p.id)::int AS "productCount"
@@ -18,8 +21,13 @@ export async function listCollections() {
     WHERE c.slug != 'sale'
     GROUP BY c.id, c.slug, c.name, c.img
     ORDER BY c.id
-  `);
-  return res.rows;
+    LIMIT $1 OFFSET $2
+  `, [limit, (page - 1) * limit]);
+  
+  return {
+    data: res.rows,
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
+  };
 }
 
 export async function getCollectionBySlug(slug) {

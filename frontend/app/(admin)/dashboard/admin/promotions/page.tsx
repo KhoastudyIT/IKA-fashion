@@ -7,9 +7,15 @@ import {
   type Coupon,
 } from '@/api'
 import { useAdminRole } from '@/lib/permissions'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
 
 export default function AdminPromotionsPage() {
   const { canWrite } = useAdminRole()
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -27,14 +33,19 @@ export default function AdminPromotionsPage() {
   })
   const [saving, setSaving] = useState(false)
 
-  const load = () => {
+  const load = (pageToLoad: number) => {
     setLoading(true)
-    getAdminCoupons()
-      .then(setCoupons)
+    getAdminCoupons({ page: pageToLoad, limit: 10 })
+      .then((res) => {
+        const { items: data, pagination } = res
+        setCoupons(data ?? [])
+        setTotalPages(pagination?.totalPages ?? 1)
+        setTotal(pagination?.total ?? (data?.length || 0))
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }
-  useEffect(load, [])
+  useEffect(() => { load(currentPage) }, [currentPage])
 
   const openCreate = () => {
     setEditingId(null)
@@ -81,7 +92,7 @@ export default function AdminPromotionsPage() {
       if (editingId) await updateCoupon(editingId, payload)
       else await createCoupon(payload)
       setShowForm(false)
-      load()
+      load(currentPage)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -93,7 +104,7 @@ export default function AdminPromotionsPage() {
     if (!confirm(`Xóa mã giảm giá "${code}"?`)) return
     try {
       await deleteCoupon(id)
-      load()
+      load(currentPage)
     } catch (err: any) {
       setError(err.message)
     }
@@ -239,6 +250,12 @@ export default function AdminPromotionsPage() {
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-[#E5DFD8] flex justify-end bg-white rounded-b-lg">
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+        )}
       </div>
 
       {/* Form Modal */}

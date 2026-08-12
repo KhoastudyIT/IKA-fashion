@@ -26,8 +26,9 @@ export async function create(req, res) {
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────────
-export async function listAll(_req, res) {
-  ok(res, await reviewService.listAllReviews());
+export async function listAll(req, res) {
+  const result = await reviewService.listAllReviews(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function toggleApprove(req, res) {

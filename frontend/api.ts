@@ -150,21 +150,28 @@ function mapProduct(p: any): ApiProduct {
 
 // ---------- Products (công khai) ----------
 
-export async function getProducts(query: ProductQuery = {}): Promise<{ items: ApiProduct[]; meta: any }> {
+export async function getProducts(query: ProductQuery = {}): Promise<{ items: ApiProduct[]; pagination: any }> {
   const qs = new URLSearchParams()
   Object.entries(query).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
   })
   const json = await request(`/products${qs.toString() ? `?${qs}` : ''}`)
-  return { items: (json.data as any[]).map(mapProduct), meta: json.meta }
+  const items = json.data?.data || json.data || []
+  return { items: (items as any[]).map(mapProduct), pagination: json.data?.pagination || json.pagination || {} }
 }
 
 export async function getProductByHandle(handle: string): Promise<ApiProduct> {
   return mapProduct(await getData(`/products/handle/${encodeURIComponent(handle)}`))
 }
 
-export async function getCollections(): Promise<Collection[]> {
-  return getData('/collections')
+export async function getCollections(query: CustomerQuery = {}): Promise<{ items: Collection[]; pagination: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  const json = await request(`/collections${qs.toString() ? `?${qs}` : ''}`)
+  const items = json.data?.data || json.data || []
+  return { items: items as Collection[], pagination: json.data?.pagination || json.pagination || {} }
 }
 
 // ---------- Products: quản trị (admin) ----------
@@ -248,27 +255,65 @@ export interface ApiUser {
   createdAt: string
 }
 
-export function getAdminOrders(status?: string): Promise<Order[]> {
-  return getData(`/admin/orders${status ? `?status=${status}` : ''}`, { auth: true })
+export interface AdminOrderQuery {
+  status?: string
+  page?: number
+  limit?: number
+}
+
+export async function getAdminOrders(
+  query: AdminOrderQuery = {},
+): Promise<{ items: Order[]; pagination: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  const json = await request(`/admin/orders${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+  const items = json.data?.data || json.data || []
+  return { items: items as Order[], pagination: json.data?.pagination || json.pagination || {} }
 }
 
 export function updateOrderStatus(id: string, body: { status: string; paymentStatus?: string }): Promise<Order> {
   return getData(`/admin/orders/${id}/status`, { method: 'PUT', body, auth: true })
 }
 
+export interface CustomerQuery {
+  page?: number
+  limit?: number
+  role?: string
+}
+
+export interface AdminUserQuery {
+  page?: number
+  limit?: number
+  /** Nhiều vai trò cùng lúc — backend nhận chuỗi phân tách bằng dấu phẩy. */
+  roles?: string[]
+}
+
 /**
  * Danh sách tài khoản. Tài khoản khách hàng và tài khoản nội bộ là hai nhóm
  * tách bạch, nên mỗi trang truyền đúng nhóm mình cần:
- *   getAdminUsers(['customer'])       — trang Khách Hàng
- *   getAdminUsers(['staff', 'admin']) — trang Nhân Viên
+ *   getAdminUsers({ roles: ['customer'] })        — trang Khách Hàng
+ *   getAdminUsers({ roles: ['staff', 'admin'] })  — trang Nhân Viên
  */
-export function getAdminUsers(roles?: string[]): Promise<ApiUser[]> {
-  const qs = roles?.length ? `?role=${roles.join(',')}` : ''
-  return getData(`/admin/users${qs}`, { auth: true })
+export async function getAdminUsers(
+  query: AdminUserQuery = {},
+): Promise<{ items: ApiUser[]; pagination: any }> {
+  const { roles, ...rest } = query
+  const qs = new URLSearchParams()
+  Object.entries(rest).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) qs.set(k, String(v))
+  })
+  if (roles?.length) qs.set('role', roles.join(','))
+  const json = await request(`/admin/users${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+  const items = json.data?.data || json.data || []
+  return { items: items as ApiUser[], pagination: json.data?.pagination || json.pagination || {} }
 }
 
-export function getAdminCustomers(): Promise<ApiUser[]> {
-  return getAdminUsers(['customer'])
+export function getAdminCustomers(
+  query: Omit<AdminUserQuery, 'roles'> = {},
+): Promise<{ items: ApiUser[]; pagination: any }> {
+  return getAdminUsers({ ...query, roles: ['customer'] })
 }
 
 /** Admin tạo thẳng tài khoản nội bộ. Bỏ trống `role` thì backend mặc định 'staff'. */
@@ -452,8 +497,15 @@ export function applyCoupon(code: string, subtotal: number): Promise<AppliedCoup
   return getData('/customer/coupons/apply', { method: 'POST', body: { code, subtotal }, auth: true })
 }
 /** Admin: danh sách mã giảm giá */
-export function getAdminCoupons(): Promise<Coupon[]> {
-  return getData('/admin/coupons', { auth: true })
+export function getAdminCoupons(query: CustomerQuery = {}): Promise<{ items: Coupon[]; pagination: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  return request(`/admin/coupons${qs.toString() ? `?${qs}` : ''}`, { auth: true }).then(json => {
+    const items = json.data?.data || json.data || []
+    return { items: items as Coupon[], pagination: json.data?.pagination || json.pagination || {} }
+  })
 }
 export function createCoupon(body: CouponInput): Promise<Coupon> {
   return getData('/admin/coupons', { method: 'POST', body, auth: true })
@@ -495,8 +547,15 @@ export function createReview(body: { productId: number; rating: number; comment?
   return getData('/customer/reviews', { method: 'POST', body, auth: true })
 }
 /** Admin: tất cả đánh giá */
-export function getAdminReviews(): Promise<Review[]> {
-  return getData('/admin/reviews', { auth: true })
+export function getAdminReviews(query: CustomerQuery = {}): Promise<{ items: Review[]; pagination: any }> {
+  const qs = new URLSearchParams()
+  Object.entries(query).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
+  })
+  return request(`/admin/reviews${qs.toString() ? `?${qs}` : ''}`, { auth: true }).then(json => {
+    const items = json.data?.data || json.data || []
+    return { items: items as Review[], pagination: json.data?.pagination || json.pagination || {} }
+  })
 }
 export function approveReview(id: number): Promise<{ id: number; approved: boolean }> {
   return getData(`/admin/reviews/${id}/approve`, { method: 'PUT', auth: true })
@@ -562,9 +621,10 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   youtubeUrl: '',
 }
 
-/** Công khai — không cần token. */
-export function getSettings(): Promise<StoreSettings> {
-  return getData('/settings')
+/** Thay đổi: endpoint settings hiện tại yêu cầu auth */
+export async function getSettings(): Promise<StoreSettings> {
+  const res = await request('/settings', { auth: true })
+  return res.data?.data || res.data || {}
 }
 
 export function updateSettings(body: Partial<StoreSettings>): Promise<StoreSettings> {
@@ -617,17 +677,21 @@ export function createContact(body: ContactInput): Promise<ContactRequest> {
 
 export async function getContacts(
   query: ContactQuery = {},
-): Promise<{ items: ContactRequest[]; meta: any }> {
+): Promise<{ items: ContactRequest[]; pagination: any }> {
   const qs = new URLSearchParams()
   Object.entries(query).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
   })
   const json = await request(`/admin/contacts${qs.toString() ? `?${qs}` : ''}`, { auth: true })
-  return { items: json.data, meta: json.meta }
+  
+  // Mạng lưới an toàn: trích xuất mảng từ data property, fallback empty array
+  const items = json.data?.data || json.data || []
+  return { items, pagination: json.data?.pagination || json.pagination || {} }
 }
 
-export function getContactStats(): Promise<{ total: number; new: number; processing: number; resolved: number }> {
-  return getData('/admin/contacts/stats', { auth: true })
+export async function getContactStats(): Promise<{ total: number; new: number; processing: number; resolved: number }> {
+  const res = await request('/admin/contacts/stats', { auth: true })
+  return res.data?.data || res.data || { total: 0, new: 0, processing: 0, resolved: 0 }
 }
 
 export function updateContact(
@@ -742,9 +806,10 @@ function newsQueryString(query: NewsQuery): string {
 }
 
 /** Công khai: danh sách bài đã đăng */
-export async function getNews(query: NewsQuery = {}): Promise<{ items: Article[]; meta: any }> {
+export async function getNews(query: NewsQuery = {}): Promise<{ items: Article[]; pagination: any }> {
   const json = await request(`/news${newsQueryString(query)}`)
-  return { items: json.data as Article[], meta: json.meta }
+  const items = json.data?.data || json.data || []
+  return { items: items as Article[], pagination: json.data?.pagination || json.pagination || {} }
 }
 export function getArticle(idOrSlug: string | number): Promise<Article> {
   return getData(`/news/${encodeURIComponent(String(idOrSlug))}`)
@@ -754,9 +819,10 @@ export function getNewsCategories(): Promise<NewsCategory[]> {
 }
 
 /** Admin: danh sách gồm cả bài nháp */
-export async function getAdminNews(query: NewsQuery = {}): Promise<{ items: Article[]; meta: any }> {
+export async function getAdminNews(query: NewsQuery = {}): Promise<{ items: Article[]; pagination: any }> {
   const json = await request(`/admin/news${newsQueryString(query)}`, { auth: true })
-  return { items: json.data as Article[], meta: json.meta }
+  const items = json.data?.data || json.data || []
+  return { items: items as Article[], pagination: json.data?.pagination || json.pagination || {} }
 }
 export function getAdminArticle(id: number): Promise<Article> {
   return getData(`/admin/news/${id}`, { auth: true })

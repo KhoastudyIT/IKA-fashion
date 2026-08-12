@@ -39,9 +39,22 @@ export async function applyCoupon(code, subtotal) {
 }
 
 // ─── Admin CRUD ─────────────────────────────────────────────────────────────
-export async function listCoupons() {
-  const res = await db.query(`SELECT ${COUPON_COLS} FROM coupons ORDER BY created_at DESC`);
-  return res.rows;
+export async function listCoupons(query = {}) {
+  const page = parseInt(query.page, 10) || 1;
+  const limit = parseInt(query.limit, 10) || 10;
+
+  const countRes = await db.query("SELECT COUNT(*)::int AS total FROM coupons");
+  const total = countRes.rows[0].total;
+
+  const res = await db.query(
+    `SELECT ${COUPON_COLS} FROM coupons ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+    [limit, (page - 1) * limit]
+  );
+  
+  return {
+    data: res.rows,
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) }
+  };
 }
 
 export async function createCoupon(data) {

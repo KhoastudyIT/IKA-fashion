@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { getAdminOrders, updateOrderStatus, Order } from '@/api'
 import { Receipt, Search, Eye, RefreshCw, X } from 'lucide-react'
+import AdminPagination from '@/components/ui/AdminPagination'
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -10,6 +12,11 @@ export default function AdminOrdersPage() {
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  const searchParams = useSearchParams()
+  const currentPage  = Math.max(1, Number(searchParams.get('page')) || 1)
 
   // Modal xem chi tiết
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -18,8 +25,15 @@ export default function AdminOrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true)
-      const res = await getAdminOrders()
-      setOrders(res)
+      const res = await getAdminOrders({
+        status: statusFilter || undefined,
+        page: currentPage,
+        limit: 15,
+      })
+      const { items: data, pagination } = res
+      setOrders(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (data?.length || 0))
     } catch (err: any) {
       setError(err.message || 'Lỗi tải đơn hàng')
     } finally {
@@ -29,7 +43,8 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     loadOrders()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, statusFilter])
 
   const handleUpdateStatus = async (orderId: string, status: string, paymentStatus?: string) => {
     try {
@@ -76,22 +91,22 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // Lọc danh sách đơn hàng
+  // Lọc thêm phía client theo search term
   const filteredOrders = orders.filter((o) => {
-    const matchesStatus = statusFilter ? o.status === statusFilter : true
-    const matchesSearch =
+    if (!searchTerm) return true
+    return (
       o.phone.includes(searchTerm) ||
       o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.shippingAddress.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesStatus && matchesSearch
+    )
   })
 
-  // Thống kê nhanh đơn hàng
+  // Thống kê nhanh đơn hàng (từ trang hiện tại)
   const stats = {
-    total: orders.length,
-    pending: orders.filter((o) => o.status === 'pending').length,
+    total,
+    pending:   orders.filter((o) => o.status === 'pending').length,
     completed: orders.filter((o) => o.status === 'completed').length,
-    revenue: orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + o.totalPrice, 0),
+    revenue:   orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + o.totalPrice, 0),
   }
 
   return (
@@ -160,7 +175,7 @@ export default function AdminOrdersPage() {
         </select>
       </div>
 
-      {/* Orders Table */}
+      {/* Orders Table + Pagination */}
       <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -219,6 +234,13 @@ export default function AdminOrdersPage() {
               )}
             </tbody>
           </table>
+        </div>
+        {/* Pagination */}
+        <div className="border-t border-[#E5DFD8] bg-[#F9F5F0] px-6">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Tổng {total} đơn hàng</span>
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
         </div>
       </div>
 

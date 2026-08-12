@@ -28,7 +28,8 @@ export default function AdminSettingsPage() {
     setSaved(false)
     setLoading(true)
     try {
-      setSettings(await getSettings())
+      const data = await getSettings()
+      setSettings(data ?? DEFAULT_SETTINGS)
     } catch (err: any) {
       setError(err.message || 'Không tải được cấu hình')
     } finally {

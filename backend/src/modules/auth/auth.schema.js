@@ -30,6 +30,7 @@ export const updateUserRoleSchema = z.object({
 });
 
 export const listUsersQuerySchema = z.object({
+  // "staff,admin" → ['staff', 'admin']; trang Nhân Viên cần lọc nhiều vai trò.
   role: z
     .string()
     .optional()
@@ -37,6 +38,8 @@ export const listUsersQuerySchema = z.object({
     .refine((list) => !list || list.every((r) => ROLES.includes(r)), {
       message: 'Vai trò không hợp lệ',
     }),
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(100).optional().default(10),
 });
 
 export const createUserSchema = z.object({

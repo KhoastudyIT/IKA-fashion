@@ -30,7 +30,8 @@ export function logout(_req, res) {
 }
 
 export async function listUsers(req, res) {
-  ok(res, await authService.listUsers({ roles: req.query.role }));
+  const result = await authService.listUsers(req.query);
+  res.status(200).json({ success: true, ...result });
 }
 
 export async function createUser(req, res) {

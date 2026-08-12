@@ -14,7 +14,8 @@ export default function AdminAnalyticsPage() {
     try {
       setLoading(true)
       const res = await getAdminOrders()
-      setOrders(res)
+      const { items: data, pagination } = res
+      setOrders(data ?? [])
     } catch (err: any) {
       setError(err.message || 'Lỗi tải dữ liệu báo cáo')
     } finally {

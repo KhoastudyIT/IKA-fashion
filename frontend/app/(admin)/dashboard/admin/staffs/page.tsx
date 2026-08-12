@@ -5,6 +5,11 @@ import {
   getAdminUsers, updateUserRole, createStaffAccount, deleteCustomer, toggleLockCustomer, ApiUser,
 } from '@/api'
 import { RefreshCw, X, ShieldCheck, UserPlus, Lock, Unlock, Trash2 } from 'lucide-react'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
+import { useSession } from '@/auth-client'
+
+const PAGE_SIZE = 10
 
 type NewAccount = {
   name: string
@@ -23,6 +28,12 @@ const emptyAccount: NewAccount = {
 }
 
 export default function AdminStaffPage() {
+  const { data: session } = useSession()
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [staffCount, setStaffCount] = useState(0)
   const [usersList, setUsersList] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -40,11 +51,19 @@ export default function AdminStaffPage() {
   const [creating, setCreating] = useState(false)
 
   // Chỉ tài khoản nội bộ — khách hàng thuộc trang Khách Hàng, không lẫn vào đây.
-  const loadUsers = async () => {
+  const loadUsers = async (pageToLoad: number) => {
     try {
       setLoading(true)
-      const res = await getAdminUsers(['staff', 'admin'])
-      setUsersList(res)
+      // Gọi kèm một truy vấn đếm: danh sách đã phân trang nên không đếm được
+      // số nhân viên từ mảng của riêng trang hiện tại.
+      const [list, staffOnly] = await Promise.all([
+        getAdminUsers({ roles: ['staff', 'admin'], page: pageToLoad, limit: PAGE_SIZE }),
+        getAdminUsers({ roles: ['staff'], page: 1, limit: 1 }),
+      ])
+      setUsersList(list.items ?? [])
+      setTotalPages(list.pagination?.totalPages ?? 1)
+      setTotal(list.pagination?.total ?? (list.items?.length || 0))
+      setStaffCount(staffOnly.pagination?.total ?? 0)
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách nhân viên')
     } finally {
@@ -53,8 +72,8 @@ export default function AdminStaffPage() {
   }
 
   useEffect(() => {
-    loadUsers()
-  }, [])
+    loadUsers(currentPage)
+  }, [currentPage])
 
   const handleUpdateRole = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,8 +81,9 @@ export default function AdminStaffPage() {
     setSaving(true)
     setError('')
     try {
-      const updated = await updateUserRole(selectedUser.id, selectedRole)
-      setUsersList((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)))
+      await updateUserRole(selectedUser.id, selectedRole)
+      // Reload everything to reflect changes
+      await loadUsers(currentPage)
       setSelectedUser(null)
     } catch (err: any) {
       setError(err.message || 'Cập nhật vai trò thất bại')
@@ -95,7 +115,9 @@ export default function AdminStaffPage() {
         password: newAccount.password,
         role: newAccount.role,
       })
-      setUsersList((prev) => [user, ...prev])
+      // Tải lại thay vì chèn vào đầu mảng: danh sách đã phân trang nên chèn tay
+      // sẽ lệch với tổng số và thứ tự thật.
+      await loadUsers(currentPage)
       setShowCreate(false)
       setCreatedInfo(
         `Đã tạo tài khoản ${newAccount.role === 'admin' ? 'quản trị viên' : 'nhân viên'} `
@@ -123,7 +145,7 @@ export default function AdminStaffPage() {
     if (!confirm(`Xóa tài khoản "${user.name}"? Thao tác này không thể hoàn tác.`)) return
     try {
       await deleteCustomer(user.id)
-      setUsersList((prev) => prev.filter((u) => u.id !== user.id))
+      await loadUsers(currentPage)
     } catch (err: any) {
       alert(err.message || 'Lỗi xóa tài khoản')
     }
@@ -139,7 +161,7 @@ export default function AdminStaffPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={loadUsers}
+            onClick={() => loadUsers(currentPage)}
             className="p-2 border border-[#E5DFD8] rounded-full hover:bg-[#F9F5F0] transition-colors cursor-pointer"
             title="Tải lại danh sách"
           >
@@ -172,18 +194,16 @@ export default function AdminStaffPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng tài khoản nội bộ</p>
-          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{usersList.length}</p>
+          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{total}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Nhân viên</p>
-          <p className="text-2xl font-heading font-semibold text-slate-700">
-            {usersList.filter((u) => u.role === 'staff').length}
-          </p>
+          <p className="text-2xl font-heading font-semibold text-slate-700">{staffCount}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Quản trị viên</p>
           <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
-            {usersList.filter((u) => u.role === 'admin').length}
+            {Math.max(0, total - staffCount)}
           </p>
         </div>
       </div>
@@ -245,15 +265,21 @@ export default function AdminStaffPage() {
                     </td>
                     <td className="py-4 px-4 text-right">
                       <div className="flex gap-3 justify-end items-center">
-                        <button
-                          onClick={() => {
-                            setSelectedUser(user)
-                            setSelectedRole(user.role)
-                          }}
-                          className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
-                        >
-                          Đổi vai trò
-                        </button>
+                        {/* Không cho tự hạ quyền chính mình — backend cũng chặn,
+                            đây chỉ là để không mời người dùng bấm vào lỗi. */}
+                        {user.id === session?.user?.id ? (
+                          <span className="text-xs text-muted-foreground italic">Bạn (đang đăng nhập)</span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setSelectedRole(user.role)
+                            }}
+                            className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
+                          >
+                            Đổi vai trò
+                          </button>
+                        )}
                         {/* Tài khoản admin không khóa/xóa được — backend chặn để hệ
                             thống không rơi vào cảnh mất sạch quản trị viên. */}
                         {user.role === 'admin' ? (
@@ -289,6 +315,11 @@ export default function AdminStaffPage() {
           </table>
         </div>
 
+        {totalPages > 1 && (
+          <div className="pt-4 border-t border-[#E5DFD8] flex justify-end">
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+        )}
       </div>
 
       {/* Create Account Modal */}
