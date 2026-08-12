@@ -2,6 +2,7 @@ import pool from '../../db/index.js';
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
 import { isBackoffice } from '../../utils/roles.js';
+import { activeFlashJoin, effectivePriceSQL } from '../../utils/price.js';
 import { assertUsable, computeDiscount } from '../coupons/coupon.service.js';
 
 // SELECT chung: 1 đơn kèm mảng items (json_agg), alias camelCase cho FE
@@ -35,12 +36,19 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
   try {
     await client.query('BEGIN');
 
-    // Lấy giỏ hàng (khóa dòng sản phẩm để trừ kho an toàn)
+    // Lấy giỏ hàng kèm giá hiệu lực (khóa dòng sản phẩm để trừ kho an toàn).
+    // FOR UPDATE OF p xếp hàng những người cùng mua một sản phẩm, nhờ đó hai
+    // khách bấm đặt cùng lúc không cùng đọc được số suất flash còn lại.
     const cart = await client.query(
       `SELECT ci.product_id, ci.size, ci.color, ci.quantity,
-              p.name, p.img, p.price, p.stock
+              p.name, p.img, p.stock,
+              p.price                  AS list_price,
+              ${effectivePriceSQL('p')} AS price,
+              active_flash.id          AS flash_sale_id,
+              active_flash.remaining   AS flash_remaining
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
+       ${activeFlashJoin('p')}
        WHERE ci.user_id = $1
        FOR UPDATE OF p`,
       [userId],
@@ -51,6 +59,27 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
     for (const it of cart.rows) {
       if (it.stock < it.quantity) {
         throw new AppError(`Sản phẩm "${it.name}" không đủ hàng (còn ${it.stock})`, 400);
+      }
+    }
+
+    // Suất flash tính trên TỔNG số lượng của một sản phẩm, không phải từng dòng:
+    // cùng một áo đặt 2 size là hai dòng giỏ hàng nhưng vẫn ăn chung một quota.
+    const flashWanted = new Map();
+    for (const it of cart.rows) {
+      if (!it.flash_sale_id) continue;
+      flashWanted.set(it.flash_sale_id, (flashWanted.get(it.flash_sale_id) ?? 0) + it.quantity);
+    }
+    for (const it of cart.rows) {
+      if (!it.flash_sale_id) continue;
+      const wanted = flashWanted.get(it.flash_sale_id);
+      if (wanted > it.flash_remaining) {
+        // Một dòng đơn chỉ mang được một đơn giá nên không thể vừa bán giá flash
+        // cho phần trong suất vừa bán giá thường cho phần vượt. Báo rõ còn bao
+        // nhiêu suất thay vì âm thầm tính khác giá đã hiển thị.
+        throw new AppError(
+          `Sản phẩm "${it.name}" chỉ còn ${it.flash_remaining} suất giá flash sale, bạn đang đặt ${wanted}.`,
+          400,
+        );
       }
     }
 
@@ -80,14 +109,24 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
 
     for (const it of cart.rows) {
       await client.query(
-        `INSERT INTO order_items (order_id, product_id, name, img, price, size, color, quantity)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [orderId, it.product_id, it.name, it.img, it.price, it.size, it.color, it.quantity],
+        `INSERT INTO order_items
+           (order_id, product_id, name, img, price, list_price, flash_sale_id, size, color, quantity)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [orderId, it.product_id, it.name, it.img, it.price, it.list_price,
+         it.flash_sale_id ?? null, it.size, it.color, it.quantity],
       );
       await client.query(
         `UPDATE products SET stock = stock - $2, sold = sold + $2 WHERE id = $1`,
         [it.product_id, it.quantity],
       );
+      // Trừ suất flash đã dùng, không thì cột stock vô nghĩa và chương trình
+      // bán được vô hạn cho tới khi hết giờ.
+      if (it.flash_sale_id) {
+        await client.query(
+          `UPDATE flash_sales SET sold = sold + $2, updated_at = NOW() WHERE id = $1`,
+          [it.flash_sale_id, it.quantity],
+        );
+      }
     }
 
     await client.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
@@ -148,14 +187,60 @@ export async function listAllOrders({ status, page = 1, limit = 15 } = {}) {
 }
 
 export async function updateOrderStatus(id, { status, paymentStatus }) {
-  const upd = await db.query(
-    `UPDATE orders SET
-       status = COALESCE($2, status),
-       payment_status = COALESCE($3, payment_status),
-       updated_at = NOW()
-     WHERE id = $1 RETURNING id`,
-    [id, status ?? null, paymentStatus ?? null],
-  );
-  if (!upd.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
-  return getOrderRow(id);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Khóa đơn để hai lần bấm "Hủy" liên tiếp không hoàn kho hai lần.
+    const cur = await client.query(
+      'SELECT status FROM orders WHERE id = $1 FOR UPDATE', [id],
+    );
+    if (!cur.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+    const wasCancelled = cur.rows[0].status === 'cancelled';
+    const nowCancelled = status === 'cancelled';
+
+    const upd = await client.query(
+      `UPDATE orders SET
+         status = COALESCE($2, status),
+         payment_status = COALESCE($3, payment_status),
+         updated_at = NOW()
+       WHERE id = $1 RETURNING id`,
+      [id, status ?? null, paymentStatus ?? null],
+    );
+    if (!upd.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+    // Chỉ hoàn khi đơn thực sự CHUYỂN SANG hủy — cập nhật lại đơn đã hủy thì thôi.
+    if (nowCancelled && !wasCancelled) {
+      const items = await client.query(
+        'SELECT product_id, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
+        [id],
+      );
+      for (const it of items.rows) {
+        await client.query(
+          `UPDATE products
+           SET stock = stock + $2, sold = GREATEST(0, sold - $2)
+           WHERE id = $1`,
+          [it.product_id, it.quantity],
+        );
+        // Trả lại suất flash, không thì đơn hủy vẫn ăn mất suất của chương trình.
+        if (it.flash_sale_id) {
+          await client.query(
+            `UPDATE flash_sales
+             SET sold = GREATEST(0, sold - $2), updated_at = NOW()
+             WHERE id = $1`,
+            [it.flash_sale_id, it.quantity],
+          );
+        }
+      }
+    }
+
+    await client.query('COMMIT');
+    return getOrderRow(id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }

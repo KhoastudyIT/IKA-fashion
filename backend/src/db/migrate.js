@@ -62,28 +62,42 @@ const STATEMENTS = [
      ('Tin Cửa Hàng', 'tin-cua-hang', 4)
    ON CONFLICT (slug) DO NOTHING`,
 
+  // Flash sale — mỗi dòng là một sản phẩm.
+  //
+  // Bản đầu tiên của tính năng dùng hai bảng (chiến dịch + sản phẩm trong chiến
+  // dịch). Mô hình đó bị thay bằng một bảng phẳng nên phải dọn bảng cũ; tính
+  // năng chưa phát hành nên không có dữ liệu thật để giữ.
+  `DROP TABLE IF EXISTS flash_sale_products CASCADE`,
+  `ALTER TABLE order_items DROP COLUMN IF EXISTS flash_sale_product_id`,
+  `DROP TABLE IF EXISTS flash_sales CASCADE`,
+
+  `CREATE EXTENSION IF NOT EXISTS "btree_gist"`,
   `CREATE TABLE IF NOT EXISTS flash_sales (
-     id         SERIAL       PRIMARY KEY,
-     name       VARCHAR(200) NOT NULL,
-     start_time TIMESTAMPTZ  NOT NULL,
-     end_time   TIMESTAMPTZ  NOT NULL,
-     is_active  BOOLEAN      NOT NULL DEFAULT false,
-     created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-     updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-     CONSTRAINT flash_sales_time_check CHECK (end_time > start_time)
+     id             SERIAL      PRIMARY KEY,
+     product_id     INTEGER     NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+     price          INTEGER     NOT NULL CHECK (price > 0),
+     original_price INTEGER     NOT NULL CHECK (original_price > 0),
+     stock          INTEGER     NOT NULL DEFAULT 0 CHECK (stock >= 0),
+     sold           INTEGER     NOT NULL DEFAULT 0 CHECK (sold >= 0),
+     starts_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     ends_at        TIMESTAMPTZ,
+     active         BOOLEAN     NOT NULL DEFAULT true,
+     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     CONSTRAINT flash_sales_no_overlap EXCLUDE USING gist (
+       product_id WITH =,
+       tstzrange(starts_at, ends_at) WITH &&
+     ) WHERE (active)
    )`,
-  `CREATE TABLE IF NOT EXISTS flash_sale_products (
-     id               SERIAL  PRIMARY KEY,
-     flash_sale_id    INTEGER NOT NULL REFERENCES flash_sales(id) ON DELETE CASCADE,
-     product_id       INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-     discounted_price INTEGER NOT NULL CHECK (discounted_price >= 0),
-     stock_limit      INTEGER NOT NULL CHECK (stock_limit > 0),
-     sold_count       INTEGER NOT NULL DEFAULT 0 CHECK (sold_count >= 0),
-     UNIQUE (flash_sale_id, product_id)
-   )`,
-  `CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (is_active, start_time, end_time)`,
-  `CREATE INDEX IF NOT EXISTS idx_fsp_flash_sale_id ON flash_sale_products (flash_sale_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_fsp_product_id ON flash_sale_products (product_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_flash_sales_product ON flash_sales (product_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (active, starts_at, ends_at)`,
+
+  // Dòng đơn hàng ghi lại giá niêm yết và chương trình flash đã dùng, để tra
+  // cứu mức giảm và để hoàn suất khi hủy đơn.
+  `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS list_price INTEGER CHECK (list_price >= 0)`,
+  `ALTER TABLE order_items ADD COLUMN IF NOT EXISTS flash_sale_id INTEGER
+     REFERENCES flash_sales(id) ON DELETE SET NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_order_items_flash ON order_items (flash_sale_id)`,
 ];
 
 export async function runMigrations() {

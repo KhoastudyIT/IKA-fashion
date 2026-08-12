@@ -1,6 +1,6 @@
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
-import { checkFlashSaleForProduct } from '../flash-sales/flash_sale.service.js';
+import { activeFlashJoin, effectivePriceSQL } from '../../utils/price.js';
 
 // Khóa định danh 1 dòng giỏ hàng = product + size + color (giữ nguyên format cho FE)
 const parseKey = (key) => {
@@ -9,34 +9,27 @@ const parseKey = (key) => {
 };
 
 async function present(userId) {
+  // Giá flash lấy bằng LATERAL join trong chính truy vấn này. Trước đây mỗi dòng
+  // giỏ hàng gọi thêm một query kiểm tra flash sale — giỏ 10 món là 11 lượt đi DB.
   const res = await db.query(
     `SELECT ci.product_id AS "productId",
-            p.name, p.handle, p.img, p.price,
-            p.original_price AS "originalPrice",
-            ci.size, ci.color, ci.quantity,
-            (p.price * ci.quantity)                                          AS "lineTotal",
-            (COALESCE(p.original_price, p.price) * ci.quantity)              AS "originalLineTotal"
+            p.name, p.handle, p.img,
+            p.price                   AS "listPrice",
+            ${effectivePriceSQL('p')} AS price,
+            active_flash.id           AS "flashSaleId",
+            active_flash.remaining    AS "flashRemaining",
+            ci.size, ci.color, ci.quantity
      FROM cart_items ci
      JOIN products p ON p.id = ci.product_id
+     ${activeFlashJoin('p')}
      WHERE ci.user_id = $1
      ORDER BY ci.created_at`,
     [userId],
   );
-  const items = await Promise.all(res.rows.map(async (r) => {
-    let price = Number(r.price);
-    let originalPrice = r.originalPrice != null ? Number(r.originalPrice) : price;
-    let isFlashSale = false;
 
-    // Check if product is in an active flash sale
-    const fs = await checkFlashSaleForProduct(r.productId);
-    if (fs && fs.soldCount < fs.stockLimit) {
-      price = fs.discountedPrice;
-      isFlashSale = true;
-    }
-
-    const lineTotal = price * r.quantity;
-    const originalLineTotal = originalPrice * r.quantity;
-
+  const items = res.rows.map((r) => {
+    const price = Number(r.price);
+    const listPrice = Number(r.listPrice);
     return {
       productId: r.productId,
       name: r.name,
@@ -46,12 +39,14 @@ async function present(userId) {
       color: r.color,
       quantity: r.quantity,
       price,
-      originalPrice,
-      lineTotal,
-      originalLineTotal,
-      isFlashSale,
+      // Giữ tên cũ cho giao diện: originalPrice = giá gạch ngang.
+      originalPrice: listPrice,
+      lineTotal: price * r.quantity,
+      originalLineTotal: listPrice * r.quantity,
+      isFlashSale: r.flashSaleId != null,
+      flashRemaining: r.flashRemaining ?? null,
     };
-  }));
+  });
 
   const subtotal         = items.reduce((s, it) => s + it.lineTotal,         0);
   const originalSubtotal = items.reduce((s, it) => s + it.originalLineTotal, 0);

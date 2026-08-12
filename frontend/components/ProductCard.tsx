@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { Heart, Zap } from 'lucide-react'
 
 export interface ProductCardProps {
   product: any
@@ -18,9 +18,17 @@ export default function ProductCard({
   wishlistBusy = false,
   onWishlistToggle,
 }: ProductCardProps) {
-  const price = product.price ?? product.newPrice ?? 0
-  const originalPrice = product.originalPrice ?? product.oldPrice ?? 0
-  const discount = product.discount ?? 0
+  const listPrice = product.price ?? product.newPrice ?? 0
+  // Đang có flash sale thì giá hiển thị phải là giá flash, đúng bằng giá lúc
+  // chốt đơn; giá niêm yết lùi xuống thành giá gạch ngang.
+  const isFlashSale = Boolean(product.isFlashSale)
+  const price = product.effectivePrice ?? listPrice
+  const originalPrice = isFlashSale
+    ? listPrice
+    : (product.originalPrice ?? product.oldPrice ?? 0)
+  const discount = isFlashSale
+    ? (listPrice > 0 ? Math.round((1 - price / listPrice) * 100) : 0)
+    : (product.discount ?? 0)
   const img = product.img ?? product.image ?? ''
   const sold = product.sold ?? product.soldCount ?? 0
   const handle = product.handle ?? product.href?.replace('/products/', '') ?? ''
@@ -47,8 +55,12 @@ export default function ProductCard({
           </button>
         )}
 
-        {/* Badges: Discount takes precedence over custom badge */}
-        {discount > 0 ? (
+        {/* Badges: Flash sale > giảm giá thường > badge tùy chỉnh */}
+        {isFlashSale ? (
+          <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none flex items-center gap-1">
+            <Zap size={10} fill="currentColor" /> FLASH SALE{discount > 0 ? ` -${discount}%` : ''}
+          </div>
+        ) : discount > 0 ? (
           <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none">
             -{discount}%
           </div>
@@ -89,13 +101,20 @@ export default function ProductCard({
 
             <div className="mt-auto space-y-1 pt-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-accent">{price.toLocaleString('vi-VN')} đ</span>
+                <span className={`text-sm font-semibold ${isFlashSale ? 'text-red-600' : 'text-accent'}`}>
+                  {price.toLocaleString('vi-VN')} đ
+                </span>
                 {discount > 0 && originalPrice > 0 && (
                   <span className="text-xs text-muted-foreground line-through">
                     {originalPrice.toLocaleString('vi-VN')} đ
                   </span>
                 )}
               </div>
+              {isFlashSale && product.flashRemaining != null && (
+                <p className="text-[10px] font-medium text-orange-600">
+                  Chỉ còn {product.flashRemaining} suất giá flash
+                </p>
+              )}
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <span className="text-accent">★ {product.rating}</span>
                 <span>· Đã bán {sold.toLocaleString('vi-VN')}</span>
