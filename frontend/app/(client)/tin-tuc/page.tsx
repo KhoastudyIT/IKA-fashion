@@ -23,7 +23,7 @@ export default function NewsListPage() {
       setError('')
       const res = await getNews({ category: category || undefined, page, limit: LIMIT })
       setArticles(res.items)
-      setTotalPages(res.meta?.totalPages ?? 1)
+      setTotalPages(res.pagination?.totalPages ?? 1)
     } catch (err: any) {
       setError(err.message || 'Không tải được bài viết')
     } finally {

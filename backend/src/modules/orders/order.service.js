@@ -119,18 +119,32 @@ export async function getOrder(id, user) {
   return order;
 }
 
-export async function listAllOrders({ status } = {}) {
+export async function listAllOrders({ status, page = 1, limit = 15 } = {}) {
+  page  = Math.max(1, Number(page)  || 1);
+  limit = Math.max(1, Number(limit) || 15);
+
   const params = [];
   let whereSql = '';
   if (status) {
     params.push(status);
     whereSql = `WHERE o.status = $1`;
   }
-  const res = await db.query(
-    `${ORDER_SELECT} ${whereSql} GROUP BY o.id ORDER BY o.created_at DESC`,
+
+  const countRes = await db.query(
+    `SELECT COUNT(*)::int AS total FROM orders o ${whereSql}`,
     params,
   );
-  return res.rows;
+  const total = countRes.rows[0].total;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const listParams = [...params, limit, (page - 1) * limit];
+  const res = await db.query(
+    `${ORDER_SELECT} ${whereSql} GROUP BY o.id ORDER BY o.created_at DESC
+     LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+    listParams,
+  );
+
+  return { data: res.rows, pagination: { page, limit, total, totalPages } };
 }
 
 export async function updateOrderStatus(id, { status, paymentStatus }) {

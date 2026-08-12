@@ -141,7 +141,7 @@ async function queryList({ filters, sort, page, limit }) {
   return {
     // Danh sách không cần nội dung đầy đủ
     data: res.rows.map(row => mapRow(row, { withContent: false })),
-    meta: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
   };
 }
 

@@ -5,6 +5,8 @@ import { getCollections, createCollection, updateCollection, deleteCollection, C
 import { FolderKanban, Plus, Edit, Trash2, X, RefreshCw } from 'lucide-react'
 import ImageField from '@/components/ImageField'
 import { useAdminRole } from '@/lib/permissions'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
 
 type FormState = {
   name: string
@@ -20,6 +22,10 @@ const emptyForm: FormState = {
 
 export default function AdminCollectionsPage() {
   const { canWrite } = useAdminRole()
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -30,11 +36,14 @@ export default function AdminCollectionsPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  const loadCollections = async () => {
+  const loadCollections = async (pageToLoad: number) => {
     try {
       setLoading(true)
-      const res = await getCollections()
-      setCollections(res)
+      const res = await getCollections({ page: pageToLoad, limit: 10 })
+      const { items: data, pagination } = res
+      setCollections(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (data?.length || 0))
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh mục')
     } finally {
@@ -43,8 +52,8 @@ export default function AdminCollectionsPage() {
   }
 
   useEffect(() => {
-    loadCollections()
-  }, [])
+    loadCollections(currentPage)
+  }, [currentPage])
 
   const openCreate = () => {
     setEditingId(null)
@@ -77,7 +86,7 @@ export default function AdminCollectionsPage() {
         setCollections((prev) => [...prev, created])
       }
       setShowForm(false)
-      loadCollections()
+      loadCollections(currentPage)
     } catch (err: any) {
       setError(err.message || 'Lưu danh mục thất bại')
     } finally {
@@ -180,6 +189,12 @@ export default function AdminCollectionsPage() {
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-[#E5DFD8] flex justify-end bg-white rounded-b-lg">
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+        )}
       </div>
 
       {/* Form Modal */}

@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   getProducts, getCollections, createProduct, updateProduct, deleteProduct,
   ApiProduct, Collection, ProductInput,
 } from '@/api'
 import ImageListField from '@/components/ImageListField'
 import { useAdminRole } from '@/lib/permissions'
+import AdminPagination from '@/components/ui/AdminPagination'
 
 const csvToArr = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean)
 
@@ -31,7 +33,8 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCollection, setSelectedCollection] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
 
   const [showForm, setShowForm] = useState(false)
@@ -40,20 +43,30 @@ export default function AdminProductsPage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  const ITEMS_PER_PAGE = 8
+  const ITEMS_PER_PAGE = 10
+
+  // Read current page from URL search params
+  const searchParams = useSearchParams()
+  const currentPage = Math.max(1, Number(searchParams.get('page')) || 1)
 
   const load = () => {
     setLoading(true)
-    getProducts({ limit: 100 })
-      .then((res) => setProducts(res.items))
+    getProducts({ page: currentPage, limit: ITEMS_PER_PAGE, search: searchTerm || undefined, collection: selectedCollection || undefined })
+      .then((res) => {
+        const { items: data, pagination } = res
+        setProducts(data ?? [])
+        setTotalPages(pagination?.totalPages ?? 1)
+        setTotal(pagination?.total ?? (data?.length || 0))
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
     load()
-    getCollections().then(setCollections).catch(() => { })
-  }, [])
+    getCollections().then(res => setCollections(res.items || [])).catch(() => { })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, selectedCollection])
 
   const openCreate = () => {
     setEditingId(null)
@@ -127,30 +140,15 @@ export default function AdminProductsPage() {
     if (!confirm(`Xóa sản phẩm "${p.name}"?`)) return
     try {
       await deleteProduct(p.id)
-      setProducts((prev) => prev.filter((x) => x.id !== p.id))
+      load()
     } catch (err: any) {
       setError(err.message || 'Xóa thất bại')
     }
   }
 
-  // Filter products
-  const filtered = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCollection = selectedCollection ? p.collection === selectedCollection : true
-    return matchesSearch && matchesCollection
-  })
-
-  // Reset to first page when filtering
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchTerm, selectedCollection])
-
-  // Paginated chunk
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-  const paginatedProducts = filtered.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
+  // Filter products client-side (search/collection are already sent to API,
+  // but keep local filter as instant feedback while typing)
+  const filtered = products
 
   const avgPrice = products.length
     ? Math.round(products.reduce((s, p) => s + p.price, 0) / products.length)
@@ -195,13 +193,15 @@ export default function AdminProductsPage() {
         <div className="flex gap-4">
           <select
             value={selectedCollection}
-            onChange={(e) => setSelectedCollection(e.target.value)}
-            className="px-4 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            onChange={(e) => {
+              setSelectedCollection(e.target.value)
+            }}
+            className="px-3 py-2 bg-white border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
           >
             <option value="">Tất cả danh mục</option>
-            {collections.map((col) => (
-              <option key={col.slug} value={col.slug}>
-                {col.name}
+            {(collections || []).map((c) => (
+              <option key={c.id} value={c.slug}>
+                {c.name}
               </option>
             ))}
           </select>
@@ -229,12 +229,12 @@ export default function AdminProductsPage() {
                 <tr>
                   <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Đang tải sản phẩm...</td>
                 </tr>
-              ) : paginatedProducts.length === 0 ? (
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Không tìm thấy sản phẩm nào khớp bộ lọc.</td>
                 </tr>
               ) : (
-                paginatedProducts.map((product) => (
+                (filtered || []).map((product) => (
                   <tr key={product.id} className="border-b border-[#E5DFD8] hover:bg-[#F9F5F0]/30 transition-colors">
                     <td className="py-4 px-6">
                       <img src={product.img} alt={product.name} className="w-12 h-12 object-cover rounded border border-[#E5DFD8]" />
@@ -281,42 +281,15 @@ export default function AdminProductsPage() {
           </table>
         </div>
 
-        {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="bg-[#F9F5F0] border-t border-[#E5DFD8] px-6 py-4 flex items-center justify-between">
+        {/* Pagination */}
+        <div className="border-t border-[#E5DFD8] bg-[#F9F5F0] px-6">
+          <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              Hiển thị {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} trên tổng số {filtered.length} sản phẩm
+              Tổng {total} sản phẩm
             </span>
-            <div className="flex gap-2">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-3 py-1 bg-white border border-[#E5DFD8] text-xs font-medium rounded hover:bg-[#F9F5F0] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                Trang Trước
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  className={`w-7 h-7 flex items-center justify-center text-xs font-medium rounded transition-colors cursor-pointer ${currentPage === p
-                      ? 'bg-[#2C2C2C] text-white'
-                      : 'bg-white border border-[#E5DFD8] text-[#2C2C2C] hover:bg-[#F9F5F0]'
-                    }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-3 py-1 bg-white border border-[#E5DFD8] text-xs font-medium rounded hover:bg-[#F9F5F0] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                Trang Sau
-              </button>
-            </div>
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Quick summaries cards */}

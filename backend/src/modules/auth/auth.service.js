@@ -90,16 +90,35 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
 
 // ─── Admin: quản lý người dùng ──────────────────────────────────────────────
 
-export async function listUsers({ roles } = {}) {
+/**
+ * `role` nhận nhiều vai trò cùng lúc (schema đã tách chuỗi "staff,admin" thành
+ * mảng) vì trang Nhân Viên cần cả staff lẫn admin trong một danh sách, còn
+ * trang Khách Hàng chỉ lấy customer.
+ */
+export async function listUsers({ role: roles, page = 1, limit = 10 } = {}) {
+  const params = [];
+  let whereSql = '';
+
   if (roles?.length) {
-    const res = await db.query(
-      `SELECT ${USER_COLS} FROM users WHERE role = ANY($1) ORDER BY created_at DESC`,
-      [roles],
-    );
-    return res.rows;
+    params.push(roles);
+    whereSql = ` WHERE role = ANY($${params.length})`;
   }
-  const res = await db.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at DESC`);
-  return res.rows;
+
+  const countRes = await db.query(`SELECT COUNT(*)::int AS total FROM users${whereSql}`, params);
+  const total = countRes.rows[0].total;
+
+  const listParams = [...params, limit, (page - 1) * limit];
+  const res = await db.query(
+    `SELECT ${USER_COLS} FROM users${whereSql}
+     ORDER BY created_at DESC
+     LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+    listParams,
+  );
+
+  return {
+    data: res.rows,
+    pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+  };
 }
 
 export async function createUser({ name, email, password, role }) {

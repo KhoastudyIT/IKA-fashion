@@ -4,19 +4,28 @@ import { useEffect, useState } from 'react'
 import { getAdminCustomers, deleteCustomer, toggleLockCustomer, ApiUser } from '@/api'
 import { Users, Search, Trash2, RefreshCw, Lock, Unlock } from 'lucide-react'
 import { useAdminRole } from '@/lib/permissions'
+import AdminPagination from '@/components/ui/AdminPagination'
+import { useSearchParams } from 'next/navigation'
 
 export default function AdminCustomersPage() {
   const { canWrite } = useAdminRole()
+  const searchParams = useSearchParams()
+  const currentPage = Number(searchParams.get('page')) || 1
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [customers, setCustomers] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const loadCustomers = async () => {
+  const loadCustomers = async (pageToLoad: number) => {
     try {
       setLoading(true)
-      const res = await getAdminCustomers()
-      setCustomers(res)
+      const res = await getAdminCustomers({ page: pageToLoad, limit: 10 })
+      const { items: data, pagination } = res
+      setCustomers(data ?? [])
+      setTotalPages(pagination?.totalPages ?? 1)
+      setTotal(pagination?.total ?? (data?.length || 0))
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách người dùng')
     } finally {
@@ -25,14 +34,15 @@ export default function AdminCustomersPage() {
   }
 
   useEffect(() => {
-    loadCustomers()
-  }, [])
+    loadCustomers(currentPage)
+  }, [currentPage])
 
   const handleDeleteCustomer = async (userId: string, name: string) => {
     if (!confirm(`Bạn chắc chắn muốn xóa tài khoản "${name}"? Thao tác này không thể hoàn tác.`)) return
     try {
       await deleteCustomer(userId)
-      setCustomers((prev) => prev.filter((u) => u.id !== userId))
+      // Tải lại để trang hiện tại được lấp đầy và tổng số cập nhật theo.
+      await loadCustomers(currentPage)
     } catch (err: any) {
       alert(err.message || 'Lỗi xóa tài khoản')
     }
@@ -74,7 +84,7 @@ export default function AdminCustomersPage() {
           </p>
         </div>
         <button
-          onClick={loadCustomers}
+          onClick={() => loadCustomers(currentPage)}
           className="p-2 border border-[#E5DFD8] rounded-full hover:bg-[#F9F5F0] transition-colors cursor-pointer"
           title="Tải lại danh sách"
         >
@@ -88,16 +98,18 @@ export default function AdminCustomersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng khách hàng</p>
-          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{customers.length}</p>
+          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{total}</p>
         </div>
+        {/* Hai ô dưới đếm trong trang đang xem — API chưa lọc được theo trạng
+            thái khóa nên không có con số toàn hệ thống để hiển thị. */}
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đang hoạt động</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đang hoạt động (trang này)</p>
           <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
             {customers.filter((c) => !c.isLocked).length}
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Bị khóa</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Bị khóa (trang này)</p>
           <p className="text-2xl font-heading font-semibold text-red-600">
             {customers.filter((c) => c.isLocked).length}
           </p>
@@ -190,6 +202,12 @@ export default function AdminCustomersPage() {
             </tbody>
           </table>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50/50 rounded-b-xl">
+            <AdminPagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
+        )}
       </div>
     </div>
   )
