@@ -1,34 +1,23 @@
 import { Router } from 'express';
 import * as ctrl from './flash_sale.controller.js';
 import { authenticate } from '../../middleware/authenticate.js';
-import { authorize } from '../../middleware/authorize.js';
+import { authorize, readOnly } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
-import {
-  createFlashSaleSchema,
-  updateFlashSaleSchema,
-  addProductSchema,
-  updateProductSchema,
-} from './flash_sale.schema.js';
+import { createFlashSaleSchema, updateFlashSaleSchema } from './flash_sale.schema.js';
 
-// ── Public — mount tại /api/v1/flash-sales ─────────────────────────────────
+// ── Công khai — mount tại /api/v1/flash-sales ──────────────────────────────
 export const flashSalePublicRouter = Router();
-
-// Trả về các flash sale đang hoạt động kèm danh sách sản phẩm
 flashSalePublicRouter.get('/active', ctrl.getActive);
 
 // ── Admin — mount tại /api/v1/admin/flash-sales ────────────────────────────
+// Flash sale là khuyến mãi nên nhân viên chỉ được xem, giống mục Khuyến Mãi.
 export const flashSaleAdminRouter = Router();
-flashSaleAdminRouter.use(authenticate, authorize('admin'));
-
-// Flash sale CRUD
-flashSaleAdminRouter.get('/',                         ctrl.list);
-flashSaleAdminRouter.get('/:id',                      ctrl.getOne);
-flashSaleAdminRouter.post('/',                         validate(createFlashSaleSchema), ctrl.create);
-flashSaleAdminRouter.put('/:id',                       validate(updateFlashSaleSchema), ctrl.update);
-flashSaleAdminRouter.patch('/:id/toggle',              ctrl.toggle);
-flashSaleAdminRouter.delete('/:id',                    ctrl.remove);
-
-// Products within a flash sale
-flashSaleAdminRouter.post('/:id/products',             validate(addProductSchema),    ctrl.addProduct);
-flashSaleAdminRouter.put('/:id/products/:productId',   validate(updateProductSchema), ctrl.updateProduct);
-flashSaleAdminRouter.delete('/:id/products/:productId',                               ctrl.removeProduct);
+flashSaleAdminRouter.use(authenticate, authorize('admin', 'staff'), readOnly('staff'));
+flashSaleAdminRouter.get('/',             ctrl.list);
+flashSaleAdminRouter.get('/:id',          ctrl.getOne);
+flashSaleAdminRouter.post('/',            validate(createFlashSaleSchema), ctrl.create);
+flashSaleAdminRouter.put('/:id',          validate(updateFlashSaleSchema), ctrl.update);
+// Không có route xóa: chương trình chỉ được tạm ngưng hoặc kết thúc, để giữ
+// lịch sử giá của các đơn đã mua theo nó (xem chú thích trong service).
+flashSaleAdminRouter.patch('/:id/toggle', ctrl.toggle);
+flashSaleAdminRouter.patch('/:id/end',    ctrl.end);

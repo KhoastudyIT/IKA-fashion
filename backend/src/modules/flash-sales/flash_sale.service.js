@@ -1,294 +1,250 @@
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
+import { activeFlashWhere, discountPercent } from '../../utils/price.js';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
+// Mỗi dòng flash_sales là MỘT sản phẩm với giá ưu đãi, số suất và khung giờ riêng.
 const SALE_COLS = `
-  id, name,
-  start_time AS "startTime",
-  end_time   AS "endTime",
-  is_active  AS "isActive",
-  created_at AS "createdAt",
-  updated_at AS "updatedAt"
+  fs.id,
+  fs.product_id     AS "productId",
+  fs.price,
+  fs.original_price AS "originalPrice",
+  fs.stock,
+  fs.sold,
+  fs.starts_at      AS "startsAt",
+  fs.ends_at        AS "endsAt",
+  fs.active,
+  fs.created_at     AS "createdAt"
 `;
 
-function mapSale(row) {
+// Thông tin sản phẩm đi kèm để giao diện khỏi phải gọi thêm API.
+const PRODUCT_COLS = `
+  p.name,
+  p.handle,
+  p.img,
+  p.price AS "productPrice",
+  p.stock AS "productStock"
+`;
+
+function mapRow(r) {
+  const price = Number(r.price);
+  // Mức giảm neo vào giá niêm yết HIỆN TẠI, không dùng original_price đã chụp
+  // lúc tạo: admin sửa giá sản phẩm sau đó là con số cũ lệch ngay.
+  const listPrice = Number(r.productPrice ?? r.originalPrice);
   return {
-    ...row,
-    isActive: Boolean(row.isActive),
+    ...r,
+    price,
+    originalPrice: Number(r.originalPrice),
+    remaining: Math.max(0, Number(r.stock) - Number(r.sold)),
+    discountPercent: discountPercent(listPrice, price),
   };
 }
 
-// ─── Public ───────────────────────────────────────────────────────────────────
+// ─── Public ──────────────────────────────────────────────────────────────────
 
-/**
- * Trả về tất cả flash sale đang hoạt động (is_active = true và trong khoảng thời gian)
- * kèm danh sách sản phẩm + thông tin sản phẩm gốc.
- */
+/** Các suất flash sale đang chạy — dùng cho khối Flash Sale ngoài trang khách. */
 export async function getActiveFlashSales() {
-  const salesRes = await db.query(
-    `SELECT ${SALE_COLS}
-     FROM flash_sales
-     WHERE is_active = true
-       AND start_time <= NOW()
-       AND end_time   >= NOW()
-     ORDER BY start_time ASC`,
+  const res = await db.query(
+    `SELECT ${SALE_COLS}, ${PRODUCT_COLS}
+     FROM flash_sales fs
+     JOIN products p ON p.id = fs.product_id
+     WHERE ${activeFlashWhere('fs')}
+     ORDER BY fs.price ASC`,
   );
-
-  if (!salesRes.rows.length) return [];
-
-  const saleIds = salesRes.rows.map(r => r.id);
-
-  // Single round-trip: lấy tất cả sản phẩm của tất cả flash sale đang hoạt động
-  const productsRes = await db.query(
-    `SELECT
-       fsp.flash_sale_id    AS "flashSaleId",
-       fsp.id               AS "flashSaleProductId",
-       fsp.discounted_price AS "discountedPrice",
-       fsp.stock_limit      AS "stockLimit",
-       fsp.sold_count       AS "soldCount",
-       p.id                 AS "productId",
-       p.name,
-       p.handle,
-       p.img,
-       p.price              AS "originalPrice",
-       p.discount,
-       p.colors,
-       p.sizes,
-       p.rating,
-       p.stock
-     FROM flash_sale_products fsp
-     JOIN products p ON p.id = fsp.product_id
-     WHERE fsp.flash_sale_id = ANY($1)
-     ORDER BY fsp.flash_sale_id, p.name`,
-    [saleIds],
-  );
-
-  // Group products by flash_sale_id
-  const productsBySale = {};
-  for (const row of productsRes.rows) {
-    const sid = row.flashSaleId;
-    if (!productsBySale[sid]) productsBySale[sid] = [];
-    productsBySale[sid].push({
-      flashSaleProductId: row.flashSaleProductId,
-      discountedPrice:    Number(row.discountedPrice),
-      stockLimit:         row.stockLimit,
-      soldCount:          row.soldCount,
-      remaining:          Math.max(0, row.stockLimit - row.soldCount),
-      productId:          row.productId,
-      name:               row.name,
-      handle:             row.handle,
-      img:                row.img,
-      originalPrice:      Number(row.originalPrice),
-      discount:           row.discount,
-      colors:             row.colors,
-      sizes:              row.sizes,
-      rating:             Number(row.rating),
-      stock:              row.stock,
-    });
-  }
-
-  return salesRes.rows.map(sale => ({
-    ...mapSale(sale),
-    products: productsBySale[sale.id] ?? [],
-  }));
+  return res.rows.map(mapRow);
 }
 
-// ─── Admin — Flash Sales CRUD ─────────────────────────────────────────────────
+// ─── Admin ───────────────────────────────────────────────────────────────────
 
 export async function listFlashSales() {
   const res = await db.query(
-    `SELECT ${SALE_COLS} FROM flash_sales ORDER BY start_time DESC`,
+    `SELECT ${SALE_COLS}, ${PRODUCT_COLS},
+            (SELECT COUNT(*)::int FROM order_items oi WHERE oi.flash_sale_id = fs.id) AS "orderItemCount"
+     FROM flash_sales fs
+     JOIN products p ON p.id = fs.product_id
+     ORDER BY fs.created_at DESC`,
   );
-  return res.rows.map(mapSale);
+  return res.rows.map(mapRow);
 }
 
 export async function getFlashSaleById(id) {
-  const saleRes = await db.query(
-    `SELECT ${SALE_COLS} FROM flash_sales WHERE id = $1`,
-    [Number(id)],
-  );
-  if (!saleRes.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
-
-  const productsRes = await db.query(
-    `SELECT
-       fsp.id               AS "flashSaleProductId",
-       fsp.discounted_price AS "discountedPrice",
-       fsp.stock_limit      AS "stockLimit",
-       fsp.sold_count       AS "soldCount",
-       p.id                 AS "productId",
-       p.name, p.handle, p.img,
-       p.price              AS "originalPrice",
-       p.discount, p.colors, p.sizes, p.rating, p.stock
-     FROM flash_sale_products fsp
-     JOIN products p ON p.id = fsp.product_id
-     WHERE fsp.flash_sale_id = $1
-     ORDER BY p.name`,
-    [Number(id)],
-  );
-
-  return {
-    ...mapSale(saleRes.rows[0]),
-    products: productsRes.rows.map(r => ({
-      ...r,
-      discountedPrice: Number(r.discountedPrice),
-      originalPrice:   Number(r.originalPrice),
-      rating:          Number(r.rating),
-      remaining:       Math.max(0, r.stockLimit - r.soldCount),
-    })),
-  };
-}
-
-export async function createFlashSale({ name, startTime, endTime, isActive }) {
   const res = await db.query(
-    `INSERT INTO flash_sales (name, start_time, end_time, is_active)
-     VALUES ($1, $2, $3, $4)
-     RETURNING ${SALE_COLS}`,
-    [name, startTime, endTime, isActive ?? false],
-  );
-  return mapSale(res.rows[0]);
-}
-
-export async function updateFlashSale(id, { name, startTime, endTime, isActive }) {
-  const res = await db.query(
-    `UPDATE flash_sales SET
-       name       = COALESCE($2, name),
-       start_time = COALESCE($3, start_time),
-       end_time   = COALESCE($4, end_time),
-       is_active  = COALESCE($5, is_active),
-       updated_at = NOW()
-     WHERE id = $1
-     RETURNING ${SALE_COLS}`,
-    [Number(id), name ?? null, startTime ?? null, endTime ?? null, isActive ?? null],
+    `SELECT ${SALE_COLS}, ${PRODUCT_COLS}
+     FROM flash_sales fs
+     JOIN products p ON p.id = fs.product_id
+     WHERE fs.id = $1`,
+    [Number(id)],
   );
   if (!res.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
-  return mapSale(res.rows[0]);
+  return mapRow(res.rows[0]);
+}
+
+/** Giá flash phải thật sự thấp hơn giá đang bán, không thì chương trình vô nghĩa. */
+async function assertPriceBelowList(productId, price) {
+  const res = await db.query('SELECT name, price FROM products WHERE id = $1', [Number(productId)]);
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+  if (Number(price) >= Number(res.rows[0].price)) {
+    throw new AppError(
+      `Giá flash sale phải thấp hơn giá đang bán của "${res.rows[0].name}" `
+      + `(${Number(res.rows[0].price).toLocaleString('vi-VN')} đ)`,
+      400,
+    );
+  }
+  return res.rows[0];
+}
+
+/**
+ * Ràng buộc EXCLUDE trong DB mới là nơi chặn thật sự việc hai chương trình cùng
+ * sản phẩm chạy chồng khung giờ. Postgres ném mã 23P01 khá khó hiểu nên đổi
+ * thành thông báo nói rõ đang vướng chương trình nào.
+ */
+async function withOverlapMessage(productId, fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err.code !== '23P01') throw err;
+    const clash = await db.query(
+      `SELECT id, starts_at, ends_at FROM flash_sales
+       WHERE product_id = $1 AND active = TRUE
+       ORDER BY starts_at LIMIT 1`,
+      [Number(productId)],
+    );
+    const c = clash.rows[0];
+    const until = c?.ends_at ? new Date(c.ends_at).toLocaleString('vi-VN') : 'không giới hạn';
+    throw new AppError(
+      `Sản phẩm này đã có chương trình flash sale${c ? ` #${c.id}` : ''} đang bật`
+      + (c ? ` (từ ${new Date(c.starts_at).toLocaleString('vi-VN')} đến ${until})` : '')
+      + ` trùng khung giờ. Hãy tạm ngưng chương trình đó trước.`,
+      409,
+    );
+  }
+}
+
+export async function createFlashSale({ productId, price, stock, startsAt, endsAt, active }) {
+  const product = await assertPriceBelowList(productId, price);
+
+  return withOverlapMessage(productId, async () => {
+    const res = await db.query(
+      `INSERT INTO flash_sales (product_id, price, original_price, stock, starts_at, ends_at, active)
+       VALUES ($1, $2, $3, $4, COALESCE($5, NOW()), $6, $7)
+       RETURNING id`,
+      [Number(productId), price, product.price, stock, startsAt ?? null, endsAt ?? null, active ?? true],
+    );
+    return getFlashSaleById(res.rows[0].id);
+  });
+}
+
+/**
+ * Chương trình đã qua thời điểm kết thúc thì đóng băng.
+ *
+ * Đơn hàng cũ trỏ về nó để giải thích đơn giá; sửa giá hay khung giờ của một
+ * chương trình đã chạy xong sẽ làm lịch sử đó nói sai. Muốn chạy lại thì tạo
+ * chương trình mới.
+ */
+function assertEditable(row) {
+  if (row.ends_at && new Date(row.ends_at) <= new Date()) {
+    throw new AppError(
+      `Chương trình đã kết thúc lúc ${new Date(row.ends_at).toLocaleString('vi-VN')} nên không sửa được nữa. `
+      + `Hãy tạo chương trình mới.`,
+      400,
+    );
+  }
+}
+
+export async function updateFlashSale(id, data) {
+  const cur = await db.query('SELECT * FROM flash_sales WHERE id = $1', [Number(id)]);
+  if (!cur.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
+  const row = cur.rows[0];
+  assertEditable(row);
+
+  const productId = data.productId ?? row.product_id;
+  if (data.price != null || data.productId != null) {
+    await assertPriceBelowList(productId, data.price ?? row.price);
+  }
+  // Không cho hạ số suất xuống dưới số đã bán — cột sold sẽ vượt stock và suất
+  // "còn lại" thành số âm.
+  if (data.stock != null && Number(data.stock) < Number(row.sold)) {
+    throw new AppError(`Đã bán ${row.sold} suất, không thể đặt số suất thấp hơn`, 400);
+  }
+
+  return withOverlapMessage(productId, async () => {
+    const res = await db.query(
+      `UPDATE flash_sales SET
+         product_id = COALESCE($2, product_id),
+         price      = COALESCE($3, price),
+         stock      = COALESCE($4, stock),
+         starts_at  = COALESCE($5, starts_at),
+         ends_at    = CASE WHEN $7::bool THEN $6::timestamptz ELSE ends_at END,
+         active     = COALESCE($8, active),
+         updated_at = NOW()
+       WHERE id = $1
+       RETURNING id`,
+      [
+        Number(id),
+        data.productId ?? null,
+        data.price ?? null,
+        data.stock ?? null,
+        data.startsAt ?? null,
+        data.endsAt ?? null,
+        // endsAt được phép đặt về null (không giới hạn) nên phải phân biệt
+        // "không truyền" với "truyền null".
+        Object.prototype.hasOwnProperty.call(data, 'endsAt'),
+        data.active ?? null,
+      ],
+    );
+    return getFlashSaleById(res.rows[0].id);
+  });
 }
 
 export async function toggleFlashSale(id) {
-  const res = await db.query(
-    `UPDATE flash_sales
-     SET is_active = NOT is_active, updated_at = NOW()
-     WHERE id = $1
-     RETURNING ${SALE_COLS}`,
-    [Number(id)],
+  const cur = await db.query(
+    'SELECT product_id, active, ends_at FROM flash_sales WHERE id = $1', [Number(id)],
   );
-  if (!res.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
-  return mapSale(res.rows[0]);
+  if (!cur.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
+  // Bật lại một chương trình đã hết hạn cũng không làm nó chạy (engine giá vẫn
+  // loại theo ends_at), nên chặn luôn cho khỏi hiểu nhầm.
+  assertEditable(cur.rows[0]);
+
+  return withOverlapMessage(cur.rows[0].product_id, async () => {
+    await db.query(
+      'UPDATE flash_sales SET active = NOT active, updated_at = NOW() WHERE id = $1',
+      [Number(id)],
+    );
+    return getFlashSaleById(id);
+  });
 }
-
-export async function deleteFlashSale(id) {
-  const res = await db.query(
-    'DELETE FROM flash_sales WHERE id = $1 RETURNING id',
-    [Number(id)],
-  );
-  if (!res.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
-}
-
-// ─── Admin — Flash Sale Products CRUD ────────────────────────────────────────
-
-export async function addProductToFlashSale(flashSaleId, { productId, discountedPrice, stockLimit }) {
-  const sid = Number(flashSaleId);
-  const pid = Number(productId);
-
-  // Kiểm tra flash sale tồn tại
-  const saleCheck = await db.query('SELECT id FROM flash_sales WHERE id = $1', [sid]);
-  if (!saleCheck.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
-
-  // Kiểm tra sản phẩm tồn tại + giá hợp lệ
-  const productCheck = await db.query('SELECT id, price FROM products WHERE id = $1', [pid]);
-  if (!productCheck.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
-  if (discountedPrice >= productCheck.rows[0].price) {
-    throw new AppError('Giá flash sale phải thấp hơn giá gốc của sản phẩm', 400);
-  }
-
-  const res = await db.query(
-    `INSERT INTO flash_sale_products (flash_sale_id, product_id, discounted_price, stock_limit)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id AS "flashSaleProductId",
-               flash_sale_id AS "flashSaleId",
-               product_id    AS "productId",
-               discounted_price AS "discountedPrice",
-               stock_limit   AS "stockLimit",
-               sold_count    AS "soldCount"`,
-    [sid, pid, discountedPrice, stockLimit],
-  );
-  return {
-    ...res.rows[0],
-    discountedPrice: Number(res.rows[0].discountedPrice),
-  };
-}
-
-export async function updateFlashSaleProduct(flashSaleId, productId, { discountedPrice, stockLimit }) {
-  const sid = Number(flashSaleId);
-  const pid = Number(productId);
-
-  if (discountedPrice != null) {
-    const productCheck = await db.query('SELECT price FROM products WHERE id = $1', [pid]);
-    if (!productCheck.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
-    if (discountedPrice >= productCheck.rows[0].price) {
-      throw new AppError('Giá flash sale phải thấp hơn giá gốc của sản phẩm', 400);
-    }
-  }
-
-  const res = await db.query(
-    `UPDATE flash_sale_products
-     SET discounted_price = COALESCE($3, discounted_price),
-         stock_limit      = COALESCE($4, stock_limit)
-     WHERE flash_sale_id = $1 AND product_id = $2
-     RETURNING id AS "flashSaleProductId",
-               flash_sale_id AS "flashSaleId",
-               product_id    AS "productId",
-               discounted_price AS "discountedPrice",
-               stock_limit   AS "stockLimit",
-               sold_count    AS "soldCount"`,
-    [sid, pid, discountedPrice ?? null, stockLimit ?? null],
-  );
-  if (!res.rows.length) throw new AppError('Sản phẩm không có trong flash sale này', 404);
-  return {
-    ...res.rows[0],
-    discountedPrice: Number(res.rows[0].discountedPrice),
-  };
-}
-
-export async function removeProductFromFlashSale(flashSaleId, productId) {
-  const res = await db.query(
-    `DELETE FROM flash_sale_products
-     WHERE flash_sale_id = $1 AND product_id = $2
-     RETURNING id`,
-    [Number(flashSaleId), Number(productId)],
-  );
-  if (!res.rows.length) throw new AppError('Sản phẩm không có trong flash sale này', 404);
-}
-
-// ─── Cart validation helper ───────────────────────────────────────────────────
 
 /**
- * Kiểm tra xem sản phẩm có đang trong một flash sale đang hoạt động không.
- * Được gọi từ cart.service.js trước khi thêm vào giỏ.
+ * Kết thúc ngay lập tức — admin dừng hẳn một chương trình bất cứ lúc nào.
  *
- * @returns {object|null} flash_sale_products row nếu có, null nếu không.
+ * Khác `toggleFlashSale`: tạm ngưng là tắt tạm, bật lại được; kết thúc là chốt
+ * `ends_at` nên chương trình vào trạng thái đã kết thúc và không sửa được nữa.
+ *
+ * Với chương trình chưa tới giờ chạy thì kéo luôn starts_at về hiện tại. Nếu
+ * chỉ đặt ends_at = NOW() mà giữ starts_at ở tương lai, tstzrange sẽ có cận
+ * dưới lớn hơn cận trên và Postgres báo lỗi; còn nếu đặt ends_at = starts_at
+ * (tương lai) thì chương trình vẫn tính là chưa kết thúc nên sửa được tiếp.
  */
-export async function checkFlashSaleForProduct(productId) {
-  const res = await db.query(
-    `SELECT
-       fsp.id               AS "flashSaleProductId",
-       fsp.flash_sale_id    AS "flashSaleId",
-       fsp.discounted_price AS "discountedPrice",
-       fsp.stock_limit      AS "stockLimit",
-       fsp.sold_count       AS "soldCount"
-     FROM flash_sale_products fsp
-     JOIN flash_sales fs ON fs.id = fsp.flash_sale_id
-     WHERE fsp.product_id = $1
-       AND fs.is_active = true
-       AND fs.start_time <= NOW()
-       AND fs.end_time   >= NOW()
-     LIMIT 1`,
-    [Number(productId)],
+export async function endFlashSale(id) {
+  const cur = await db.query('SELECT ends_at FROM flash_sales WHERE id = $1', [Number(id)]);
+  if (!cur.rows.length) throw new AppError('Không tìm thấy flash sale', 404);
+  if (cur.rows[0].ends_at && new Date(cur.rows[0].ends_at) <= new Date()) {
+    throw new AppError('Chương trình này đã kết thúc rồi', 400);
+  }
+
+  await db.query(
+    `UPDATE flash_sales
+     SET starts_at = LEAST(starts_at, NOW()),
+         ends_at   = NOW(),
+         updated_at = NOW()
+     WHERE id = $1`,
+    [Number(id)],
   );
-  if (!res.rows.length) return null;
-  return {
-    ...res.rows[0],
-    discountedPrice: Number(res.rows[0].discountedPrice),
-  };
+  return getFlashSaleById(id);
 }
+
+// Không có hàm xóa flash sale — chỉ tạm ngưng hoặc kết thúc.
+//
+// order_items.flash_sale_id trỏ về đây để giải thích vì sao đơn cũ có đơn giá
+// thấp hơn giá niêm yết. Xóa dòng là khóa ngoại bị set null và mất luôn dấu vết
+// đó, tra soát đơn cũ sẽ không biết vì sao khách được giá rẻ. Tạm ngưng đạt
+// đúng mục đích (dừng bán giá flash) mà vẫn giữ lịch sử.

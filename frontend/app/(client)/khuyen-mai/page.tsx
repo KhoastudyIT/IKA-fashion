@@ -1,72 +1,90 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+// =============================================================
+// Trang Ưu Đãi — lấy thẳng các chương trình Flash Sale đang chạy từ API.
+//
+// Trước đây trang này render một mảng sản phẩm viết cứng trong file nên hiện
+// hàng giảm giá kể cả khi admin chưa tạo chương trình nào. Giờ chưa có chương
+// trình thì trang báo rõ là chưa có.
+// =============================================================
+
+import { useState, useEffect, useMemo } from 'react'
 import ProductCard from '@/components/ProductCard'
+import { getActiveFlashSales, FlashSale } from '@/api'
 
-// href trỏ đến /products/[handle] — handle khớp với sản phẩm giảm giá trong DB backend
-const initialProducts = [
-  { id: 1,  name: 'Áo Polo Bo Sọc Form Regular PO136 Màu Trắng',      oldPrice: 450000, newPrice: 270000, discount: 40, rating: 4.8, soldCount: 312, tag: 'Bestseller', emoji: '👕', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-1.jpg',       href: '/products/sale-polo-1' },
-  { id: 2,  name: 'Áo Thun Lạnh Thể Thao Thoáng Mát Navy BS3234-Đen', oldPrice: 650000, newPrice: 429000, discount: 34, rating: 4.9, soldCount: 189, tag: 'Hot Deal',   emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-2.jpg',       href: '/products/sale-polo-2' },
-  { id: 3,  name: 'Áo Polo Màu Trơn Nam Ngắn Tay',                    oldPrice: 590000, newPrice: 354000, discount: 40, rating: 4.7, soldCount: 254, tag: 'Flash Sale', emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-3.jpg',       href: '/products/sale-polo-3' },
-  { id: 4,  name: 'Áo Polo Nam Màu Xanh Lá - North Sails',            oldPrice: 280000, newPrice: 168000, discount: 40, rating: 4.6, soldCount: 421, tag: 'Phổ biến',  emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-4.webp',     href: '/products/sale-polo-4' },
-  { id: 5,  name: 'Quần Trouser Trắng Trơn',                          oldPrice: 520000, newPrice: 312000, discount: 40, rating: 4.8, soldCount: 312, tag: 'Bestseller', emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-1.jpg', href: '/products/sale-quan-1' },
-  { id: 6,  name: 'Quần Âu Be Trơn',                                  oldPrice: 480000, newPrice: 288000, discount: 40, rating: 4.7, soldCount: 205, tag: 'Flash Sale', emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-2.jpg', href: '/products/sale-quan-2' },
-  { id: 7,  name: 'Quần Tây Nam Thanh Lịch Tôn Dáng Form Slim',       oldPrice: 550000, newPrice: 330000, discount: 40, rating: 4.6, soldCount: 178, tag: 'Hot Deal',   emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-3.webp', href: '/products/sale-quan-3' },
-  { id: 8,  name: 'Quần Dài Công Sở Thẳng Nam Cao Cấp',              oldPrice: 620000, newPrice: 372000, discount: 40, rating: 4.9, soldCount: 143, tag: 'Mới giảm',  emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-4.webp', href: '/products/sale-quan-4' },
-]
+const PAGE_SIZE = 8
 
-const extraProducts = [
-  { id: 9,  name: 'Áo Polo Nam Regular Fit Màu Trắng',                oldPrice: 780000, newPrice: 499000, discount: 36, rating: 4.8, soldCount: 143, tag: 'Mới giảm',  emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-5.webp',     href: '/products/sale-polo-5' },
-  { id: 10, name: 'Áo Polo Saint Laurent',                            oldPrice: 390000, newPrice: 234000, discount: 40, rating: 4.5, soldCount: 367, tag: 'Flash Sale', emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-6.webp',     href: '/products/sale-polo-6' },
-  { id: 11, name: 'Áo Polo Ralph Lauren',                             oldPrice: 520000, newPrice: 312000, discount: 40, rating: 4.9, soldCount: 98,  tag: 'Combo',      emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-7.webp',     href: '/products/sale-polo-7' },
-  { id: 12, name: 'Áo Polo Unisex Cổ Bẻ Tay Ngắn',                  oldPrice: 870000, newPrice: 609000, discount: 30, rating: 4.7, soldCount: 211, tag: 'Mới về',     emoji: '👔', type: 'Áo Polo', image: '/Giam-Gia/Ao/Ao-Polo/Polo-8.webp',     href: '/products/sale-polo-8' },
-  { id: 13, name: 'Áo Thun Trắng Premium Classic',                   oldPrice: 450000, newPrice: 270000, discount: 40, rating: 4.8, soldCount: 312, tag: 'Bestseller', emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-1.jpg',      href: '/products/sale-thun-1' },
-  { id: 14, name: 'Áo Thun Kẻ Sọc Premium',                          oldPrice: 520000, newPrice: 364000, discount: 30, rating: 4.9, soldCount: 189, tag: 'Hot Deal',   emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-2.jpg',      href: '/products/sale-thun-2' },
-  { id: 15, name: 'Áo Thun Nam Slim Fit Xanh Navy',                  oldPrice: 590000, newPrice: 354000, discount: 40, rating: 4.7, soldCount: 254, tag: 'Flash Sale', emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-3.jpg',      href: '/products/sale-thun-3' },
-  { id: 16, name: 'Áo Thun Xám EasyCare',                            oldPrice: 480000, newPrice: 288000, discount: 40, rating: 4.6, soldCount: 421, tag: 'Phổ biến',  emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-4.jpg',      href: '/products/sale-thun-4' },
-  { id: 17, name: 'Áo Thun Nam AirLight Trắng',                      oldPrice: 550000, newPrice: 330000, discount: 40, rating: 4.8, soldCount: 143, tag: 'Mới giảm',  emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-5.jpg',      href: '/products/sale-thun-5' },
-  { id: 18, name: 'Áo Thun Đen Dài Tay FormFit',                     oldPrice: 620000, newPrice: 372000, discount: 40, rating: 4.5, soldCount: 367, tag: 'Flash Sale', emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-6.jpg',      href: '/products/sale-thun-6' },
-  { id: 19, name: 'Áo Thun Classic Fit Màu Đen - Calvin Klein',      oldPrice: 780000, newPrice: 468000, discount: 40, rating: 4.9, soldCount: 98,  tag: 'Combo',      emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-7.webp',     href: '/products/sale-thun-7' },
-  { id: 20, name: 'Áo Thun Unisex Basic',                            oldPrice: 420000, newPrice: 294000, discount: 30, rating: 4.7, soldCount: 211, tag: 'Mới về',     emoji: '👕', type: 'Áo Thun', image: '/Giam-Gia/Ao/Ao-SoMi/SoMi-8.jpg',      href: '/products/sale-thun-8' },
-  { id: 21, name: 'Quần Jean Xanh Ôm Dáng Kiểu Anh',                oldPrice: 680000, newPrice: 408000, discount: 40, rating: 4.8, soldCount: 312, tag: 'Bestseller', emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-5.jpg', href: '/products/sale-quan-5' },
-  { id: 22, name: 'Quần Tây Nam Xám Trơn Công Sở',                  oldPrice: 590000, newPrice: 354000, discount: 40, rating: 4.6, soldCount: 189, tag: 'Hot Deal',   emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-6.jpg', href: '/products/sale-quan-6' },
-  { id: 23, name: 'Quần Kaki Nam Casual',                            oldPrice: 750000, newPrice: 450000, discount: 40, rating: 4.9, soldCount: 254, tag: 'Flash Sale', emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-7.webp', href: '/products/sale-quan-7' },
-  { id: 24, name: 'Quần Âu Đen Trơn Slim Fit',                      oldPrice: 640000, newPrice: 384000, discount: 40, rating: 4.7, soldCount: 421, tag: 'Phổ biến',  emoji: '👖', type: 'Quần',    image: '/Giam-Gia/Quan/Quan-Tay/QuanTay-8.webp', href: '/products/sale-quan-8' },
-]
+/** Đếm ngược tới mốc `target`. Không có mốc thì không hiện đồng hồ. */
+function useCountdown(target: number | null) {
+  const [left, setLeft] = useState<{ h: number; m: number; s: number } | null>(null)
 
-
-const saleProducts = [...initialProducts, ...extraProducts]
-function useCountdown() {
-  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 })
   useEffect(() => {
-    const end = new Date()
-    end.setHours(23, 59, 59, 999)
+    if (target == null) {
+      setLeft(null)
+      return
+    }
     const tick = () => {
-      const diff = Math.max(0, end.getTime() - Date.now())
-      setTimeLeft({ h: Math.floor(diff / 3600000), m: Math.floor((diff % 3600000) / 60000), s: Math.floor((diff % 60000) / 1000) })
+      const diff = Math.max(0, target - Date.now())
+      setLeft({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      })
     }
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [])
-  return timeLeft
+  }, [target])
+
+  return left
 }
 
 export default function KhuyenMaiPage() {
-  const { h, m, s } = useCountdown()
-  const pad = (n: number) => String(n).padStart(2, '0')
+  const [sales, setSales] = useState<FlashSale[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showAll, setShowAll] = useState(false)
-  const [animating, setAnimating] = useState(false)
 
-  const handleShowAll = () => {
-    if (!showAll) {
-      setAnimating(true)
-      setShowAll(true)
-    } else {
-      setShowAll(false)
-      setAnimating(false)
-    }
-  }
+  useEffect(() => {
+    getActiveFlashSales()
+      .then(setSales)
+      .catch((err) => setError(err.message || 'Không tải được chương trình ưu đãi'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Đồng hồ chạy theo chương trình sắp hết hạn nhất; chương trình không đặt
+  // hạn kết thúc thì bỏ qua.
+  const soonestEnd = useMemo(() => {
+    const ends = sales
+      .map((fs) => (fs.endsAt ? new Date(fs.endsAt).getTime() : null))
+      .filter((t): t is number => t != null && t > Date.now())
+    return ends.length ? Math.min(...ends) : null
+  }, [sales])
+
+  const timeLeft = useCountdown(soonestEnd)
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  const maxDiscount = sales.reduce((m, fs) => Math.max(m, fs.discountPercent), 0)
+  const totalRemaining = sales.reduce((s, fs) => s + fs.remaining, 0)
+
+  // ProductCard nhận dữ liệu sản phẩm, nên dựng lại từ dòng flash sale.
+  const cards = sales.map((fs) => ({
+    id: fs.productId,
+    name: fs.name,
+    handle: fs.handle,
+    img: fs.img,
+    price: fs.productPrice,     // giá niêm yết → hiện gạch ngang
+    effectivePrice: fs.price,   // giá flash    → giá hiển thị chính
+    originalPrice: fs.productPrice,
+    discount: fs.discountPercent,
+    isFlashSale: true,
+    flashRemaining: fs.remaining,
+    sold: fs.sold,
+  }))
+
+  const visible = showAll ? cards : cards.slice(0, PAGE_SIZE)
+  const hiddenCount = Math.max(0, cards.length - PAGE_SIZE)
+
   return (
     <>
       <style>{`
@@ -101,34 +119,44 @@ export default function KhuyenMaiPage() {
               Ưu Đãi &amp; Giảm Giá
             </h1>
             <p style={{ color: '#aaa', fontSize: '17px', marginBottom: '36px', lineHeight: 1.7 }}>
-              Giảm đến <span style={{ color: '#D4AF37', fontWeight: 700 }}>40%</span> toàn bộ sản phẩm IKA Fashion — Chỉ trong hôm nay!
+              {maxDiscount > 0 ? (
+                <>Giảm đến <span style={{ color: '#D4AF37', fontWeight: 700 }}>{maxDiscount}%</span> — số suất có hạn!</>
+              ) : (
+                <>Theo dõi để không bỏ lỡ đợt Flash Sale tiếp theo của IKA Fashion.</>
+              )}
             </p>
-            {/* Countdown */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '40px', flexWrap: 'wrap' }}>
-              <span style={{ color: '#D4AF37', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Kết thúc sau</span>
-              {[pad(h), pad(m), pad(s)].map((val, i) => (
-                <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ background: '#D4AF37', color: '#1a1a1a', fontWeight: 800, fontSize: '28px', borderRadius: '8px', padding: '8px 14px', fontFamily: 'monospace', minWidth: '56px', textAlign: 'center', display: 'inline-block' }}>{val}</span>
-                  {i < 2 && <span style={{ color: '#D4AF37', fontSize: '24px', fontWeight: 800 }}>:</span>}
-                </span>
-              ))}
-            </div>
-            <a href="#sale-products" style={{ display: 'inline-block', padding: '14px 40px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', textDecoration: 'none', fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
-              Khám Phá Ngay
-            </a>
+
+            {/* Countdown — chỉ hiện khi có chương trình đặt hạn kết thúc */}
+            {timeLeft && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '40px', flexWrap: 'wrap' }}>
+                <span style={{ color: '#D4AF37', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Kết thúc sau</span>
+                {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((val, i) => (
+                  <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ background: '#D4AF37', color: '#1a1a1a', fontWeight: 800, fontSize: '28px', borderRadius: '8px', padding: '8px 14px', fontFamily: 'monospace', minWidth: '56px', textAlign: 'center', display: 'inline-block' }}>{val}</span>
+                    {i < 2 && <span style={{ color: '#D4AF37', fontSize: '24px', fontWeight: 800 }}>:</span>}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {cards.length > 0 && (
+              <a href="#sale-products" style={{ display: 'inline-block', padding: '14px 40px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', textDecoration: 'none', fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                Khám Phá Ngay
+              </a>
+            )}
           </div>
         </section>
 
-        {/* Stats Bar */}
+        {/* Stats Bar — số liệu lấy từ chính các chương trình đang chạy */}
         <section style={{ background: '#F9F5F0', borderBottom: '1px solid #E5DFD8', padding: '28px 24px' }}>
           <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px' }}>
             {[
-              { icon: '🏷️', label: 'Sản phẩm giảm giá', value: '200+' },
-              { icon: '⚡', label: 'Giảm tối đa', value: '40%' },
-              { icon: '🛍️', label: 'Đơn hàng hôm nay', value: '1.248' },
+              { icon: '🏷️', label: 'Sản phẩm đang giảm', value: String(cards.length) },
+              { icon: '⚡', label: 'Giảm tối đa', value: maxDiscount > 0 ? `${maxDiscount}%` : '—' },
+              { icon: '🛍️', label: 'Suất ưu đãi còn lại', value: String(totalRemaining) },
               { icon: '🚚', label: 'Miễn phí vận chuyển', value: 'Đơn từ 500K' },
             ].map((stat, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -144,58 +172,71 @@ export default function KhuyenMaiPage() {
 
         {/* Products Grid */}
         <section id="sale-products" style={{ padding: '72px 24px', maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-            <p style={{ fontSize: '12px', letterSpacing: '4px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontFamily: 'Inter, sans-serif' }}>Flash Sale</p>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px, 4vw, 48px)', fontWeight: 700, color: '#2C2C2C', marginBottom: '16px' }}>Sản Phẩm Đang Giảm Giá</h2>
-            <p style={{ color: '#7A7A7A', maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
-              Tất cả sản phẩm IKA đều được áp dụng công nghệ vải tiên tiến — Chất lượng đảm bảo, giá ưu đãi!
-            </p>
-          </div>
+          {error && (
+            <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', color: '#b91c1c', fontSize: '14px', borderRadius: '4px', marginBottom: '32px' }}>
+              {error}
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            {initialProducts.map((product) => (
-              <ProductCard key={product.id} product={product} badge={product.tag} />
-            ))}
-            {showAll && extraProducts.map((product, i) => (
-              <div
-                key={product.id}
-                className="extra-card"
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <ProductCard product={product} badge={product.tag} />
+          {loading ? (
+            <p style={{ textAlign: 'center', color: '#7A7A7A', padding: '48px 0' }}>Đang tải chương trình ưu đãi...</p>
+          ) : cards.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '64px 24px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '8px' }}>
+              <p style={{ fontSize: '40px', margin: 0 }}>🕗</p>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: '#2C2C2C', margin: '12px 0 8px' }}>
+                Hiện chưa có chương trình ưu đãi nào
+              </h3>
+              <p style={{ color: '#7A7A7A', fontSize: '14px', margin: 0 }}>
+                Các đợt Flash Sale sẽ xuất hiện tại đây ngay khi bắt đầu. Ghé lại sau nhé!
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                {visible.map((product, i) => (
+                  <div
+                    key={product.id}
+                    className={i >= PAGE_SIZE ? 'extra-card' : undefined}
+                    style={i >= PAGE_SIZE ? { animationDelay: `${(i - PAGE_SIZE) * 80}ms` } : undefined}
+                  >
+                    <ProductCard product={product} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div style={{ textAlign: 'center', marginTop: '56px' }}>
-            <button
-              onClick={handleShowAll}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '14px 40px',
-                border: '1.5px solid #2C2C2C',
-                color: '#2C2C2C',
-                fontWeight: 600,
-                borderRadius: '4px',
-                background: 'transparent',
-                fontSize: '13px',
-                letterSpacing: '2px',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                transition: 'all 0.25s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2C2C2C'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#2C2C2C' }}
-            >
-              {showAll ? (
-                <><span style={{ fontSize: '16px', lineHeight: 1 }}>↑</span> Thu Gọn</>
-              ) : (
-                <><span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Xem Thêm {extraProducts.length} Sản Phẩm</>
+              {hiddenCount > 0 && (
+                <div style={{ textAlign: 'center', marginTop: '56px' }}>
+                  <button
+                    onClick={() => setShowAll((v) => !v)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '14px 40px',
+                      border: '1.5px solid #2C2C2C',
+                      color: '#2C2C2C',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      background: 'transparent',
+                      fontSize: '13px',
+                      letterSpacing: '2px',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#2C2C2C'; (e.currentTarget as HTMLButtonElement).style.color = '#fff' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#2C2C2C' }}
+                  >
+                    {showAll ? (
+                      <><span style={{ fontSize: '16px', lineHeight: 1 }}>↑</span> Thu Gọn</>
+                    ) : (
+                      <><span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Xem Thêm {hiddenCount} Sản Phẩm</>
+                    )}
+                  </button>
+                </div>
               )}
-            </button>
-          </div>
+            </>
+          )}
         </section>
 
         {/* Bottom Banner */}
@@ -219,4 +260,3 @@ export default function KhuyenMaiPage() {
     </>
   )
 }
-

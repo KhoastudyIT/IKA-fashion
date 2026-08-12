@@ -1,407 +1,503 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, X, Trash2, Zap, Settings, Search } from 'lucide-react'
+// =============================================================
+// Quản lý Flash Sale — mỗi dòng là MỘT sản phẩm với giá ưu đãi, số suất và
+// khung giờ riêng.
+//
+// Bảng dài dần theo thời gian vì chương trình đã kết thúc vẫn phải giữ lại
+// (order_items trỏ về để giải thích giá đơn cũ), nên mặc định chỉ hiện các
+// suất đang chạy và lọc theo trạng thái.
+// =============================================================
+
+import { useEffect, useMemo, useState } from 'react'
 import {
-  getAdminFlashSales, createFlashSale, toggleFlashSale, deleteFlashSale,
-  addProductToFlashSale, removeProductFromFlashSale,
-  getProducts, type FlashSale, type ApiProduct
+  getAdminFlashSales, createFlashSale, updateFlashSale, toggleFlashSale, endFlashSale,
+  isFlashSaleEditable, getProducts, flashStatus, FlashSale, FlashTone, ApiProduct,
 } from '@/api'
+import { useAdminRole } from '@/lib/permissions'
+import { Zap, Plus, X, RefreshCw } from 'lucide-react'
+
+const FILTERS: { tone: FlashTone | 'all'; label: string }[] = [
+  { tone: 'live', label: 'Đang chạy' },
+  { tone: 'pending', label: 'Chưa bắt đầu' },
+  { tone: 'soldout', label: 'Hết suất' },
+  { tone: 'off', label: 'Tạm ngưng' },
+  { tone: 'expired', label: 'Đã kết thúc' },
+  { tone: 'all', label: 'Tất cả' },
+]
+
+const TONE_STYLE: Record<FlashTone, string> = {
+  live: 'bg-green-100 text-green-800',
+  pending: 'bg-blue-100 text-blue-800',
+  expired: 'bg-gray-200 text-gray-600',
+  soldout: 'bg-orange-100 text-orange-700',
+  off: 'bg-red-100 text-red-700',
+}
+
+type FormState = {
+  productId: string
+  price: string
+  discountPct: string
+  stock: string
+  startsAt: string
+  endsAt: string
+  active: boolean
+}
+
+/** <input type="datetime-local"> cần đúng dạng YYYY-MM-DDTHH:mm theo giờ máy. */
+const toLocalInput = (d: Date) =>
+  new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+
+const vnd = (n: number) => Number(n).toLocaleString('vi-VN') + ' đ'
+
+/**
+ * Mã chương trình dựng từ id trong DB — cùng một sản phẩm có thể chạy nhiều đợt
+ * nối tiếp nhau, mã giúp phân biệt đợt này với các đợt trước khi tra soát đơn.
+ */
+const flashCode = (id: number) => `FS-${String(id).padStart(4, '0')}`
 
 export default function AdminFlashSalesPage() {
+  const { canWrite } = useAdminRole()
   const [sales, setSales] = useState<FlashSale[]>([])
+  const [products, setProducts] = useState<ApiProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [filter, setFilter] = useState<FlashTone | 'all'>('live')
 
-  // Create form
-  const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState({ name: '', startTime: '', endTime: '' })
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [form, setForm] = useState<FormState | null>(null)
+  const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Products modal
-  const [activeSale, setActiveSale] = useState<FlashSale | null>(null)
-  
-  // Product Search & Add
-  const [search, setSearch] = useState('')
-  const [searchResults, setSearchResults] = useState<ApiProduct[]>([])
-  const [selectedProduct, setSelectedProduct] = useState<ApiProduct | null>(null)
-  const [productForm, setProductForm] = useState({ discountedPrice: '', stockLimit: '' })
-  const [addingProduct, setAddingProduct] = useState(false)
-
-  const load = () => {
-    setLoading(true)
-    getAdminFlashSales()
-      .then(data => {
-        setSales(data)
-        // update activeSale if it's currently open
-        if (activeSale) {
-          const updated = data.find(s => s.id === activeSale.id)
-          if (updated) setActiveSale(updated)
-        }
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
-  }
-  useEffect(load, []) // eslint-disable-next-line react-hooks/exhaustive-deps
-
-  // ── Flash Sales Actions ──
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!createForm.name || !createForm.startTime || !createForm.endTime) return setError('Vui lòng nhập đủ thông tin')
-    setSaving(true)
-    setError('')
+  const load = async () => {
     try {
-      await createFlashSale({
-        name: createForm.name,
-        startTime: new Date(createForm.startTime).toISOString(),
-        endTime: new Date(createForm.endTime).toISOString()
-      })
-      setShowCreate(false)
-      load()
+      setLoading(true)
+      const [fs, prods] = await Promise.all([
+        getAdminFlashSales(),
+        getProducts({ limit: 100 }),
+      ])
+      setSales(fs)
+      setProducts(prods.items)
+      setError('')
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Lỗi tải danh sách flash sale')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { load() }, [])
+
+  // Đếm sẵn từng nhóm để hiện số trên tab lọc.
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: sales.length }
+    for (const fs of sales) {
+      const t = flashStatus(fs).tone
+      c[t] = (c[t] ?? 0) + 1
+    }
+    return c
+  }, [sales])
+
+  const visible = useMemo(
+    () => (filter === 'all' ? sales : sales.filter((fs) => flashStatus(fs).tone === filter)),
+    [sales, filter],
+  )
+
+  // ── Form ───────────────────────────────────────────────────
+  const openCreate = () => {
+    if (!products.length) {
+      setError('Hãy thêm sản phẩm trước khi tạo flash sale')
+      return
+    }
+    const p = products[0]
+    setEditingId(null)
+    setForm({
+      productId: String(p.id),
+      price: String(Math.round(p.price * 0.8)),
+      discountPct: '20',
+      stock: '50',
+      startsAt: toLocalInput(new Date()),
+      endsAt: toLocalInput(new Date(Date.now() + 24 * 3600 * 1000)),
+      active: true,
+    })
+    setFormError('')
+    setShowForm(true)
+  }
+
+  const openEdit = (fs: FlashSale) => {
+    setEditingId(fs.id)
+    setForm({
+      productId: String(fs.productId),
+      price: String(fs.price),
+      discountPct: String(fs.discountPercent),
+      stock: String(fs.stock),
+      startsAt: toLocalInput(new Date(fs.startsAt)),
+      endsAt: fs.endsAt ? toLocalInput(new Date(fs.endsAt)) : '',
+      active: fs.active,
+    })
+    setFormError('')
+    setShowForm(true)
+  }
+
+  /** Giá niêm yết của sản phẩm đang chọn trong form. */
+  const selectedListPrice = form
+    ? Number(products.find((p) => String(p.id) === form.productId)?.price ?? 0)
+    : 0
+
+  // Đổi sản phẩm hoặc đổi % thì tính lại giá; gõ thẳng giá thì tính lại %.
+  const setProductId = (productId: string) => {
+    const list = Number(products.find((p) => String(p.id) === productId)?.price ?? 0)
+    const pct = Number(form?.discountPct || 0)
+    setForm((f) => f && { ...f, productId, price: String(Math.round(list * (1 - pct / 100))) })
+  }
+  const setDiscountPct = (discountPct: string) => {
+    const pct = Number(discountPct || 0)
+    setForm((f) => f && {
+      ...f, discountPct, price: String(Math.round(selectedListPrice * (1 - pct / 100))),
+    })
+  }
+  const setPrice = (price: string) => {
+    const p = Number(price || 0)
+    const pct = selectedListPrice > 0 && p > 0 && p < selectedListPrice
+      ? Math.round((1 - p / selectedListPrice) * 100)
+      : 0
+    setForm((f) => f && { ...f, price, discountPct: String(pct) })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form) return
+    setSaving(true)
+    setFormError('')
+    try {
+      const body = {
+        productId: Number(form.productId),
+        price: Number(form.price),
+        stock: Number(form.stock),
+        startsAt: new Date(form.startsAt).toISOString(),
+        endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
+        active: form.active,
+      }
+      if (editingId) await updateFlashSale(editingId, body)
+      else await createFlashSale(body)
+      setShowForm(false)
+      await load()
+    } catch (err: any) {
+      setFormError(err.message || 'Lưu flash sale thất bại')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleToggle = async (id: number) => {
+  const handleToggle = async (fs: FlashSale) => {
+    if (fs.active && !confirm(`Tạm ngưng chương trình cho "${fs.name}"? Giá sẽ trở về niêm yết ngay.`)) return
     try {
-      await toggleFlashSale(id)
-      load()
+      await toggleFlashSale(fs.id)
+      await load()
     } catch (err: any) {
-      setError(err.message)
+      alert(err.message || 'Không đổi được trạng thái')
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Xóa Flash Sale này? Tất cả sản phẩm thuộc sale sẽ bị gỡ.')) return
+  const handleEnd = async (fs: FlashSale) => {
+    if (!confirm(
+      `Kết thúc hẳn chương trình cho "${fs.name}"?\n\n`
+      + `Giá trở về niêm yết ngay và sau đó chương trình KHÔNG SỬA ĐƯỢC NỮA. `
+      + `Nếu chỉ muốn dừng tạm thì chọn "Tạm ngưng".`,
+    )) return
     try {
-      await deleteFlashSale(id)
-      if (activeSale?.id === id) setActiveSale(null)
-      load()
+      await endFlashSale(fs.id)
+      await load()
     } catch (err: any) {
-      setError(err.message)
+      alert(err.message || 'Không kết thúc được chương trình')
     }
-  }
-
-  // ── Product Actions ──
-
-  useEffect(() => {
-    if (search.length < 2) {
-      setSearchResults([])
-      return
-    }
-    const timer = setTimeout(() => {
-      getProducts({ search, limit: 5 }).then(res => setSearchResults(res.items)).catch(console.error)
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [search])
-
-  const handleAddProduct = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!activeSale || !selectedProduct) return
-    const price = Number(productForm.discountedPrice)
-    const stock = Number(productForm.stockLimit)
-    if (isNaN(price) || price < 0 || isNaN(stock) || stock <= 0) return setError('Giá trị không hợp lệ')
-    if (price >= selectedProduct.price) return setError('Giá flash sale phải thấp hơn giá gốc')
-
-    setAddingProduct(true)
-    setError('')
-    try {
-      await addProductToFlashSale(activeSale.id, {
-        productId: selectedProduct.id,
-        discountedPrice: price,
-        stockLimit: stock
-      })
-      setSelectedProduct(null)
-      setSearch('')
-      setProductForm({ discountedPrice: '', stockLimit: '' })
-      load() // Will auto refresh activeSale
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setAddingProduct(false)
-    }
-  }
-
-  const handleRemoveProduct = async (productId: number) => {
-    if (!activeSale) return
-    if (!confirm('Xóa sản phẩm này khỏi Flash Sale?')) return
-    try {
-      await removeProductFromFlashSale(activeSale.id, productId)
-      load()
-    } catch (err: any) {
-      setError(err.message)
-    }
-  }
-
-  if (loading && !sales.length) {
-    return <div className="p-8 text-center text-muted-foreground">Đang tải...</div>
   }
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-semibold text-foreground mb-2 flex items-center gap-2">
-            <Zap className="text-orange-500" /> Quản Lý Flash Sale
+          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1 flex items-center gap-2">
+            <Zap className="w-7 h-7 text-[#D4AF37]" /> Flash Sale
           </h1>
-          <p className="text-muted-foreground">Tạo và quản lý các chương trình Flash Sale giới hạn thời gian.</p>
+          <p className="text-muted-foreground text-sm">
+            {canWrite
+              ? 'Mỗi chương trình áp cho một sản phẩm, có giá ưu đãi, số suất và khung giờ riêng.'
+              : 'Xem các chương trình flash sale đang áp dụng cho từng sản phẩm.'}
+          </p>
         </div>
-        <button
-          onClick={() => {
-            setCreateForm({ name: '', startTime: '', endTime: '' })
-            setShowCreate(true)
-            setError('')
-          }}
-          className="bg-foreground text-primary-foreground px-4 py-2 rounded font-medium flex items-center gap-2 hover:opacity-90"
-        >
-          <Plus size={20} /> Tạo Flash Sale
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={load}
+            className="p-2 border border-[#E5DFD8] rounded-full hover:bg-[#F9F5F0] transition-colors cursor-pointer"
+            title="Tải lại danh sách"
+          >
+            <RefreshCw className="w-5 h-5 text-[#2C2C2C]" />
+          </button>
+          {canWrite && (
+            <button
+              onClick={openCreate}
+              className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Tạo Flash Sale
+            </button>
+          )}
+        </div>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-4 rounded mb-6">{error}</div>}
+      {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700 text-sm rounded">{error}</div>}
 
-      {/* ── LIST ── */}
-      <div className="bg-card rounded-lg border border-border overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-secondary/50 border-b border-border">
-              <th className="p-4 font-semibold text-foreground">Tên Chương Trình</th>
-              <th className="p-4 font-semibold text-foreground">Thời Gian Bắt Đầu</th>
-              <th className="p-4 font-semibold text-foreground">Thời Gian Kết Thúc</th>
-              <th className="p-4 font-semibold text-foreground">Trạng Thái</th>
-              <th className="p-4 font-semibold text-foreground text-right">Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {sales.map((sale) => (
-              <tr key={sale.id} className="hover:bg-secondary/20">
-                <td className="p-4 font-medium text-foreground">{sale.name}</td>
-                <td className="p-4 text-sm">{new Date(sale.startTime).toLocaleString('vi-VN')}</td>
-                <td className="p-4 text-sm">{new Date(sale.endTime).toLocaleString('vi-VN')}</td>
-                <td className="p-4">
-                  <button
-                    onClick={() => handleToggle(sale.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sale.isActive ? 'bg-orange-500' : 'bg-gray-300'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${sale.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </td>
-                <td className="p-4 text-right space-x-3">
-                  <button onClick={() => setActiveSale(sale)} className="text-foreground hover:text-orange-500 inline-flex items-center gap-1 text-sm font-medium">
-                    <Settings size={16} /> Quản lý SP
-                  </button>
-                  <button onClick={() => handleDelete(sale.id)} className="text-destructive hover:opacity-70">
-                    <Trash2 size={18} />
-                  </button>
-                </td>
+      {/* Lọc theo trạng thái */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.tone}
+            onClick={() => setFilter(f.tone)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+              filter === f.tone
+                ? 'bg-[#2C2C2C] text-white border-[#2C2C2C]'
+                : 'bg-white text-[#2C2C2C] border-[#E5DFD8] hover:bg-[#F9F5F0]'
+            }`}
+          >
+            {f.label} ({counts[f.tone] ?? 0})
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-[#F9F5F0] border-b border-[#E5DFD8] text-muted-foreground">
+              <tr>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Mã</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Sản Phẩm</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Giá Flash</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-center">Suất</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Khung Giờ</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Ngày Tạo Mã</th>
+                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-center">Trạng Thái</th>
+                {canWrite && <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>}
               </tr>
-            ))}
-            {sales.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Chưa có Flash Sale nào</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Đang tải flash sale...</td></tr>
+              ) : visible.length === 0 ? (
+                <tr>
+                  <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">
+                    Không có chương trình nào ở trạng thái này.
+                  </td>
+                </tr>
+              ) : (
+                visible.map((fs) => {
+                  const st = flashStatus(fs)
+                  return (
+                    <tr key={fs.id} className="border-b border-[#E5DFD8] last:border-none hover:bg-[#F9F5F0]/30 transition-colors">
+                      <td className="py-4 px-6">
+                        <span className="bg-[#D4AF37]/15 text-[#D4AF37] px-2.5 py-1 rounded font-mono font-bold text-xs tracking-wider border border-[#D4AF37]/30 whitespace-nowrap">
+                          {flashCode(fs.id)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <img src={fs.img} alt={fs.name} className="w-11 h-11 object-cover rounded border border-[#E5DFD8]" />
+                          <div>
+                            <p className="font-medium text-[#2C2C2C]">{fs.name}</p>
+                            <p className="text-[11px] text-muted-foreground">Giá niêm yết {vnd(fs.productPrice)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-semibold text-red-600">{vnd(fs.price)}</span>
+                        {fs.discountPercent > 0 && (
+                          <span className="ml-2 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                            -{fs.discountPercent}%
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <span className="font-medium text-[#2C2C2C]">{fs.sold}</span>
+                        <span className="text-muted-foreground"> / {fs.stock}</span>
+                        <p className="text-[10px] text-muted-foreground">còn {fs.remaining}</p>
+                      </td>
+                      <td className="py-4 px-6 text-xs text-muted-foreground">
+                        <div>{new Date(fs.startsAt).toLocaleString('vi-VN')}</div>
+                        <div>{fs.endsAt ? new Date(fs.endsAt).toLocaleString('vi-VN') : 'Không giới hạn'}</div>
+                      </td>
+                      <td className="py-4 px-6 text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(fs.createdAt).toLocaleString('vi-VN')}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${TONE_STYLE[st.tone]}`}>
+                          {st.label}
+                        </span>
+                      </td>
+                      {canWrite && (
+                        <td className="py-4 px-6 text-right">
+                          {/* Không có nút xóa: chương trình chỉ tạm ngưng hoặc
+                              kết thúc, để giữ lịch sử giá của đơn đã mua.
+                              Đã kết thúc thì đóng băng, không còn thao tác nào. */}
+                          <div className="flex gap-3 justify-end items-center">
+                            {isFlashSaleEditable(fs) ? (
+                              <>
+                                <button onClick={() => openEdit(fs)} className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer">
+                                  Sửa
+                                </button>
+                                <button
+                                  onClick={() => handleToggle(fs)}
+                                  className={`text-xs font-semibold hover:underline cursor-pointer ${
+                                    fs.active ? 'text-amber-600' : 'text-green-600'
+                                  }`}
+                                >
+                                  {fs.active ? 'Tạm ngưng' : 'Bật lại'}
+                                </button>
+                                <button
+                                  onClick={() => handleEnd(fs)}
+                                  className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                                >
+                                  Kết thúc
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">Đã kết thúc</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ── CREATE MODAL ── */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card w-full max-w-md rounded-lg shadow-xl border border-border p-6">
+      {/* Form Modal */}
+      {showForm && form && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg max-h-[92vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Tạo Flash Sale Mới</h2>
-              <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
+              <h2 className="text-xl font-heading font-semibold text-[#2C2C2C] flex items-center gap-2">
+                {editingId ? 'Sửa Flash Sale' : 'Tạo Flash Sale'}
+                {editingId && (
+                  <span className="bg-[#D4AF37]/15 text-[#D4AF37] px-2 py-0.5 rounded font-mono font-bold text-xs tracking-wider border border-[#D4AF37]/30">
+                    {flashCode(editingId)}
+                  </span>
+                )}
+              </h2>
+              <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-[#F9F5F0] rounded-full cursor-pointer">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
             </div>
-            <form onSubmit={handleCreate} className="space-y-4">
+
+            {formError && <p className="text-red-600 mb-4 text-sm">{formError}</p>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Tên chương trình</label>
-                <input
-                  type="text"
-                  required
-                  value={createForm.name}
-                  onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
-                  placeholder="Ví dụ: Siêu Sale Giữa Tháng"
-                />
+                <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Sản Phẩm *</label>
+                <select
+                  value={form.productId}
+                  onChange={(e) => setProductId(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} — {vnd(p.price)}</option>
+                  ))}
+                </select>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#2C2C2C] mb-1">% Giảm</label>
+                  <input
+                    type="number" min="1" max="99"
+                    value={form.discountPct}
+                    onChange={(e) => setDiscountPct(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Giá Flash *</label>
+                  <input
+                    required type="number" min="1"
+                    value={form.price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground -mt-2">
+                Giá niêm yết hiện tại: <strong className="text-[#2C2C2C]">{vnd(selectedListPrice)}</strong>.
+                Giá flash phải thấp hơn con số này.
+              </p>
+
               <div>
-                <label className="block text-sm font-medium mb-1">Thời gian bắt đầu</label>
+                <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Số Suất *</label>
                 <input
-                  type="datetime-local"
-                  required
-                  value={createForm.startTime}
-                  onChange={e => setCreateForm(f => ({ ...f, startTime: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
+                  required type="number" min="1"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                 />
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Bán hết số suất này là chương trình tự dừng, giá quay về niêm yết.
+                </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Thời gian kết thúc</label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Bắt Đầu *</label>
+                  <input
+                    required type="datetime-local"
+                    value={form.startsAt}
+                    onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2C2C2C] mb-1">Kết Thúc</label>
+                  <input
+                    type="datetime-local"
+                    value={form.endsAt}
+                    onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
+                    className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">Bỏ trống = chạy tới khi tắt tay.</p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-[#2C2C2C] cursor-pointer">
                 <input
-                  type="datetime-local"
-                  required
-                  value={createForm.endTime}
-                  onChange={e => setCreateForm(f => ({ ...f, endTime: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
+                  type="checkbox"
+                  checked={form.active}
+                  onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                  className="w-4 h-4 accent-[#D4AF37]"
                 />
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 border border-border rounded">Hủy</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-foreground text-primary-foreground rounded hover:opacity-90 disabled:opacity-50">
-                  {saving ? 'Đang tạo...' : 'Tạo mới'}
+                Bật chương trình ngay
+              </label>
+              <p className="text-[11px] text-muted-foreground -mt-2">
+                Một sản phẩm chỉ được có một chương trình đang bật trong cùng khung giờ.
+              </p>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 px-4 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-semibold rounded transition-colors disabled:opacity-50 cursor-pointer text-sm"
+                >
+                  {saving ? 'Đang lưu...' : editingId ? 'Cập Nhật' : 'Tạo Mới'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2.5 border border-[#E5DFD8] text-[#2C2C2C] font-semibold rounded hover:bg-[#F9F5F0] transition-colors cursor-pointer text-sm"
+                >
+                  Hủy
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MANAGE PRODUCTS MODAL ── */}
-      {activeSale && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-card w-full max-w-4xl rounded-lg shadow-xl border border-border my-8 flex flex-col">
-            <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30 sticky top-0 z-10">
-              <div>
-                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <Zap className="text-orange-500" /> {activeSale.name}
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {new Date(activeSale.startTime).toLocaleString()} — {new Date(activeSale.endTime).toLocaleString()}
-                </p>
-              </div>
-              <button onClick={() => setActiveSale(null)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
-            </div>
-
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Product Selection Form */}
-              <div className="md:col-span-1 space-y-4">
-                <h3 className="font-semibold text-foreground mb-4">Thêm Sản Phẩm</h3>
-                
-                <div className="relative">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 text-muted-foreground" size={18} />
-                    <input
-                      type="text"
-                      placeholder="Tìm tên sản phẩm..."
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
-                    />
-                  </div>
-                  {searchResults.length > 0 && !selectedProduct && (
-                    <div className="absolute z-20 top-full mt-1 w-full bg-card border border-border rounded shadow-lg max-h-60 overflow-y-auto">
-                      {searchResults.map(p => (
-                        <button
-                          key={p.id}
-                          onClick={() => { setSelectedProduct(p); setSearchResults([]) }}
-                          className="w-full text-left px-3 py-2 hover:bg-secondary/50 text-sm flex items-center gap-2"
-                        >
-                          <img src={p.img} alt="" className="w-8 h-8 rounded object-cover" />
-                          <div className="truncate">
-                            <div className="font-medium truncate">{p.name}</div>
-                            <div className="text-muted-foreground">{p.price.toLocaleString()}đ</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedProduct && (
-                  <form onSubmit={handleAddProduct} className="bg-secondary/20 p-4 rounded-lg border border-border space-y-4">
-                    <div className="flex items-start gap-3 justify-between">
-                      <div className="flex gap-3">
-                        <img src={selectedProduct.img} alt="" className="w-12 h-12 rounded object-cover" />
-                        <div>
-                          <p className="font-medium text-sm line-clamp-2">{selectedProduct.name}</p>
-                          <p className="text-sm text-muted-foreground mt-1">Gốc: {selectedProduct.price.toLocaleString()}đ</p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={() => setSelectedProduct(null)} className="text-muted-foreground"><X size={16}/></button>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Giá Flash Sale (VNĐ)</label>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        value={productForm.discountedPrice}
-                        onChange={e => setProductForm(f => ({ ...f, discountedPrice: e.target.value }))}
-                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Giới hạn số lượng bán</label>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        value={productForm.stockLimit}
-                        onChange={e => setProductForm(f => ({ ...f, stockLimit: e.target.value }))}
-                        className="w-full px-3 py-2 border border-border rounded focus:outline-none focus:border-foreground"
-                      />
-                    </div>
-
-                    <button type="submit" disabled={addingProduct} className="w-full py-2 bg-orange-600 text-white font-medium rounded hover:bg-orange-700 disabled:opacity-50">
-                      {addingProduct ? 'Đang thêm...' : 'Thêm Vào Flash Sale'}
-                    </button>
-                  </form>
-                )}
-              </div>
-
-              {/* Products List */}
-              <div className="md:col-span-2">
-                <h3 className="font-semibold text-foreground mb-4">Sản Phẩm Đang Chạy ({activeSale.products?.length || 0})</h3>
-                <div className="border border-border rounded-lg overflow-hidden">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead className="bg-secondary/50 border-b border-border">
-                      <tr>
-                        <th className="p-3 font-medium text-muted-foreground">Sản Phẩm</th>
-                        <th className="p-3 font-medium text-muted-foreground">Giá Flash Sale</th>
-                        <th className="p-3 font-medium text-muted-foreground">Đã Bán</th>
-                        <th className="p-3 font-medium text-muted-foreground text-right">Xóa</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {activeSale.products?.map(p => (
-                        <tr key={p.productId} className="hover:bg-secondary/20">
-                          <td className="p-3 flex items-center gap-3">
-                            <img src={p.img} alt="" className="w-10 h-10 rounded object-cover" />
-                            <div className="max-w-[200px]">
-                              <p className="font-medium truncate" title={p.name}>{p.name}</p>
-                              <p className="text-xs text-muted-foreground line-through">{p.originalPrice.toLocaleString()}đ</p>
-                            </div>
-                          </td>
-                          <td className="p-3 font-medium text-orange-600">
-                            {p.discountedPrice.toLocaleString()}đ
-                          </td>
-                          <td className="p-3">
-                            {p.soldCount} / {p.stockLimit}
-                            <div className="w-24 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                              <div 
-                                className="h-full bg-orange-500" 
-                                style={{ width: `${Math.min(100, (p.soldCount / p.stockLimit) * 100)}%` }}
-                              />
-                            </div>
-                          </td>
-                          <td className="p-3 text-right">
-                            <button onClick={() => handleRemoveProduct(p.productId)} className="text-destructive hover:opacity-70 p-1">
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {!activeSale.products?.length && (
-                        <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Chưa có sản phẩm nào.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}

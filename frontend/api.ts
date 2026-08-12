@@ -62,9 +62,15 @@ export interface ApiProduct {
   handle: string
   collection: string
   type: string
-  price: number          // Giá bán cuối — dùng cho Cart & Order
+  price: number          // Giá niêm yết trong bảng products (form admin sửa cột này)
   originalPrice?: number // Giá gốc trước giảm (null nếu không giảm)
   discount: number       // % giảm (0 = không giảm)
+  // Giá khách thật sự trả = giá flash nếu đang có chương trình, không thì `price`.
+  // Backend tính bằng cùng biểu thức dùng lúc chốt đơn nên hai nơi không lệch nhau.
+  effectivePrice: number
+  flashPrice?: number     // null = sản phẩm không nằm trong flash sale nào đang chạy
+  flashRemaining?: number // số suất giá flash còn lại
+  isFlashSale: boolean
   img: string
   images: string[]
   colors: string[]
@@ -142,11 +148,20 @@ export const lineKey = (it: { productId: number; size: string; color: string }) 
   `${it.productId}|${it.size}|${it.color}`
 
 function mapProduct(p: any): ApiProduct {
+  const price = Number(p.price ?? 0)
+  const flashPrice = p.flash_price != null ? Number(p.flash_price) : undefined
   return {
     ...p,
+    price,
     // snake_case → camelCase
     originalPrice: p.original_price ?? undefined,
     discount: p.discount ?? 0,
+    // Endpoint cũ chưa trả effective_price thì lùi về giá niêm yết, không để undefined
+    // lọt xuống phần hiển thị tiền.
+    effectivePrice: p.effective_price != null ? Number(p.effective_price) : price,
+    flashPrice,
+    flashRemaining: p.flash_remaining != null ? Number(p.flash_remaining) : undefined,
+    isFlashSale: flashPrice != null,
     title: p.name,
     image: p.img,
   }
@@ -844,59 +859,84 @@ export function deleteArticle(id: number): Promise<void> {
   return request(`/admin/news/${id}`, { method: 'DELETE', auth: true }).then(() => { })
 }
 
-// ---------- Flash Sales (Admin) ----------
-
-export interface FlashSaleProduct {
-  flashSaleProductId: number
-  productId: number
-  name: string
-  handle: string
-  img: string
-  originalPrice: number
-  discountedPrice: number
-  stockLimit: number
-  soldCount: number
-  remaining: number
-}
+// ---------- Flash Sales ----------
+// Mỗi flash sale gắn với ĐÚNG MỘT sản phẩm, có giá ưu đãi, số suất và khung
+// giờ riêng.
 
 export interface FlashSale {
   id: number
-  name: string
-  startTime: string
-  endTime: string
-  isActive: boolean
+  productId: number
+  price: number          // giá flash
+  originalPrice: number  // ảnh chụp giá niêm yết lúc tạo chương trình
+  stock: number          // tổng số suất
+  sold: number
+  remaining: number
+  discountPercent: number // tính trên giá niêm yết HIỆN TẠI của sản phẩm
+  startsAt: string
+  endsAt: string | null   // null = chạy tới khi tắt tay
+  active: boolean
   createdAt: string
-  updatedAt: string
-  products?: FlashSaleProduct[]
+  // Thông tin sản phẩm đi kèm
+  name: string
+  handle: string
+  img: string
+  productPrice: number
+  productStock: number
+  orderItemCount?: number
+}
+
+export interface FlashSaleInput {
+  productId: number
+  price: number
+  stock: number
+  startsAt?: string
+  endsAt?: string | null
+  active?: boolean
+}
+
+/** Công khai — các suất đang chạy, dùng cho khối Flash Sale phía khách. */
+export function getActiveFlashSales(): Promise<FlashSale[]> {
+  return getData('/flash-sales/active')
 }
 
 export function getAdminFlashSales(): Promise<FlashSale[]> {
   return getData('/admin/flash-sales', { auth: true })
 }
-export function getAdminFlashSale(id: number): Promise<FlashSale> {
-  return getData(`/admin/flash-sales/${id}`, { auth: true })
-}
-export function createFlashSale(body: { name: string; startTime: string; endTime: string; isActive?: boolean }): Promise<FlashSale> {
+export function createFlashSale(body: FlashSaleInput): Promise<FlashSale> {
   return getData('/admin/flash-sales', { method: 'POST', body, auth: true })
 }
-export function updateFlashSale(id: number, body: Partial<{ name: string; startTime: string; endTime: string; isActive: boolean }>): Promise<FlashSale> {
+export function updateFlashSale(id: number, body: Partial<FlashSaleInput>): Promise<FlashSale> {
   return getData(`/admin/flash-sales/${id}`, { method: 'PUT', body, auth: true })
 }
+/**
+ * Bật / tạm ngưng (tắt tạm, bật lại được).
+ *
+ * Không có hàm xóa flash sale — đơn hàng cũ trỏ về chương trình để giải thích
+ * đơn giá, xóa đi là mất dấu vết đó.
+ */
 export function toggleFlashSale(id: number): Promise<FlashSale> {
   return getData(`/admin/flash-sales/${id}/toggle`, { method: 'PATCH', auth: true })
 }
-export function deleteFlashSale(id: number): Promise<void> {
-  return request(`/admin/flash-sales/${id}`, { method: 'DELETE', auth: true }).then(() => {})
+
+/** Kết thúc ngay — chốt `endsAt`, sau đó chương trình không sửa được nữa. */
+export function endFlashSale(id: number): Promise<FlashSale> {
+  return getData(`/admin/flash-sales/${id}/end`, { method: 'PATCH', auth: true })
 }
 
-// ---------- Flash Sale Products (Admin) ----------
+/** Đã kết thúc thì đóng băng: không sửa, không bật/tắt được nữa. */
+export function isFlashSaleEditable(fs: FlashSale) {
+  return !(fs.endsAt && new Date(fs.endsAt).getTime() <= Date.now())
+}
 
-export function addProductToFlashSale(flashSaleId: number, body: { productId: number; discountedPrice: number; stockLimit: number }): Promise<FlashSaleProduct> {
-  return getData(`/admin/flash-sales/${flashSaleId}/products`, { method: 'POST', body, auth: true })
-}
-export function updateFlashSaleProduct(flashSaleId: number, productId: number, body: { discountedPrice?: number; stockLimit?: number }): Promise<FlashSaleProduct> {
-  return getData(`/admin/flash-sales/${flashSaleId}/products/${productId}`, { method: 'PUT', body, auth: true })
-}
-export function removeProductFromFlashSale(flashSaleId: number, productId: number): Promise<void> {
-  return request(`/admin/flash-sales/${flashSaleId}/products/${productId}`, { method: 'DELETE', auth: true }).then(() => {})
+/** Trạng thái hiển thị của một suất — đối xứng với activeFlashWhere() ở backend. */
+export type FlashTone = 'live' | 'pending' | 'expired' | 'soldout' | 'off'
+
+export function flashStatus(fs: FlashSale, now = Date.now()): { label: string; tone: FlashTone } {
+  const starts = fs.startsAt ? new Date(fs.startsAt).getTime() : null
+  const ends = fs.endsAt ? new Date(fs.endsAt).getTime() : null
+  if (!fs.active) return { label: 'Tạm ngưng', tone: 'off' }
+  if (starts && starts > now) return { label: 'Chưa bắt đầu', tone: 'pending' }
+  if (ends && ends < now) return { label: 'Đã kết thúc', tone: 'expired' }
+  if (fs.remaining <= 0) return { label: 'Hết suất', tone: 'soldout' }
+  return { label: 'Đang chạy', tone: 'live' }
 }

@@ -7,6 +7,9 @@
 -- =============================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid()
+-- Cho phép trộn cột thường (product_id) với toán tử phạm vi trong ràng buộc
+-- EXCLUDE ở bảng flash_sales.
+CREATE EXTENSION IF NOT EXISTS "btree_gist";
 
 -- =============================================================
 -- BẢNG
@@ -60,6 +63,33 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at     TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
+-- Flash sale — MỖI DÒNG LÀ MỘT SẢN PHẨM với giá ưu đãi, số suất và khung giờ
+-- riêng. Đặt ngay sau products vì order_items tham chiếu tới bảng này.
+CREATE TABLE IF NOT EXISTS flash_sales (
+  id             SERIAL      PRIMARY KEY,
+  product_id     INTEGER     NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  price          INTEGER     NOT NULL CHECK (price > 0),           -- giá flash
+  original_price INTEGER     NOT NULL CHECK (original_price > 0),  -- ảnh chụp giá niêm yết lúc tạo
+  stock          INTEGER     NOT NULL DEFAULT 0 CHECK (stock >= 0),-- số suất
+  -- Suất đã bán. Hết suất thì dừng bán giá flash, không thì flash sale thành
+  -- giảm giá vĩnh viễn cho tới khi hết giờ.
+  sold           INTEGER     NOT NULL DEFAULT 0 CHECK (sold >= 0),
+  starts_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ends_at        TIMESTAMPTZ,                                      -- NULL = không giới hạn
+  active         BOOLEAN     NOT NULL DEFAULT true,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  -- Một sản phẩm chỉ có một chương trình đang bật tại mỗi thời điểm.
+  -- Dùng EXCLUDE chứ không UNIQUE: UNIQUE(product_id) sẽ cấm luôn các đợt sale
+  -- nối tiếp nhau, còn ở đây chỉ cấm khi KHUNG GIỜ giao nhau.
+  -- ends_at NULL -> tstzrange coi là vô cực.
+  CONSTRAINT flash_sales_no_overlap EXCLUDE USING gist (
+    product_id WITH =,
+    tstzrange(starts_at, ends_at) WITH &&
+  ) WHERE (active)
+);
+
 -- Giỏ hàng (mỗi dòng = sản phẩm + size + màu của 1 user)
 CREATE TABLE IF NOT EXISTS cart_items (
   id          SERIAL      PRIMARY KEY,
@@ -98,6 +128,13 @@ CREATE TABLE IF NOT EXISTS order_items (
   name        VARCHAR(200) NOT NULL,
   img         VARCHAR(500) NOT NULL DEFAULT '',
   price       INTEGER     NOT NULL CHECK (price >= 0),
+  -- Giá niêm yết tại thời điểm đặt, chụp cùng lúc với `price`. Nhờ nó tra cứu
+  -- được đã giảm bao nhiêu mà không phải đọc products.price hiện tại — giá sản
+  -- phẩm đổi về sau sẽ làm sai lệch đơn cũ. NULL = đơn đặt trước khi có cột này.
+  list_price  INTEGER     CHECK (list_price >= 0),
+  -- Chương trình flash sale đã áp cho dòng này (NULL = mua giá thường). Cần lưu
+  -- để hoàn suất khi đơn bị hủy, và để biết vì sao đơn giá thấp hơn giá niêm yết.
+  flash_sale_id INTEGER REFERENCES flash_sales(id) ON DELETE SET NULL,
   size        VARCHAR(20) NOT NULL,
   color       VARCHAR(50) NOT NULL,
   quantity    INTEGER     NOT NULL CHECK (quantity > 0)
@@ -146,6 +183,9 @@ CREATE INDEX IF NOT EXISTS idx_orders_user         ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_cart_user           ON cart_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_wishlist_user       ON wishlist(user_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conv       ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_flash_sales_product     ON flash_sales (product_id);
+CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (active, starts_at, ends_at);
+CREATE INDEX IF NOT EXISTS idx_order_items_flash       ON order_items (flash_sale_id);
 
 -- =============================================================
 -- SEED DỮ LIỆU (tài khoản admin được backend seed lúc khởi động)
@@ -502,37 +542,6 @@ INSERT INTO coupons (code, type, value, min_order, quantity, used, active, expir
   ('FREESHIP',  'fixed',      30000,  500000,  200, 89, true,  '2026-08-30'),
   ('MIDYEAR30', 'percentage', 30,  400000,  30,  30, false, '2026-06-30')
 ON CONFLICT (code) DO NOTHING;
-
--- =============================================================
--- FLASH SALE
---
--- Một chương trình (flash_sales) có khung giờ riêng và gom nhiều sản phẩm
--- (flash_sale_products), mỗi sản phẩm có giá ưu đãi và số suất riêng.
--- =============================================================
-CREATE TABLE IF NOT EXISTS flash_sales (
-  id         SERIAL       PRIMARY KEY,
-  name       VARCHAR(200) NOT NULL,
-  start_time TIMESTAMPTZ  NOT NULL,
-  end_time   TIMESTAMPTZ  NOT NULL,
-  is_active  BOOLEAN      NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-  CONSTRAINT flash_sales_time_check CHECK (end_time > start_time)
-);
-
-CREATE TABLE IF NOT EXISTS flash_sale_products (
-  id               SERIAL  PRIMARY KEY,
-  flash_sale_id    INTEGER NOT NULL REFERENCES flash_sales(id) ON DELETE CASCADE,
-  product_id       INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  discounted_price INTEGER NOT NULL CHECK (discounted_price >= 0),
-  stock_limit      INTEGER NOT NULL CHECK (stock_limit > 0),
-  sold_count       INTEGER NOT NULL DEFAULT 0 CHECK (sold_count >= 0),
-  UNIQUE (flash_sale_id, product_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (is_active, start_time, end_time);
-CREATE INDEX IF NOT EXISTS idx_fsp_flash_sale_id       ON flash_sale_products (flash_sale_id);
-CREATE INDEX IF NOT EXISTS idx_fsp_product_id          ON flash_sale_products (product_id);
 
 -- =============================================================
 -- ĐÁNH GIÁ (reviews)
