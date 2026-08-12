@@ -13,8 +13,9 @@ orderCustomerRouter.get('/',     orderController.listMine);
 orderCustomerRouter.get('/:id',  orderController.getById);
 
 // Admin quản lý tất cả đơn — mount tại /api/v1/admin/orders
+// Nhân viên được quản lý đơn hàng như admin (kể cả đổi trạng thái).
 export const orderAdminRouter = Router();
-orderAdminRouter.use(authenticate, authorize('admin'));
+orderAdminRouter.use(authenticate, authorize('admin', 'staff'));
 orderAdminRouter.get('/',            orderController.listAll);
 orderAdminRouter.get('/:id',         orderController.getById);
 orderAdminRouter.put('/:id/status',  validate(updateOrderStatusSchema), orderController.updateStatus);

@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { getAdminCustomers, deleteCustomer, toggleLockCustomer, ApiUser } from '@/api'
 import { Users, Search, Trash2, RefreshCw, Lock, Unlock } from 'lucide-react'
+import { useAdminRole } from '@/lib/permissions'
 
 export default function AdminCustomersPage() {
+  const { canWrite } = useAdminRole()
   const [customers, setCustomers] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -62,8 +64,14 @@ export default function AdminCustomersPage() {
       {/* Title */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">Quản Lý Khách Hàng</h1>
-          <p className="text-muted-foreground text-sm">Xem danh sách người dùng đã đăng ký thành viên, quản lý quyền truy cập và kiểm tra thông tin liên hệ.</p>
+          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">
+            {canWrite ? 'Quản Lý Khách Hàng' : 'Khách Hàng'}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {canWrite
+              ? 'Danh sách khách hàng đã đăng ký thành viên — khóa/mở tài khoản và kiểm tra thông tin liên hệ. Tài khoản nhân viên nằm ở mục Nhân Viên.'
+              : 'Danh sách khách hàng đã đăng ký thành viên và thông tin liên hệ của họ.'}
+          </p>
         </div>
         <button
           onClick={loadCustomers}
@@ -79,19 +87,19 @@ export default function AdminCustomersPage() {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng tài khoản</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng khách hàng</p>
           <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{customers.length}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Khách hàng thành viên</p>
-          <p className="text-2xl font-heading font-semibold text-[#2C2C2C] text-[#D4AF37]">
-            {customers.filter((c) => c.role === 'customer').length}
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đang hoạt động</p>
+          <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
+            {customers.filter((c) => !c.isLocked).length}
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Quản trị viên (Admin)</p>
-          <p className="text-2xl font-heading font-semibold text-[#2C2C2C] text-slate-700">
-            {customers.filter((c) => c.role === 'admin').length}
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Bị khóa</p>
+          <p className="text-2xl font-heading font-semibold text-red-600">
+            {customers.filter((c) => c.isLocked).length}
           </p>
         </div>
       </div>
@@ -119,19 +127,18 @@ export default function AdminCustomersPage() {
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Họ Tên</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Email</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Số Điện Thoại</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C]">Vai Trò</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Ngày Tạo</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>
+                {canWrite && <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-muted-foreground">Đang tải danh sách người dùng...</td>
+                  <td colSpan={canWrite ? 5 : 4} className="text-center py-12 text-muted-foreground">Đang tải danh sách người dùng...</td>
                 </tr>
               ) : filteredCustomers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-muted-foreground">Không tìm thấy khách hàng nào.</td>
+                  <td colSpan={canWrite ? 5 : 4} className="text-center py-12 text-muted-foreground">Không tìm thấy khách hàng nào.</td>
                 </tr>
               ) : (
                 filteredCustomers.map((user) => (
@@ -150,22 +157,11 @@ export default function AdminCustomersPage() {
                     <td className="py-4 px-6 text-muted-foreground">
                       {user.phone || 'Chưa cập nhật'}
                     </td>
-                    <td className="py-4 px-6">
-                      {user.role === 'admin' ? (
-                        <span className="px-2.5 py-0.5 text-xs font-semibold rounded bg-[#D4AF37]/15 text-[#D4AF37] uppercase tracking-wider">
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 text-xs font-medium rounded bg-gray-100 text-gray-800">
-                          Khách Hàng
-                        </span>
-                      )}
-                    </td>
                     <td className="py-4 px-6 text-muted-foreground">
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'Mặc định'}
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      {user.role !== 'admin' ? (
+                    {canWrite && (
+                      <td className="py-4 px-6 text-right">
                         <div className="flex gap-2 justify-end">
                           <button
                             onClick={() => handleToggleLock(user.id, user.name, !!user.isLocked)}
@@ -186,10 +182,8 @@ export default function AdminCustomersPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Không thể thao tác</span>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

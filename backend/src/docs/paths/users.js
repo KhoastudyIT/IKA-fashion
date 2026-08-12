@@ -1,6 +1,6 @@
 import {
-  bearer, pathParam, jsonBody, okData, okList, okMessage,
-  adminErrors, notFound, validationError,
+  bearer, pathParam, queryParam, jsonBody, okData, okList, okMessage, createdData,
+  adminErrors, notFound, conflict, validationError,
 } from '../helpers.js';
 
 const userId = pathParam('id', { example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' });
@@ -10,10 +10,36 @@ export const userPaths = {
     get: {
       tags: ['Admin - Người dùng'],
       summary: 'Danh sách người dùng',
+      description:
+        'Bỏ trống `role` thì trả về mọi tài khoản. Trang Khách Hàng gọi `?role=customer`, '
+        + 'trang Nhân Viên gọi `?role=staff,admin` — hai nhóm tài khoản này tách bạch nhau.',
       security: bearer,
+      parameters: [
+        queryParam(
+          'role',
+          { type: 'string', example: 'staff,admin' },
+          'Lọc theo vai trò, phân tách bằng dấu phẩy: customer | staff | admin',
+        ),
+      ],
       responses: {
-        200: okList('Toàn bộ tài khoản', 'User'),
+        200: okList('Tài khoản khớp bộ lọc', 'User'),
         ...adminErrors,
+        422: validationError,
+      },
+    },
+    post: {
+      tags: ['Admin - Người dùng'],
+      summary: 'Tạo tài khoản nội bộ',
+      description:
+        'Admin tạo thẳng tài khoản nhân viên (hoặc admin). Không trả token — tài khoản mới '
+        + 'tự đăng nhập bằng mật khẩu được cấp. Bỏ trống `role` thì mặc định là `staff`.',
+      security: bearer,
+      requestBody: jsonBody('CreateUserBody'),
+      responses: {
+        201: createdData('Tài khoản vừa tạo', 'User'),
+        ...adminErrors,
+        409: conflict,
+        422: validationError,
       },
     },
   },

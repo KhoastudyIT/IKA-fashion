@@ -1,6 +1,7 @@
 import pool from '../../db/index.js';
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
+import { isBackoffice } from '../../utils/roles.js';
 import { assertUsable, computeDiscount } from '../coupons/coupon.service.js';
 
 // SELECT chung: 1 đơn kèm mảng items (json_agg), alias camelCase cho FE
@@ -112,7 +113,7 @@ export async function listMyOrders(userId) {
 export async function getOrder(id, user) {
   const order = await getOrderRow(id);
   if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
-  if (user.role !== 'admin' && order.userId !== user.id) {
+  if (!isBackoffice(user.role) && order.userId !== user.id) {
     throw new AppError('Bạn không có quyền xem đơn hàng này', 403);
   }
   return order;

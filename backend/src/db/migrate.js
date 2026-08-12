@@ -9,6 +9,11 @@ import db from './index.js';
  * chạy lại bao nhiêu lần cũng không hỏng dữ liệu.
  */
 const STATEMENTS = [
+  // Vai trò 'staff' (nhân viên) thêm sau nên DB cũ vẫn còn CHECK hai giá trị.
+  `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check`,
+  `ALTER TABLE users ADD CONSTRAINT users_role_check
+     CHECK (role IN ('customer', 'staff', 'admin'))`,
+
   `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN NOT NULL DEFAULT true`,
   `ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_product_id INTEGER REFERENCES products(id) ON DELETE SET NULL`,
 

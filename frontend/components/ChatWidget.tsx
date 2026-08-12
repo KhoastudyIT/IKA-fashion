@@ -11,6 +11,7 @@ import {
   Message,
 } from '@/api'
 import { useChat } from '@/components/ChatContext'
+import { isBackoffice } from '@/lib/permissions'
 import { RichText, SuggestionCards } from '@/components/ChatMessageBody'
 import { QUICK_REPLIES } from '@/components/chatQuickReplies'
 import {
@@ -43,7 +44,7 @@ export default function ChatWidget() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
-  const isHidden = isPending || !session || session.user.role === 'admin'
+  const isHidden = isPending || !session || isBackoffice(session.user.role)
 
   // Cuộn trong khung chat; scrollIntoView có thể kéo theo cả trang phía sau
   // vì widget là position: fixed.

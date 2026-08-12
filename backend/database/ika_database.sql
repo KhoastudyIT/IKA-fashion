@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   email       VARCHAR(255) NOT NULL UNIQUE,
   password    VARCHAR(255) NOT NULL,
   role        VARCHAR(20)  NOT NULL DEFAULT 'customer'
-              CHECK (role IN ('customer', 'admin')),
+              CHECK (role IN ('customer', 'staff', 'admin')),
   phone       VARCHAR(20)  NOT NULL DEFAULT '',
   address     VARCHAR(255) NOT NULL DEFAULT '',
   city        VARCHAR(255) NOT NULL DEFAULT '',

@@ -90,9 +90,30 @@ export async function changePassword(userId, { currentPassword, newPassword }) {
 
 // ─── Admin: quản lý người dùng ──────────────────────────────────────────────
 
-export async function listUsers() {
+export async function listUsers({ roles } = {}) {
+  if (roles?.length) {
+    const res = await db.query(
+      `SELECT ${USER_COLS} FROM users WHERE role = ANY($1) ORDER BY created_at DESC`,
+      [roles],
+    );
+    return res.rows;
+  }
   const res = await db.query(`SELECT ${USER_COLS} FROM users ORDER BY created_at DESC`);
   return res.rows;
+}
+
+export async function createUser({ name, email, password, role }) {
+  const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (existing.rows.length) throw new AppError('Email đã được đăng ký', 409);
+
+  const hashed = await bcrypt.hash(password, 10);
+  const res = await db.query(
+    `INSERT INTO users (name, email, password, role)
+     VALUES ($1, $2, $3, $4)
+     RETURNING ${USER_COLS}`,
+    [name, email, hashed, role],
+  );
+  return res.rows[0];
 }
 
 export async function deleteUser(id) {

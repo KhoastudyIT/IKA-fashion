@@ -15,3 +15,12 @@ export function authorize(...roles) {
     next();
   };
 }
+
+export function readOnly(...roles) {
+  return (req, _res, next) => {
+    if (roles.includes(req.user?.role) && req.method !== 'GET') {
+      return next(new AppError('Tài khoản của bạn chỉ được phép xem mục này', 403));
+    }
+    next();
+  };
+}

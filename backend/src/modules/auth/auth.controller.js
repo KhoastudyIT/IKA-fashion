@@ -29,8 +29,13 @@ export function logout(_req, res) {
   ok(res, null, 'Đăng xuất thành công');
 }
 
-export async function listUsers(_req, res) {
-  ok(res, await authService.listUsers());
+export async function listUsers(req, res) {
+  ok(res, await authService.listUsers({ roles: req.query.role }));
+}
+
+export async function createUser(req, res) {
+  const user = await authService.createUser(req.body);
+  created(res, user, 'Tạo tài khoản thành công');
 }
 
 export async function deleteUser(req, res) {

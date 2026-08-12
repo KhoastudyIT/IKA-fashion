@@ -6,8 +6,10 @@ import {
   getAdminCoupons, createCoupon, updateCoupon, toggleCoupon, deleteCoupon,
   type Coupon,
 } from '@/api'
+import { useAdminRole } from '@/lib/permissions'
 
 export default function AdminPromotionsPage() {
+  const { canWrite } = useAdminRole()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -112,14 +114,20 @@ export default function AdminPromotionsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">Mã Giảm Giá & Ưu Đãi</h1>
-          <p className="text-muted-foreground text-sm">Quản lý các chương trình ưu đãi, coupon chiết khấu và mã vận chuyển cho khách hàng.</p>
+          <p className="text-muted-foreground text-sm">
+            {canWrite
+              ? 'Quản lý các chương trình ưu đãi, coupon chiết khấu và mã vận chuyển cho khách hàng.'
+              : 'Xem các chương trình ưu đãi, coupon chiết khấu và mã vận chuyển đang áp dụng.'}
+          </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Thêm Mã Giảm Giá
-        </button>
+        {canWrite && (
+          <button
+            onClick={openCreate}
+            className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Thêm Mã Giảm Giá
+          </button>
+        )}
       </div>
 
       {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700 text-sm rounded">{error}</div>}
@@ -137,17 +145,17 @@ export default function AdminPromotionsPage() {
                 <th className="py-4 px-6 font-medium text-[#2C2C2C] text-center">Đã Dùng / Số Lượng</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Hạn Sử Dụng</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C] text-center">Trạng Thái</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>
+                {canWrite && <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-muted-foreground">Đang tải danh sách coupon...</td>
+                  <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Đang tải danh sách coupon...</td>
                 </tr>
               ) : coupons.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-muted-foreground">Không có mã giảm giá nào. Hãy tạo mã mới.</td>
+                  <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Không có mã giảm giá nào. Hãy tạo mã mới.</td>
                 </tr>
               ) : (
                 coupons.map((coupon) => {
@@ -182,33 +190,48 @@ export default function AdminPromotionsPage() {
                         {isExpired && <span className="text-[10px] block text-red-500">(Đã hết hạn)</span>}
                       </td>
                       <td className="py-4 px-6 text-center">
-                        <button
-                          onClick={() => handleToggleActive(coupon.id)}
-                          className={`px-2.5 py-0.5 text-xs font-semibold rounded-full cursor-pointer transition-colors ${
-                            coupon.active && !isExpired
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                          }`}
-                        >
-                          {coupon.active && !isExpired ? 'Đang chạy' : 'Tạm dừng'}
-                        </button>
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex gap-3 justify-end">
+                        {/* Nhân viên chỉ được xem nên ô trạng thái thành nhãn tĩnh. */}
+                        {canWrite ? (
                           <button
-                            onClick={() => openEdit(coupon)}
-                            className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
+                            onClick={() => handleToggleActive(coupon.id)}
+                            className={`px-2.5 py-0.5 text-xs font-semibold rounded-full cursor-pointer transition-colors ${
+                              coupon.active && !isExpired
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            }`}
                           >
-                            Sửa
+                            {coupon.active && !isExpired ? 'Đang chạy' : 'Tạm dừng'}
                           </button>
-                          <button
-                            onClick={() => handleDelete(coupon.id, coupon.code)}
-                            className="text-red-500 hover:underline text-xs font-semibold cursor-pointer"
+                        ) : (
+                          <span
+                            className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
+                              coupon.active && !isExpired
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
                           >
-                            Xóa
-                          </button>
-                        </div>
+                            {coupon.active && !isExpired ? 'Đang chạy' : 'Tạm dừng'}
+                          </span>
+                        )}
                       </td>
+                      {canWrite && (
+                        <td className="py-4 px-6 text-right">
+                          <div className="flex gap-3 justify-end">
+                            <button
+                              onClick={() => openEdit(coupon)}
+                              className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              onClick={() => handleDelete(coupon.id, coupon.code)}
+                              className="text-red-500 hover:underline text-xs font-semibold cursor-pointer"
+                            >
+                              Xóa
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )
                 })

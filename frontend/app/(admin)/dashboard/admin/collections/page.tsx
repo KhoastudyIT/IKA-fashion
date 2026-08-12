@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { getCollections, createCollection, updateCollection, deleteCollection, Collection } from '@/api'
 import { FolderKanban, Plus, Edit, Trash2, X, RefreshCw } from 'lucide-react'
 import ImageField from '@/components/ImageField'
+import { useAdminRole } from '@/lib/permissions'
 
 type FormState = {
   name: string
@@ -18,6 +19,7 @@ const emptyForm: FormState = {
 }
 
 export default function AdminCollectionsPage() {
+  const { canWrite } = useAdminRole()
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -98,15 +100,23 @@ export default function AdminCollectionsPage() {
       {/* Title Section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">Quản Lý Danh Mục</h1>
-          <p className="text-muted-foreground text-sm">Quản lý các danh mục sản phẩm thời trang (Collections) hiển thị trên hệ thống menu bán hàng.</p>
+          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">
+            {canWrite ? 'Quản Lý Danh Mục' : 'Danh Mục'}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {canWrite
+              ? 'Quản lý các danh mục sản phẩm thời trang (Collections) hiển thị trên hệ thống menu bán hàng.'
+              : 'Xem các danh mục sản phẩm thời trang đang hiển thị trên hệ thống menu bán hàng.'}
+          </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Thêm Danh Mục
-        </button>
+        {canWrite && (
+          <button
+            onClick={openCreate}
+            className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Thêm Danh Mục
+          </button>
+        )}
       </div>
 
       {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700 text-sm rounded">{error}</div>}
@@ -121,17 +131,17 @@ export default function AdminCollectionsPage() {
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Tên Danh Mục</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Slug</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C] text-center">Số Sản Phẩm</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>
+                {canWrite && <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-muted-foreground">Đang tải danh mục...</td>
+                  <td colSpan={canWrite ? 5 : 4} className="text-center py-12 text-muted-foreground">Đang tải danh mục...</td>
                 </tr>
               ) : collections.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-12 text-muted-foreground">Không có danh mục nào. Hãy tạo danh mục mới.</td>
+                  <td colSpan={canWrite ? 5 : 4} className="text-center py-12 text-muted-foreground">Không có danh mục nào. Hãy tạo danh mục mới.</td>
                 </tr>
               ) : (
                 collections.map((col) => (
@@ -142,26 +152,28 @@ export default function AdminCollectionsPage() {
                     <td className="py-4 px-6 text-[#2C2C2C] font-semibold">{col.name}</td>
                     <td className="py-4 px-6 text-muted-foreground code font-mono text-xs">{col.slug}</td>
                     <td className="py-4 px-6 text-center text-[#2C2C2C] font-medium">{col.productCount ?? 0}</td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex gap-3 justify-end">
-                        <button
-                          onClick={() => openEdit(col)}
-                          className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
-                        >
-                          Sửa
-                        </button>
-                        {col.slug !== 'ao-thun' && col.slug !== 'ao-polo' && col.slug !== 'quan' ? (
+                    {canWrite && (
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex gap-3 justify-end">
                           <button
-                            onClick={() => handleDelete(col)}
-                            className="text-red-500 hover:underline text-xs font-semibold cursor-pointer"
+                            onClick={() => openEdit(col)}
+                            className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer"
                           >
-                            Xóa
+                            Sửa
                           </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Mặc định</span>
-                        )}
-                      </div>
-                    </td>
+                          {col.slug !== 'ao-thun' && col.slug !== 'ao-polo' && col.slug !== 'quan' ? (
+                            <button
+                              onClick={() => handleDelete(col)}
+                              className="text-red-500 hover:underline text-xs font-semibold cursor-pointer"
+                            >
+                              Xóa
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Mặc định</span>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -1,26 +1,27 @@
 'use client'
 
 // =============================================================
-// Tài khoản admin chỉ làm việc trong /dashboard/admin.
+// Tài khoản quản trị (admin và nhân viên) chỉ làm việc trong /dashboard/admin.
 //
 // Mọi trang thuộc nhóm (client) — trang chủ, sản phẩm, giỏ hàng, tin nhắn của
-// khách — đều nằm sau lớp này, nên admin mở bất kỳ đường dẫn nào trong đó cũng
-// bị đẩy về dashboard quản trị.
+// khách — đều nằm sau lớp này, nên các tài khoản đó mở bất kỳ đường dẫn nào
+// trong đó cũng bị đẩy về dashboard quản trị.
 //
-// Đây chỉ là lớp chặn giao diện. Việc cấm admin đặt hàng / nhắn tin thật sự do
-// backend giữ: các router khách đã gắn authorize('customer') và trả 403.
+// Đây chỉ là lớp chặn giao diện. Việc cấm họ đặt hàng / nhắn tin như khách thật
+// sự do backend giữ: các router khách đã gắn authorize('customer') và trả 403.
 // =============================================================
 
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from '@/auth-client'
+import { isBackoffice } from '@/lib/permissions'
 
 export default function AdminAreaGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { data: session, isPending } = useSession()
 
-  const isAdmin = !isPending && session?.user.role === 'admin'
+  const isAdmin = !isPending && isBackoffice(session?.user.role)
 
   useEffect(() => {
     if (isAdmin) router.replace('/dashboard/admin')

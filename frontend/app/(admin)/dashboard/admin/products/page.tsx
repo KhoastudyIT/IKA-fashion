@@ -6,6 +6,7 @@ import {
   ApiProduct, Collection, ProductInput,
 } from '@/api'
 import ImageListField from '@/components/ImageListField'
+import { useAdminRole } from '@/lib/permissions'
 
 const csvToArr = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean)
 
@@ -24,6 +25,7 @@ const emptyForm: FormState = {
 }
 
 export default function AdminProductsPage() {
+  const { canWrite } = useAdminRole()
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
@@ -159,15 +161,23 @@ export default function AdminProductsPage() {
       {/* Title section */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">Quản Lý Sản Phẩm</h1>
-          <p className="text-muted-foreground text-sm">Xem, thêm, sửa đổi, cập nhật số lượng tồn kho hoặc xóa sản phẩm thời trang.</p>
+          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-1">
+            {canWrite ? 'Quản Lý Sản Phẩm' : 'Sản Phẩm'}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {canWrite
+              ? 'Xem, thêm, sửa đổi, cập nhật số lượng tồn kho hoặc xóa sản phẩm thời trang.'
+              : 'Xem danh sách sản phẩm thời trang, giá bán, ưu đãi và số lượng tồn kho.'}
+          </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap cursor-pointer"
-        >
-          + Thêm Sản Phẩm
-        </button>
+        {canWrite && (
+          <button
+            onClick={openCreate}
+            className="px-5 py-2.5 bg-[#2C2C2C] text-white hover:bg-[#D4AF37] font-medium rounded shadow-sm transition-colors whitespace-nowrap cursor-pointer"
+          >
+            + Thêm Sản Phẩm
+          </button>
+        )}
       </div>
 
       {error && <div className="bg-red-50 border-l-4 border-red-500 p-4 text-red-700 text-sm rounded">{error}</div>}
@@ -211,17 +221,17 @@ export default function AdminProductsPage() {
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Danh Mục</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Tồn Kho</th>
                 <th className="py-4 px-6 font-medium text-[#2C2C2C]">Đã Bán</th>
-                <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>
+                {canWrite && <th className="py-4 px-6 font-medium text-[#2C2C2C] text-right">Thao Tác</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">Đang tải sản phẩm...</td>
+                  <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Đang tải sản phẩm...</td>
                 </tr>
               ) : paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">Không tìm thấy sản phẩm nào khớp bộ lọc.</td>
+                  <td colSpan={canWrite ? 8 : 7} className="text-center py-12 text-muted-foreground">Không tìm thấy sản phẩm nào khớp bộ lọc.</td>
                 </tr>
               ) : (
                 paginatedProducts.map((product) => (
@@ -256,12 +266,14 @@ export default function AdminProductsPage() {
                       )}
                     </td>
                     <td className="py-4 px-6 text-muted-foreground">{product.sold}</td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex gap-3 justify-end">
-                        <button onClick={() => openEdit(product)} className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer">Sửa</button>
-                        <button onClick={() => handleDelete(product)} className="text-red-500 hover:underline text-xs font-semibold cursor-pointer">Xóa</button>
-                      </div>
-                    </td>
+                    {canWrite && (
+                      <td className="py-4 px-6 text-right">
+                        <div className="flex gap-3 justify-end">
+                          <button onClick={() => openEdit(product)} className="text-[#D4AF37] hover:underline text-xs font-semibold cursor-pointer">Sửa</button>
+                          <button onClick={() => handleDelete(product)} className="text-red-500 hover:underline text-xs font-semibold cursor-pointer">Xóa</button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

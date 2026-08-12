@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useSession, signOut } from '@/auth-client'
+import { isBackoffice, canAccessPath, ROLE_LABELS } from '@/lib/permissions'
 import { getProducts, getAdminOrders, getUnreadMessageCount } from '@/api'
 import {
   LayoutDashboard,
@@ -35,8 +36,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadMessages, setUnreadMessages] = useState(0)
 
+  const role = session?.user.role
+  const allowed = isBackoffice(role)
+
   useEffect(() => {
-    if (session && session.user.role === 'admin') {
+    if (allowed) {
       Promise.all([getProducts({ limit: 100 }), getAdminOrders()]).then(([prods, ords]) => {
         const list: Notification[] = []
         // Cảnh báo hết hàng
@@ -65,16 +69,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       // Load unread message count
       getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => {})
     }
-  }, [session])
+  }, [allowed])
 
   // Poll unread messages every 15s
   useEffect(() => {
-    if (!session || session.user.role !== 'admin') return
+    if (!allowed) return
     const interval = setInterval(() => {
       getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => {})
     }, 15000)
     return () => clearInterval(interval)
-  }, [session])
+  }, [allowed])
 
   useEffect(() => {
     if (isPending) return
@@ -82,12 +86,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.push('/auth/login')
       return
     }
-    if (session.user.role !== 'admin') {
+    if (!allowed) {
       router.push('/dashboard/customer')
+      return
     }
-  }, [session, isPending, router])
+    // Nhân viên gõ thẳng URL của mục dành riêng cho admin thì đẩy về tổng quan.
+    if (!canAccessPath(role, pathname)) {
+      router.replace('/dashboard/admin')
+    }
+  }, [session, isPending, allowed, role, pathname, router])
 
-  if (isPending || !session || session.user.role !== 'admin') {
+  if (isPending || !session || !allowed || !canAccessPath(role, pathname)) {
     return (
       <div className="min-h-screen bg-[#FFFBF7] flex items-center justify-center">
         <div className="text-center">
@@ -98,6 +107,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     )
   }
 
+  // Menu đầy đủ của admin; nhân viên chỉ thấy phần canAccessPath cho qua.
   const navItems = [
     { name: 'Bảng Điều Khiển', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Sản Phẩm', href: '/dashboard/admin/products', icon: ShoppingBag },
@@ -112,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Nhân Viên', href: '/dashboard/admin/staffs', icon: ShieldCheck },
     { name: 'Thống Kê', href: '/dashboard/admin/analytics', icon: BarChart3 },
     { name: 'Cài Đặt', href: '/dashboard/admin/settings', icon: Settings },
-  ]
+  ].filter((item) => canAccessPath(role, item.href))
 
   // Nav items that may carry a badge
   const navBadges: Record<string, number> = {
@@ -257,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="text-[#7A7A7A] text-sm mr-2">Xin chào,</span>
             <span className="text-[#2C2C2C] font-semibold text-sm">{session.user.name}</span>
             <span className="ml-2 bg-[#D4AF37]/15 text-[#D4AF37] text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded">
-              {session.user.role}
+              {ROLE_LABELS[session.user.role] ?? session.user.role}
             </span>
           </div>
 

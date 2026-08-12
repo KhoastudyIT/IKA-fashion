@@ -15,8 +15,10 @@ messageCustomerRouter.get('/:conversationId/messages', ctrl.getMessages);
 messageCustomerRouter.put('/:conversationId/read',     ctrl.markRead);
 
 // Admin — mount tại /api/v1/admin/messages
+// Nhân viên trả lời khách qua đúng router này; controller quy role staff về
+// 'admin' trước khi gọi service (xem message.controller.js).
 export const messageAdminRouter = Router();
-messageAdminRouter.use(authenticate, authorize('admin'));
+messageAdminRouter.use(authenticate, authorize('admin', 'staff'));
 messageAdminRouter.get('/conversations',              ctrl.listConversations);
 messageAdminRouter.get('/unread-count',               ctrl.getUnreadCount);
 messageAdminRouter.post('/',                          validate(sendMessageSchema), ctrl.sendMessage);

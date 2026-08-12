@@ -212,7 +212,7 @@ export const components = {
         email: { type: 'string', format: 'email', example: 'a@gmail.com' },
         phone: { type: 'string', nullable: true, example: '0901234567' },
         address: { type: 'string', nullable: true, example: '123 Lê Lợi, Quận 1, TP.HCM' },
-        role: { type: 'string', enum: ['customer', 'admin'], example: 'customer' },
+        role: { type: 'string', enum: ['customer', 'staff', 'admin'], example: 'customer' },
         isLocked: { type: 'boolean', example: false },
         createdAt: { type: 'string', format: 'date-time', example: '2026-06-16T10:00:00.000Z' },
       },
@@ -584,7 +584,22 @@ export const components = {
       type: 'object',
       required: ['role'],
       properties: {
-        role: { type: 'string', enum: ['customer', 'admin'], example: 'admin' },
+        role: { type: 'string', enum: ['customer', 'staff', 'admin'], example: 'staff' },
+      },
+    },
+    CreateUserBody: {
+      type: 'object',
+      required: ['name', 'email', 'password'],
+      properties: {
+        name: { type: 'string', minLength: 2, maxLength: 100, example: 'Trần Thu Hà' },
+        email: { type: 'string', format: 'email', example: 'ha.tran@ika.vn' },
+        password: { type: 'string', minLength: 6, maxLength: 100, example: 'nhanvien123' },
+        role: {
+          type: 'string',
+          enum: ['customer', 'staff', 'admin'],
+          default: 'staff',
+          example: 'staff',
+        },
       },
     },
   },

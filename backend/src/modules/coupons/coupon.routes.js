@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as ctrl from './coupon.controller.js';
 import { authenticate } from '../../middleware/authenticate.js';
-import { authorize } from '../../middleware/authorize.js';
+import { authorize, readOnly } from '../../middleware/authorize.js';
 import { validate } from '../../middleware/validate.js';
 import { applyCouponSchema, createCouponSchema, updateCouponSchema } from './coupon.schema.js';
 
@@ -10,8 +10,9 @@ export const couponCustomerRouter = Router();
 couponCustomerRouter.post('/apply', authenticate, authorize('customer'), validate(applyCouponSchema), ctrl.apply);
 
 // Admin quản lý mã giảm giá — mount tại /api/v1/admin/coupons
+// Nhân viên xem được danh sách mã, không tạo/sửa/xóa/bật-tắt được.
 export const couponAdminRouter = Router();
-couponAdminRouter.use(authenticate, authorize('admin'));
+couponAdminRouter.use(authenticate, authorize('admin', 'staff'), readOnly('staff'));
 couponAdminRouter.get('/',           ctrl.list);
 couponAdminRouter.post('/',          validate(createCouponSchema), ctrl.create);
 couponAdminRouter.put('/:id',        validate(updateCouponSchema), ctrl.update);

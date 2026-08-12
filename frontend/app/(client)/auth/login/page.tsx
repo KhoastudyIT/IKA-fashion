@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn } from '@/auth-client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { isBackoffice } from '@/lib/permissions'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export default function LoginPage() {
 
     try {
       const { user } = await signIn.email({ email, password })
-      router.push(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer')
+      router.push(isBackoffice(user.role) ? '/dashboard/admin' : '/dashboard/customer')
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       setError(msg || 'Email hoặc mật khẩu không đúng')

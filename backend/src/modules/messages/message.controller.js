@@ -1,4 +1,16 @@
 import * as svc from './message.service.js';
+import { isBackoffice } from '../../utils/roles.js';
+
+/**
+ * Quy vai trò của người gọi về đúng hai phía mà tầng tin nhắn hiểu.
+ *
+ * Nhân viên (staff) trả lời khách bằng chính luồng của admin, và cột
+ * messages.sender_role có CHECK ('customer','admin','ai') — nên staff phải
+ * được ghi nhận là 'admin', không đẩy thẳng req.user.role xuống service.
+ */
+function actorRole(req) {
+  return isBackoffice(req.user.role) ? 'admin' : 'customer';
+}
 
 /** GET /messages/conversations — Admin xem tất cả */
 export async function listConversations(_req, res) {
@@ -14,7 +26,7 @@ export async function getMyConversation(req, res) {
 
 /** GET /messages/:conversationId — Lấy tin nhắn của 1 conversation */
 export async function getMessages(req, res) {
-  const msgs = await svc.getMessages(req.params.conversationId, req.user.id, req.user.role);
+  const msgs = await svc.getMessages(req.params.conversationId, req.user.id, actorRole(req));
   res.json({ success: true, data: msgs });
 }
 
@@ -23,7 +35,7 @@ export async function sendMessage(req, res) {
   const { content, conversationId, productId } = req.body;
   const result = await svc.sendMessage({
     senderId: req.user.id,
-    senderRole: req.user.role,
+    senderRole: actorRole(req),
     content,
     conversationId,
     productId,
@@ -39,13 +51,13 @@ export async function toggleBot(req, res) {
 
 /** PUT /messages/:conversationId/read — Đánh dấu đã đọc */
 export async function markRead(req, res) {
-  const conv = await svc.markRead(req.params.conversationId, req.user.role);
+  const conv = await svc.markRead(req.params.conversationId, actorRole(req));
   res.json({ success: true, data: conv });
 }
 
 /** DELETE /messages/:id — Admin xóa tin nhắn */
 export async function deleteMessage(req, res) {
-  await svc.deleteMessage(req.params.id, req.user.role);
+  await svc.deleteMessage(req.params.id, actorRole(req));
   res.json({ success: true, message: 'Đã xóa tin nhắn' });
 }
 

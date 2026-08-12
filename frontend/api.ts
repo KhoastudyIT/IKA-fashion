@@ -256,8 +256,29 @@ export function updateOrderStatus(id: string, body: { status: string; paymentSta
   return getData(`/admin/orders/${id}/status`, { method: 'PUT', body, auth: true })
 }
 
+/**
+ * Danh sách tài khoản. Tài khoản khách hàng và tài khoản nội bộ là hai nhóm
+ * tách bạch, nên mỗi trang truyền đúng nhóm mình cần:
+ *   getAdminUsers(['customer'])       — trang Khách Hàng
+ *   getAdminUsers(['staff', 'admin']) — trang Nhân Viên
+ */
+export function getAdminUsers(roles?: string[]): Promise<ApiUser[]> {
+  const qs = roles?.length ? `?role=${roles.join(',')}` : ''
+  return getData(`/admin/users${qs}`, { auth: true })
+}
+
 export function getAdminCustomers(): Promise<ApiUser[]> {
-  return getData('/admin/users', { auth: true })
+  return getAdminUsers(['customer'])
+}
+
+/** Admin tạo thẳng tài khoản nội bộ. Bỏ trống `role` thì backend mặc định 'staff'. */
+export function createStaffAccount(body: {
+  name: string
+  email: string
+  password: string
+  role?: string
+}): Promise<ApiUser> {
+  return getData('/admin/users', { method: 'POST', body, auth: true })
 }
 
 export function deleteCustomer(id: string): Promise<void> {

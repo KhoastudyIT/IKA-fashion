@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from '@/auth-client'
 import { useShop } from '@/components/context/ShopContext'
 import { useSettings } from '@/components/context/SettingsContext'
+import { isBackoffice } from '@/lib/permissions'
 
 function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null
@@ -50,7 +51,7 @@ export default function Navigation() {
 
   const isActive = (path: string) => pathname === path
 
-  const dashboardHref = session?.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/customer'
+  const dashboardHref = isBackoffice(session?.user.role) ? '/dashboard/admin' : '/dashboard/customer'
 
   return (
     <div className="sticky top-0 z-50">

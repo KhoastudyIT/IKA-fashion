@@ -11,9 +11,10 @@ export const contactPublicRouter = Router();
 contactPublicRouter.post('/', validate(createContactSchema), contactController.create);
 
 // Admin — mount tại /api/v1/admin/contacts
+// Nhân viên được quản lý liên hệ như admin.
 // '/stats' phải đứng trước '/:id', không thì bị nuốt thành id.
 export const contactAdminRouter = Router();
-contactAdminRouter.use(authenticate, authorize('admin'));
+contactAdminRouter.use(authenticate, authorize('admin', 'staff'));
 contactAdminRouter.get('/stats',                                      contactController.stats);
 contactAdminRouter.get('/',      validateQuery(contactQuerySchema),   contactController.list);
 contactAdminRouter.get('/:id',                                        contactController.getOne);
