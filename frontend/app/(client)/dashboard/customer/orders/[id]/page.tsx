@@ -161,7 +161,7 @@ export default function OrderDetailPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '40px', height: '40px', border: '3px solid #E5DFD8', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#7A7A7A', fontSize: '14px' }}>Đang tải...</p>
+          <p style={{ color: '#7A7A7A', fontSize: '0.875rem' }}>Đang tải...</p>
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       </div>
@@ -172,8 +172,8 @@ export default function OrderDetailPage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '48px', marginBottom: '16px' }}>📦</p>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', color: '#2C2C2C', marginBottom: '8px' }}>Không tìm thấy đơn hàng</h1>
+          <p style={{ fontSize: '3rem', marginBottom: '16px' }}>📦</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', color: '#2C2C2C', marginBottom: '8px' }}>Không tìm thấy đơn hàng</h1>
           <Link href="/dashboard/customer/orders" style={{ color: '#D4AF37', textDecoration: 'none', fontWeight: 600 }}>
             ← Quay lại danh sách đơn hàng
           </Link>
@@ -194,7 +194,7 @@ export default function OrderDetailPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '14px' }} className="print:hidden">
+        <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '0.875rem' }} className="print:hidden">
           <ArrowLeft size={16} /> Đơn hàng của tôi
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -206,7 +206,7 @@ export default function OrderDetailPage() {
           >
             📄 {invoicing ? 'Đang tạo...' : 'Xuất Hóa Đơn'}
           </button>
-          <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
+          <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, background: status.bg, color: status.color }}>
             {status.label}
           </span>
         </div>
@@ -215,11 +215,11 @@ export default function OrderDetailPage() {
       <div>
         {/* Title */}
         <div style={{ marginBottom: '32px' }}>
-          <p style={{ fontSize: '12px', color: '#7A7A7A', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Mã đơn hàng</p>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
+          <p style={{ fontSize: '0.75rem', color: '#7A7A7A', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Mã đơn hàng</p>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.25rem', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
             #{order.id.slice(0, 8).toUpperCase()}
           </h1>
-          <p style={{ fontSize: '13px', color: '#9A9A9A', marginTop: '6px' }}>
+          <p style={{ fontSize: '0.8125rem', color: '#9A9A9A', marginTop: '6px' }}>
             <Clock size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
             Đặt lúc {new Date(order.createdAt).toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' })}
           </p>
@@ -228,7 +228,7 @@ export default function OrderDetailPage() {
         {/* Timeline */}
         {!isCancelled && (
           <div className="print:hidden" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8', marginBottom: '24px' }}>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600, color: '#2C2C2C', marginBottom: '24px' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '24px' }}>
               Trạng thái đơn hàng
             </h2>
             <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
@@ -250,13 +250,13 @@ export default function OrderDetailPage() {
                       background: done ? '#D4AF37' : '#FFFFFF',
                       border: `3px solid ${done ? '#D4AF37' : '#E5DFD8'}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '16px', boxShadow: active ? '0 0 0 6px rgba(212,175,55,0.15)' : 'none',
+                      fontSize: '1rem', boxShadow: active ? '0 0 0 6px rgba(212,175,55,0.15)' : 'none',
                       transition: 'all 0.4s',
                     }}>
                       {t.icon}
                     </div>
-                    <p style={{ margin: '8px 0 0', fontSize: '12px', fontWeight: active ? 700 : done ? 600 : 400, color: done ? '#2C2C2C' : '#9A9A9A', textAlign: 'center' }}>{t.label}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '10px', color: '#9A9A9A', textAlign: 'center' }}>{t.sub}</p>
+                    <p style={{ margin: '8px 0 0', fontSize: '0.75rem', fontWeight: active ? 700 : done ? 600 : 400, color: done ? '#2C2C2C' : '#9A9A9A', textAlign: 'center' }}>{t.label}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.625rem', color: '#9A9A9A', textAlign: 'center' }}>{t.sub}</p>
                   </div>
                 )
               })}
@@ -266,20 +266,20 @@ export default function OrderDetailPage() {
 
         {order.status === 'cancelled' && (
           <div style={{ background: '#fee2e2', borderRadius: '12px', padding: '20px', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ fontSize: '28px' }}>❌</span>
+            <span style={{ fontSize: '1.75rem' }}>❌</span>
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: '#991b1b' }}>Đơn hàng đã bị hủy</p>
-              <p style={{ margin: 0, fontSize: '13px', color: '#b91c1c' }}>Vui lòng liên hệ hỗ trợ nếu bạn có thắc mắc.</p>
+              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#b91c1c' }}>Vui lòng liên hệ hỗ trợ nếu bạn có thắc mắc.</p>
             </div>
           </div>
         )}
 
         {order.status === 'returned' && (
           <div style={{ background: '#ffedd5', borderRadius: '12px', padding: '20px', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ fontSize: '28px' }}>↩️</span>
+            <span style={{ fontSize: '1.75rem' }}>↩️</span>
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: '#9a3412' }}>Đơn hàng đã được trả</p>
-              <p style={{ margin: 0, fontSize: '13px', color: '#c2410c' }}>
+              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#c2410c' }}>
                 {order.paymentStatus === 'refunded'
                   ? 'Cửa hàng đã hoàn tiền cho đơn này.'
                   : 'Cửa hàng đã nhận lại hàng.'}
@@ -296,20 +296,20 @@ export default function OrderDetailPage() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
               <Undo2 size={17} style={{ color: '#D4AF37' }} />
-              <span style={{ fontWeight: 600, color: '#2C2C2C', fontSize: '14px' }}>
+              <span style={{ fontWeight: 600, color: '#2C2C2C', fontSize: '0.875rem' }}>
                 Yêu cầu {RETURN_TYPE_LABEL[rq.type].toLowerCase()}
               </span>
               <span style={{
-                padding: '3px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                padding: '3px 12px', borderRadius: '20px', fontSize: '0.6875rem', fontWeight: 700,
                 background: RETURN_TONE[rq.status].bg, color: RETURN_TONE[rq.status].color,
               }}>
                 {RETURN_STATUS_LABEL[rq.status]}
               </span>
-              <span style={{ fontSize: '12px', color: '#9A9A9A', marginLeft: 'auto' }}>
+              <span style={{ fontSize: '0.75rem', color: '#9A9A9A', marginLeft: 'auto' }}>
                 Gửi lúc {new Date(rq.createdAt).toLocaleString('vi-VN')}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '13px', color: '#7A7A7A', lineHeight: 1.6 }}>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: '#7A7A7A', lineHeight: 1.6 }}>
               <strong style={{ color: '#2C2C2C' }}>Lý do của bạn:</strong> {rq.reason}
             </p>
             {rq.images?.length > 0 && (
@@ -326,12 +326,12 @@ export default function OrderDetailPage() {
               </div>
             )}
             {rq.adminNote && (
-              <p style={{ margin: '10px 0 0', fontSize: '13px', color: '#7A7A7A', lineHeight: 1.6, background: '#F9F5F0', padding: '10px 12px', borderRadius: '8px' }}>
+              <p style={{ margin: '10px 0 0', fontSize: '0.8125rem', color: '#7A7A7A', lineHeight: 1.6, background: '#F9F5F0', padding: '10px 12px', borderRadius: '8px' }}>
                 <strong style={{ color: '#2C2C2C' }}>Phản hồi từ cửa hàng:</strong> {rq.adminNote}
               </p>
             )}
             {rq.status === 'rejected' && (
-              <p style={{ margin: '10px 0 0', fontSize: '12px', color: '#b91c1c' }}>
+              <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: '#b91c1c' }}>
                 Yêu cầu bị từ chối. Bạn có thể gửi lại nếu bổ sung được thông tin.
               </p>
             )}
@@ -346,10 +346,10 @@ export default function OrderDetailPage() {
             display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap',
           }}>
             <div style={{ flex: 1, minWidth: '220px' }}>
-              <p style={{ margin: 0, fontWeight: 600, color: '#2C2C2C', fontSize: '14px' }}>
+              <p style={{ margin: 0, fontWeight: 600, color: '#2C2C2C', fontSize: '0.875rem' }}>
                 Sản phẩm chưa vừa ý?
               </p>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#7A7A7A' }}>
+              <p style={{ margin: '4px 0 0', fontSize: '0.8125rem', color: '#7A7A7A' }}>
                 Bạn được trả hàng hoặc đổi mới trong {RETURN_WINDOW_DAYS} ngày kể từ khi nhận hàng.
               </p>
             </div>
@@ -358,7 +358,7 @@ export default function OrderDetailPage() {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
                 padding: '12px 24px', background: '#2C2C2C', color: '#FFFFFF',
-                border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                border: 'none', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
               }}
             >
               <Undo2 size={15} /> Yêu cầu trả / đổi hàng
@@ -368,7 +368,7 @@ export default function OrderDetailPage() {
 
         {windowClosed && (
           <div className="print:hidden" style={{ background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
-            <p style={{ margin: 0, fontSize: '13px', color: '#7A7A7A' }}>
+            <p style={{ margin: 0, fontSize: '0.8125rem', color: '#7A7A7A' }}>
               Đã quá {RETURN_WINDOW_DAYS} ngày kể từ khi đơn hoàn thành nên không còn yêu cầu trả/đổi được.
               Liên hệ cửa hàng nếu bạn cần hỗ trợ thêm.
             </p>
@@ -380,7 +380,7 @@ export default function OrderDetailPage() {
           <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
               <Package size={18} style={{ color: '#D4AF37' }} />
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>
                 Sản phẩm đã mua ({order.items.length})
               </h2>
             </div>
@@ -388,17 +388,17 @@ export default function OrderDetailPage() {
               {order.items.map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'center', paddingBottom: '16px', borderBottom: i < order.items.length - 1 ? '1px solid #F0EBE5' : 'none' }}>
                   <div style={{ width: '64px', height: '64px', background: '#F9F5F0', borderRadius: '8px', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {item.img ? <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '24px' }}>👕</span>}
+                    {item.img ? <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '1.5rem' }}>👕</span>}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{item.name}</p>
-                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#7A7A7A' }}>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#2C2C2C' }}>{item.name}</p>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#7A7A7A' }}>
                       Màu: {item.color} &nbsp;·&nbsp; Size: {item.size} &nbsp;·&nbsp; Số lượng: {item.quantity}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#2C2C2C' }}>{item.lineTotal.toLocaleString('vi-VN')}đ</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#9A9A9A' }}>{item.price.toLocaleString('vi-VN')} × {item.quantity}</p>
+                    <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, color: '#2C2C2C' }}>{item.lineTotal.toLocaleString('vi-VN')}đ</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.6875rem', color: '#9A9A9A' }}>{item.price.toLocaleString('vi-VN')} × {item.quantity}</p>
                   </div>
                 </div>
               ))}
@@ -412,7 +412,7 @@ export default function OrderDetailPage() {
               style={{
                 width: '100%', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 padding: '12px', border: '1.5px solid #2C2C2C', borderRadius: '8px', background: 'transparent',
-                fontSize: '13px', fontWeight: 600, color: '#2C2C2C', cursor: buyingAgain ? 'wait' : 'pointer', opacity: buyingAgain ? 0.7 : 1,
+                fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', cursor: buyingAgain ? 'wait' : 'pointer', opacity: buyingAgain ? 0.7 : 1,
               }}
             >
               <RotateCcw size={15} /> {buyingAgain ? 'Đang thêm...' : 'Mua lại đơn hàng'}
@@ -423,15 +423,15 @@ export default function OrderDetailPage() {
           <div className="print:w-full" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Order summary */}
             <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Tóm tắt đơn hàng</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9375rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Tóm tắt đơn hàng</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8125rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
                   <span>Tạm tính</span><span style={{ color: '#2C2C2C' }}>{order.totalPrice.toLocaleString('vi-VN')}đ</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
                   <span>Vận chuyển</span><span style={{ color: '#22c55e' }}>Miễn phí</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E5DFD8', paddingTop: '10px', fontWeight: 700, fontSize: '15px', color: '#2C2C2C' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E5DFD8', paddingTop: '10px', fontWeight: 700, fontSize: '0.9375rem', color: '#2C2C2C' }}>
                   <span>Tổng cộng</span><span style={{ color: '#D4AF37' }}>{order.totalPrice.toLocaleString('vi-VN')}đ</span>
                 </div>
               </div>
@@ -439,8 +439,8 @@ export default function OrderDetailPage() {
 
             {/* Shipping info */}
             <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Thông tin giao hàng</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: '#2C2C2C' }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9375rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Thông tin giao hàng</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.8125rem', color: '#2C2C2C' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <MapPin size={15} style={{ color: '#D4AF37', flexShrink: 0, marginTop: '2px' }} />
                   <span style={{ lineHeight: 1.6 }}>{order.shippingAddress}</span>
@@ -450,7 +450,7 @@ export default function OrderDetailPage() {
                   <a href={`tel:${order.phone}`} style={{ color: '#2C2C2C', textDecoration: 'none' }}>{order.phone}</a>
                 </div>
                 {order.notes && (
-                  <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#7A7A7A', lineHeight: 1.6 }}>
+                  <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '10px 12px', fontSize: '0.75rem', color: '#7A7A7A', lineHeight: 1.6 }}>
                     📝 {order.notes}
                   </div>
                 )}
@@ -460,7 +460,7 @@ export default function OrderDetailPage() {
             <Link href="/dashboard/customer/orders" className="print:hidden" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '12px', background: '#2C2C2C', color: '#FFFFFF',
-              borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 600,
+              borderRadius: '8px', textDecoration: 'none', fontSize: '0.8125rem', fontWeight: 600,
             }}>
               <ArrowLeft size={15} /> Tất cả đơn hàng
             </Link>
@@ -487,10 +487,10 @@ export default function OrderDetailPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '22px 32px', borderBottom: '1px solid #E5DFD8', flexShrink: 0 }}>
               <div>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '24px', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
                   Yêu Cầu Trả / Đổi Hàng
                 </h2>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#7A7A7A' }}>
+                <p style={{ margin: '4px 0 0', fontSize: '0.8125rem', color: '#7A7A7A' }}>
                   Đơn #{order.id.slice(0, 8).toUpperCase()} · áp dụng cho toàn bộ đơn
                 </p>
               </div>
@@ -501,12 +501,12 @@ export default function OrderDetailPage() {
 
             <div style={{ padding: '24px 32px', overflowY: 'auto' }}>
               {returnError && (
-                <p style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', marginBottom: '20px' }}>
+                <p style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', fontSize: '0.8125rem', marginBottom: '20px' }}>
                   {returnError}
                 </p>
               )}
 
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>
                 Bạn muốn làm gì?
               </label>
               <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
@@ -522,17 +522,17 @@ export default function OrderDetailPage() {
                       textAlign: 'left',
                     }}
                   >
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#2C2C2C' }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9375rem', color: '#2C2C2C' }}>
                       {RETURN_TYPE_LABEL[t]}
                     </p>
-                    <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#7A7A7A', lineHeight: 1.5 }}>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#7A7A7A', lineHeight: 1.5 }}>
                       {t === 'return' ? 'Gửi hàng về và nhận lại tiền' : 'Đổi sang sản phẩm cùng loại'}
                     </p>
                   </button>
                 ))}
               </div>
 
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>
                 Lý do *
               </label>
               <textarea
@@ -545,19 +545,19 @@ export default function OrderDetailPage() {
                 placeholder="Vd: Áo bị lỗi đường may ở tay phải, em muốn đổi sang chiếc khác."
                 style={{
                   width: '100%', padding: '14px 16px', borderRadius: '10px', border: '1px solid #E5DFD8',
-                  background: '#F9F5F0', fontSize: '14px', color: '#2C2C2C', resize: 'vertical',
+                  background: '#F9F5F0', fontSize: '0.875rem', color: '#2C2C2C', resize: 'vertical',
                   fontFamily: 'inherit', outline: 'none', lineHeight: 1.6,
                 }}
               />
-              <p style={{ margin: '8px 0 24px', fontSize: '12px', color: '#9A9A9A' }}>
+              <p style={{ margin: '8px 0 24px', fontSize: '0.75rem', color: '#9A9A9A' }}>
                 {reason.trim().length}/500 ký tự — mô tả càng rõ càng được xử lý nhanh (tối thiểu 10 ký tự).
               </p>
 
               {/* Ảnh đính kèm — cửa hàng đối chiếu với lý do trước khi duyệt */}
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#2C2C2C', marginBottom: '4px' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '4px' }}>
                 Ảnh sản phẩm * <span style={{ fontWeight: 400, color: '#9A9A9A' }}>(ít nhất {MIN_RETURN_IMAGES} ảnh)</span>
               </label>
-              <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#9A9A9A', lineHeight: 1.6 }}>
+              <p style={{ margin: '0 0 12px', fontSize: '0.75rem', color: '#9A9A9A', lineHeight: 1.6 }}>
                 Cần ít nhất {MIN_RETURN_IMAGES} ảnh để cửa hàng đối chiếu — nên có một ảnh toàn bộ sản phẩm
                 và một ảnh chụp cận chỗ lỗi. Tối đa {MAX_RETURN_IMAGES} ảnh, JPG/PNG/WEBP dưới 5MB.
               </p>
@@ -593,7 +593,7 @@ export default function OrderDetailPage() {
                     }}
                   >
                     <ImagePlus size={20} />
-                    <span style={{ fontSize: '11px', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.6875rem', fontWeight: 600 }}>
                       {uploading ? 'Đang tải...' : 'Thêm ảnh'}
                     </span>
                     <input
@@ -608,7 +608,7 @@ export default function OrderDetailPage() {
                 )}
               </div>
               <p style={{
-                margin: 0, fontSize: '12px', fontWeight: 600,
+                margin: 0, fontSize: '0.75rem', fontWeight: 600,
                 color: images.length < MIN_RETURN_IMAGES ? '#b45309' : '#15803d',
               }}>
                 {images.length < MIN_RETURN_IMAGES
@@ -623,7 +623,7 @@ export default function OrderDetailPage() {
                 disabled={sending || uploading || images.length < MIN_RETURN_IMAGES}
                 style={{
                   flex: 1, padding: '15px', background: '#2C2C2C', color: '#FFFFFF', border: 'none',
-                  borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+                  borderRadius: '10px', fontSize: '0.875rem', fontWeight: 700,
                   cursor: sending || uploading || images.length < MIN_RETURN_IMAGES ? 'not-allowed' : 'pointer',
                   opacity: sending || uploading || images.length < MIN_RETURN_IMAGES ? 0.5 : 1,
                 }}
@@ -638,7 +638,7 @@ export default function OrderDetailPage() {
                 onClick={() => setShowReturn(false)}
                 style={{
                   padding: '15px 32px', background: 'transparent', color: '#2C2C2C',
-                  border: '1px solid #E5DFD8', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                  border: '1px solid #E5DFD8', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Hủy

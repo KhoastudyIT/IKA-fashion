@@ -59,7 +59,7 @@
   color-scheme: light;
   /* Bề rộng tối đa của khung trang khách — dùng cho cả thanh điều hướng, nội
      dung và chân trang. Đổi một số này là cả trang rộng/hẹp theo. */
-  --site-max: 1760px;
+  --site-max: 1920px;
   /* Trần riêng cho khu quản trị, rộng hơn trang khách vì toàn bảng nhiều cột.
      Trên màn 1920px trở xuống trần này không chạm tới nên nội dung vẫn trải
      hết chỗ trống; chỉ màn siêu rộng mới bị chặn lại cho đỡ hẫng. */

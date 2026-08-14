@@ -35,13 +35,13 @@ function OrderSuccessContent() {
           </div>
         </div>
 
-        <p style={{ fontSize: '12px', letterSpacing: '4px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
+        <p style={{ fontSize: '0.75rem', letterSpacing: '4px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 600 }}>
           Thành công
         </p>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '12px', lineHeight: 1.2 }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.25rem', fontWeight: 700, color: '#2C2C2C', marginBottom: '12px', lineHeight: 1.2 }}>
           Đặt hàng thành công!
         </h1>
-        <p style={{ fontSize: '16px', color: '#7A7A7A', marginBottom: '32px', lineHeight: 1.7 }}>
+        <p style={{ fontSize: '1rem', color: '#7A7A7A', marginBottom: '32px', lineHeight: 1.7 }}>
           Cảm ơn bạn đã tin tưởng IKA Fashion. Đơn hàng của bạn đang được xử lý và sẽ được giao sớm nhất có thể.
         </p>
 
@@ -53,14 +53,14 @@ function OrderSuccessContent() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #F0EBE5' }}>
             <div>
-              <p style={{ fontSize: '11px', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Mã đơn hàng</p>
-              <p style={{ fontSize: '16px', fontWeight: 700, color: '#2C2C2C', fontFamily: 'monospace', margin: 0 }}>
+              <p style={{ fontSize: '0.6875rem', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Mã đơn hàng</p>
+              <p style={{ fontSize: '1rem', fontWeight: 700, color: '#2C2C2C', fontFamily: 'monospace', margin: 0 }}>
                 #{orderId.slice(0, 8).toUpperCase()}
               </p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '11px', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Tổng tiền</p>
-              <p style={{ fontSize: '20px', fontWeight: 800, color: '#D4AF37', margin: 0 }}>
+              <p style={{ fontSize: '0.6875rem', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 4px' }}>Tổng tiền</p>
+              <p style={{ fontSize: '1.25rem', fontWeight: 800, color: '#D4AF37', margin: 0 }}>
                 {total.toLocaleString('vi-VN')}đ
               </p>
             </div>
@@ -80,11 +80,11 @@ function OrderSuccessContent() {
                   background: t.done ? 'rgba(212,175,55,0.15)' : '#F9F5F0',
                   border: t.done ? '2px solid #D4AF37' : '2px solid #E5DFD8',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '16px',
+                  fontSize: '1rem',
                 }}>{t.icon}</div>
                 <div>
-                  <p style={{ margin: 0, fontWeight: t.done ? 600 : 400, fontSize: '14px', color: t.done ? '#2C2C2C' : '#7A7A7A' }}>{t.label}</p>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#9A9A9A' }}>{t.sub}</p>
+                  <p style={{ margin: 0, fontWeight: t.done ? 600 : 400, fontSize: '0.875rem', color: t.done ? '#2C2C2C' : '#7A7A7A' }}>{t.label}</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#9A9A9A' }}>{t.sub}</p>
                 </div>
               </div>
             ))}
@@ -96,15 +96,15 @@ function OrderSuccessContent() {
           <div style={{ background: '#F9F5F0', borderRadius: '10px', padding: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <Package size={18} style={{ color: '#D4AF37', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#2C2C2C' }}>Email xác nhận</p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#7A7A7A', lineHeight: 1.5 }}>Đã gửi đến email của bạn</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: '#2C2C2C' }}>Email xác nhận</p>
+              <p style={{ margin: 0, fontSize: '0.6875rem', color: '#7A7A7A', lineHeight: 1.5 }}>Đã gửi đến email của bạn</p>
             </div>
           </div>
           <div style={{ background: '#F9F5F0', borderRadius: '10px', padding: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
             <MapPin size={18} style={{ color: '#D4AF37', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <p style={{ margin: 0, fontSize: '12px', fontWeight: 600, color: '#2C2C2C' }}>Theo dõi đơn</p>
-              <p style={{ margin: 0, fontSize: '11px', color: '#7A7A7A', lineHeight: 1.5 }}>Dashboard của bạn</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: '#2C2C2C' }}>Theo dõi đơn</p>
+              <p style={{ margin: 0, fontSize: '0.6875rem', color: '#7A7A7A', lineHeight: 1.5 }}>Dashboard của bạn</p>
             </div>
           </div>
         </div>
@@ -114,20 +114,20 @@ function OrderSuccessContent() {
           <Link href="/dashboard/customer/orders" style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '13px 28px', background: '#2C2C2C', color: '#FFFFFF',
-            borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
+            borderRadius: '8px', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600,
           }}>
             <Package size={16} /> Xem đơn hàng
           </Link>
           <Link href="/products" style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '13px 28px', border: '1.5px solid #2C2C2C', color: '#2C2C2C',
-            borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: 600,
+            borderRadius: '8px', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600,
           }}>
             <RotateCcw size={16} /> Tiếp tục mua sắm
           </Link>
         </div>
 
-        <p style={{ marginTop: '24px', fontSize: '13px', color: '#9A9A9A' }}>
+        <p style={{ marginTop: '24px', fontSize: '0.8125rem', color: '#9A9A9A' }}>
           Câu hỏi? Liên hệ <a href="mailto:hello@ikafashion.com" style={{ color: '#D4AF37' }}>hello@ikafashion.com</a>
         </p>
       </div>

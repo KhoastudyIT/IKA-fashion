@@ -112,13 +112,13 @@ export default function KhuyenMaiPage() {
           />
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)' }} />
           <div style={{ position: 'relative', zIndex: 1, maxWidth: '700px', margin: '0 auto' }}>
-            <p style={{ color: '#D4AF37', fontSize: '13px', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
+            <p style={{ color: '#D4AF37', fontSize: '0.8125rem', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '16px', fontFamily: 'Inter, sans-serif' }}>
               ⚡ Chương Trình Đặc Biệt
             </p>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.15, marginBottom: '16px' }}>
               Ưu Đãi &amp; Giảm Giá
             </h1>
-            <p style={{ color: '#aaa', fontSize: '17px', marginBottom: '36px', lineHeight: 1.7 }}>
+            <p style={{ color: '#aaa', fontSize: '1.0625rem', marginBottom: '36px', lineHeight: 1.7 }}>
               {maxDiscount > 0 ? (
                 <>Giảm đến <span style={{ color: '#D4AF37', fontWeight: 700 }}>{maxDiscount}%</span> — số suất có hạn!</>
               ) : (
@@ -129,18 +129,18 @@ export default function KhuyenMaiPage() {
             {/* Countdown — chỉ hiện khi có chương trình đặt hạn kết thúc */}
             {timeLeft && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '40px', flexWrap: 'wrap' }}>
-                <span style={{ color: '#D4AF37', fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase' }}>Kết thúc sau</span>
+                <span style={{ color: '#D4AF37', fontSize: '0.8125rem', letterSpacing: '2px', textTransform: 'uppercase' }}>Kết thúc sau</span>
                 {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((val, i) => (
                   <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ background: '#D4AF37', color: '#1a1a1a', fontWeight: 800, fontSize: '28px', borderRadius: '8px', padding: '8px 14px', fontFamily: 'monospace', minWidth: '56px', textAlign: 'center', display: 'inline-block' }}>{val}</span>
-                    {i < 2 && <span style={{ color: '#D4AF37', fontSize: '24px', fontWeight: 800 }}>:</span>}
+                    <span style={{ background: '#D4AF37', color: '#1a1a1a', fontWeight: 800, fontSize: '1.75rem', borderRadius: '8px', padding: '8px 14px', fontFamily: 'monospace', minWidth: '56px', textAlign: 'center', display: 'inline-block' }}>{val}</span>
+                    {i < 2 && <span style={{ color: '#D4AF37', fontSize: '1.5rem', fontWeight: 800 }}>:</span>}
                   </span>
                 ))}
               </div>
             )}
 
             {cards.length > 0 && (
-              <a href="#sale-products" style={{ display: 'inline-block', padding: '14px 40px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', textDecoration: 'none', fontSize: '14px', letterSpacing: '2px', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+              <a href="#sale-products" style={{ display: 'inline-block', padding: '14px 40px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', textDecoration: 'none', fontSize: '0.875rem', letterSpacing: '2px', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
@@ -160,10 +160,10 @@ export default function KhuyenMaiPage() {
               { icon: '🚚', label: 'Miễn phí vận chuyển', value: 'Đơn từ 500K' },
             ].map((stat, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '28px' }}>{stat.icon}</span>
+                <span style={{ fontSize: '1.75rem' }}>{stat.icon}</span>
                 <div>
-                  <p style={{ fontWeight: 800, fontSize: '20px', color: '#D4AF37', margin: 0, fontFamily: "'Playfair Display', serif" }}>{stat.value}</p>
-                  <p style={{ fontSize: '12px', color: '#7A7A7A', margin: 0 }}>{stat.label}</p>
+                  <p style={{ fontWeight: 800, fontSize: '1.25rem', color: '#D4AF37', margin: 0, fontFamily: "'Playfair Display', serif" }}>{stat.value}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#7A7A7A', margin: 0 }}>{stat.label}</p>
                 </div>
               </div>
             ))}
@@ -173,7 +173,7 @@ export default function KhuyenMaiPage() {
         {/* Products Grid */}
         <section id="sale-products" style={{ padding: '72px 24px', maxWidth: 'var(--site-max)', margin: '0 auto' }}>
           {error && (
-            <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', color: '#b91c1c', fontSize: '14px', borderRadius: '4px', marginBottom: '32px' }}>
+            <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', color: '#b91c1c', fontSize: '0.875rem', borderRadius: '4px', marginBottom: '32px' }}>
               {error}
             </div>
           )}
@@ -182,11 +182,11 @@ export default function KhuyenMaiPage() {
             <p style={{ textAlign: 'center', color: '#7A7A7A', padding: '48px 0' }}>Đang tải chương trình ưu đãi...</p>
           ) : cards.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '64px 24px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '8px' }}>
-              <p style={{ fontSize: '40px', margin: 0 }}>🕗</p>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: '#2C2C2C', margin: '12px 0 8px' }}>
+              <p style={{ fontSize: '2.5rem', margin: 0 }}>🕗</p>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.375rem', color: '#2C2C2C', margin: '12px 0 8px' }}>
                 Hiện chưa có chương trình ưu đãi nào
               </h3>
-              <p style={{ color: '#7A7A7A', fontSize: '14px', margin: 0 }}>
+              <p style={{ color: '#7A7A7A', fontSize: '0.875rem', margin: 0 }}>
                 Các đợt Flash Sale sẽ xuất hiện tại đây ngay khi bắt đầu. Ghé lại sau nhé!
               </p>
             </div>
@@ -218,7 +218,7 @@ export default function KhuyenMaiPage() {
                       fontWeight: 600,
                       borderRadius: '4px',
                       background: 'transparent',
-                      fontSize: '13px',
+                      fontSize: '0.8125rem',
                       letterSpacing: '2px',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
@@ -228,9 +228,9 @@ export default function KhuyenMaiPage() {
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#2C2C2C' }}
                   >
                     {showAll ? (
-                      <><span style={{ fontSize: '16px', lineHeight: 1 }}>↑</span> Thu Gọn</>
+                      <><span style={{ fontSize: '1rem', lineHeight: 1 }}>↑</span> Thu Gọn</>
                     ) : (
-                      <><span style={{ fontSize: '16px', lineHeight: 1 }}>+</span> Xem Thêm {hiddenCount} Sản Phẩm</>
+                      <><span style={{ fontSize: '1rem', lineHeight: 1 }}>+</span> Xem Thêm {hiddenCount} Sản Phẩm</>
                     )}
                   </button>
                 </div>
@@ -248,9 +248,9 @@ export default function KhuyenMaiPage() {
             </p>
             <form style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }} onSubmit={e => e.preventDefault()}>
               <input type="email" placeholder="Nhập email của bạn..." required
-                style={{ flex: '1', minWidth: '220px', padding: '12px 18px', borderRadius: '4px', border: '1px solid #444', background: '#2a2a2a', color: '#fff', fontSize: '14px', outline: 'none' }}
+                style={{ flex: '1', minWidth: '220px', padding: '12px 18px', borderRadius: '4px', border: '1px solid #444', background: '#2a2a2a', color: '#fff', fontSize: '0.875rem', outline: 'none' }}
               />
-              <button type="submit" style={{ padding: '12px 28px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', border: 'none', fontSize: '13px', letterSpacing: '1px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <button type="submit" style={{ padding: '12px 28px', background: '#D4AF37', color: '#1a1a1a', fontWeight: 700, borderRadius: '4px', border: 'none', fontSize: '0.8125rem', letterSpacing: '1px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 Đăng Ký Ngay
               </button>
             </form>
