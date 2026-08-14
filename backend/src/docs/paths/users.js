@@ -24,7 +24,40 @@ export const userPaths = {
         queryParam('limit', { type: 'integer', default: 10, maximum: 100 }, 'Số tài khoản mỗi trang'),
       ],
       responses: {
-        200: okPaginated('Tài khoản khớp bộ lọc, mới nhất lên trước', 'User'),
+        200: {
+          description: 'Tài khoản khớp bộ lọc, mới nhất lên trước',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  data: { type: 'array', items: { $ref: '#/components/schemas/User' } },
+                  pagination: {
+                    type: 'object',
+                    properties: {
+                      page: { type: 'integer', example: 1 },
+                      limit: { type: 'integer', example: 10 },
+                      total: { type: 'integer', example: 58 },
+                      totalPages: { type: 'integer', example: 6 },
+                    },
+                  },
+                  summary: {
+                    type: 'object',
+                    description:
+                      'Đếm trên TOÀN BỘ tài khoản khớp bộ lọc vai trò (không phải trang đang '
+                      + 'xem), cho các thẻ ở đầu trang Khách Hàng / Nhân Viên.',
+                    properties: {
+                      total: { type: 'integer', example: 58 },
+                      active: { type: 'integer', example: 55 },
+                      locked: { type: 'integer', example: 3 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         ...adminErrors,
         422: validationError,
       },

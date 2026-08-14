@@ -104,8 +104,17 @@ export async function listUsers({ role: roles, page = 1, limit = 10 } = {}) {
     whereSql = ` WHERE role = ANY($${params.length})`;
   }
 
-  const countRes = await db.query(`SELECT COUNT(*)::int AS total FROM users${whereSql}`, params);
-  const total = countRes.rows[0].total;
+  // Đếm trên TOÀN BỘ tài khoản khớp bộ lọc vai trò, không phải trang đang xem —
+  // các thẻ ở đầu trang Khách Hàng / Nhân Viên cần số của cả hệ thống.
+  const summaryRes = await db.query(
+    `SELECT COUNT(*)::int                                 AS total,
+            COUNT(*) FILTER (WHERE is_locked = false)::int AS active,
+            COUNT(*) FILTER (WHERE is_locked)::int         AS locked
+     FROM users${whereSql}`,
+    params,
+  );
+  const summary = summaryRes.rows[0];
+  const total = summary.total;
 
   const listParams = [...params, limit, (page - 1) * limit];
   const res = await db.query(
@@ -118,6 +127,7 @@ export async function listUsers({ role: roles, page = 1, limit = 10 } = {}) {
   return {
     data: res.rows,
     pagination: { total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) },
+    summary,
   };
 }
 

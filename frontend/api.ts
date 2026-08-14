@@ -417,9 +417,19 @@ export interface AdminUserQuery {
  *   getAdminUsers({ roles: ['customer'] })        — trang Khách Hàng
  *   getAdminUsers({ roles: ['staff', 'admin'] })  — trang Nhân Viên
  */
+/**
+ * Thống kê kèm theo danh sách tài khoản — tính trên TOÀN BỘ tài khoản khớp bộ
+ * lọc vai trò, không phải trang đang xem.
+ */
+export interface AdminUserSummary {
+  total: number
+  active: number
+  locked: number
+}
+
 export async function getAdminUsers(
   query: AdminUserQuery = {},
-): Promise<{ items: ApiUser[]; pagination: any }> {
+): Promise<{ items: ApiUser[]; pagination: any; summary: AdminUserSummary }> {
   const { roles, ...rest } = query
   const qs = new URLSearchParams()
   Object.entries(rest).forEach(([k, v]) => {
@@ -428,12 +438,16 @@ export async function getAdminUsers(
   if (roles?.length) qs.set('role', roles.join(','))
   const json = await request(`/admin/users${qs.toString() ? `?${qs}` : ''}`, { auth: true })
   const items = json.data?.data || json.data || []
-  return { items: items as ApiUser[], pagination: json.data?.pagination || json.pagination || {} }
+  return {
+    items: items as ApiUser[],
+    pagination: json.data?.pagination || json.pagination || {},
+    summary: json.summary ?? { total: 0, active: 0, locked: 0 },
+  }
 }
 
 export function getAdminCustomers(
   query: Omit<AdminUserQuery, 'roles'> = {},
-): Promise<{ items: ApiUser[]; pagination: any }> {
+): Promise<{ items: ApiUser[]; pagination: any; summary: AdminUserSummary }> {
   return getAdminUsers({ ...query, roles: ['customer'] })
 }
 
