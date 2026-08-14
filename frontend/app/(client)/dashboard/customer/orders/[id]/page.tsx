@@ -7,8 +7,9 @@ import { useSession } from '@/auth-client'
 import {
   getMyOrders, createReturnRequest, canRequestReturn, uploadImage, validateImageFile,
   RETURN_WINDOW_DAYS, RETURN_TYPE_LABEL, RETURN_STATUS_LABEL,
-  Order, ReturnType,
+  Order, ReturnType, addToCart
 } from '@/api'
+import { useShop } from '@/components/context/ShopContext'
 import { ArrowLeft, Package, MapPin, Phone, Clock, RotateCcw, Undo2, X, ImagePlus } from 'lucide-react'
 
 // Khớp với ràng buộc ở backend (return.schema.js).
@@ -45,6 +46,29 @@ export default function OrderDetailPage() {
   const { data: session, isPending } = useSession()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
+  const { refreshCounts } = useShop()
+  const [buyingAgain, setBuyingAgain] = useState(false)
+
+  const handleBuyAgain = async () => {
+    if (!order) return
+    setBuyingAgain(true)
+    try {
+      for (const item of order.items) {
+        await addToCart({
+          productId: item.productId || (item as any).product_id,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+        })
+      }
+      await refreshCounts()
+      router.push('/dashboard/customer/cart')
+    } catch (error: any) {
+      console.error('Lỗi khi mua lại:', error)
+      alert(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng')
+      setBuyingAgain(false)
+    }
+  }
 
   // Yêu cầu trả / đổi
   const [showReturn, setShowReturn] = useState(false)
@@ -156,12 +180,21 @@ export default function OrderDetailPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '14px' }}>
+        <Link href="/dashboard/customer/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#7A7A7A', textDecoration: 'none', fontSize: '14px' }} className="print:hidden">
           <ArrowLeft size={16} /> Đơn hàng của tôi
         </Link>
-        <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
-          {status.label}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => window.print()}
+            className="print:hidden px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-sm rounded hover:bg-[#E5DFD8] transition-colors cursor-pointer"
+            style={{ color: '#2C2C2C', fontWeight: 600 }}
+          >
+            📄 Xuất Hóa Đơn
+          </button>
+          <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
+            {status.label}
+          </span>
+        </div>
       </div>
 
       <div>
@@ -179,7 +212,7 @@ export default function OrderDetailPage() {
 
         {/* Timeline */}
         {!isCancelled && (
-          <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8', marginBottom: '24px' }}>
+          <div className="print:hidden" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8', marginBottom: '24px' }}>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600, color: '#2C2C2C', marginBottom: '24px' }}>
               Trạng thái đơn hàng
             </h2>
@@ -242,7 +275,7 @@ export default function OrderDetailPage() {
 
         {/* Trạng thái yêu cầu trả / đổi */}
         {rq && (
-          <div style={{
+          <div className="print:hidden" style={{
             background: '#FFFFFF', border: '1px solid #E5DFD8', borderRadius: '12px',
             padding: '20px', marginBottom: '24px',
           }}>
@@ -292,7 +325,7 @@ export default function OrderDetailPage() {
 
         {/* Nút gửi yêu cầu */}
         {canRequest && (
-          <div style={{
+          <div className="print:hidden" style={{
             background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '12px',
             padding: '20px', marginBottom: '24px',
             display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap',
@@ -319,7 +352,7 @@ export default function OrderDetailPage() {
         )}
 
         {windowClosed && (
-          <div style={{ background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
+          <div className="print:hidden" style={{ background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px' }}>
             <p style={{ margin: 0, fontSize: '13px', color: '#7A7A7A' }}>
               Đã quá {RETURN_WINDOW_DAYS} ngày kể từ khi đơn hoàn thành nên không còn yêu cầu trả/đổi được.
               Liên hệ cửa hàng nếu bạn cần hỗ trợ thêm.
@@ -327,9 +360,9 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+        <div className="print:block print:w-full print:max-w-none print:p-0" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
           {/* Products */}
-          <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8' }}>
+          <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
               <Package size={18} style={{ color: '#D4AF37' }} />
               <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>
@@ -357,19 +390,24 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Reorder CTA */}
-            <Link href="/products" style={{
-              marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              padding: '12px', border: '1.5px solid #2C2C2C', borderRadius: '8px',
-              textDecoration: 'none', fontSize: '13px', fontWeight: 600, color: '#2C2C2C',
-            }}>
-              <RotateCcw size={15} /> Mua thêm sản phẩm
-            </Link>
+            <button
+              onClick={handleBuyAgain}
+              disabled={buyingAgain}
+              className="print:hidden"
+              style={{
+                width: '100%', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '12px', border: '1.5px solid #2C2C2C', borderRadius: '8px', background: 'transparent',
+                fontSize: '13px', fontWeight: 600, color: '#2C2C2C', cursor: buyingAgain ? 'wait' : 'pointer', opacity: buyingAgain ? 0.7 : 1,
+              }}
+            >
+              <RotateCcw size={15} /> {buyingAgain ? 'Đang thêm...' : 'Mua lại đơn hàng'}
+            </button>
           </div>
 
           {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="print:w-full" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Order summary */}
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
+            <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Tóm tắt đơn hàng</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
@@ -385,7 +423,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Shipping info */}
-            <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
+            <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '15px', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Thông tin giao hàng</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', color: '#2C2C2C' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
@@ -404,7 +442,7 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <Link href="/dashboard/customer/orders" style={{
+            <Link href="/dashboard/customer/orders" className="print:hidden" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               padding: '12px', background: '#2C2C2C', color: '#FFFFFF',
               borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 600,

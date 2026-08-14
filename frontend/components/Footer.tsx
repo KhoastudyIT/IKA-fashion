@@ -79,7 +79,7 @@ export default function Footer() {
   }
 
   return (
-    <footer style={{
+    <footer className="print:hidden" style={{
       background: 'linear-gradient(180deg, #1C1C1C 0%, #141414 100%)',
       color: '#E8E2DA',
       fontFamily: 'Inter, sans-serif',

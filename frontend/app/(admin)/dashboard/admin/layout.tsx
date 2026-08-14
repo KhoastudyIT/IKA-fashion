@@ -144,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-[#FFFBF7] flex flex-col md:flex-row">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#2C2C2C] text-white border-r border-[#E5DFD8]">
+      <aside className="hidden md:flex flex-col w-64 bg-[#2C2C2C] text-white border-r border-[#E5DFD8] print:hidden">
         <div className="h-16 flex items-center px-6 border-b border-[#3D3D3D]">
           <Link href="/dashboard/admin">
             <img src="/icon.svg" alt="IKA Fashion" className="h-10 w-auto object-contain" />
@@ -190,7 +190,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Header - Mobile */}
-      <header className="md:hidden h-16 bg-[#2C2C2C] text-white flex justify-between items-center px-4 border-b border-[#3D3D3D] sticky top-0 z-50">
+      <header className="md:hidden h-16 bg-[#2C2C2C] text-white flex justify-between items-center px-4 border-b border-[#3D3D3D] sticky top-0 z-50 print:hidden">
         <Link href="/dashboard/admin">
           <img src="/icon.svg" alt="IKA Fashion" className="h-9 w-auto object-contain" />
         </Link>
@@ -267,7 +267,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         {/* Top Header - Desktop */}
-        <header className="hidden md:flex h-16 bg-white border-b border-[#E5DFD8] justify-between items-center px-8 sticky top-0 z-30">
+        <header className="hidden md:flex h-16 bg-white border-b border-[#E5DFD8] justify-between items-center px-8 sticky top-0 z-30 print:hidden">
           <div className="flex items-center">
             <span className="text-[#7A7A7A] text-sm mr-2">Xin chào,</span>
             <span className="text-[#2C2C2C] font-semibold text-sm">{session.user.name}</span>
