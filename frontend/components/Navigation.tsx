@@ -54,7 +54,7 @@ export default function Navigation() {
   const dashboardHref = isBackoffice(session?.user.role) ? '/dashboard/admin' : '/dashboard/customer'
 
   return (
-    <div className="sticky top-0 z-50">
+    <div className="sticky top-0 z-50 print:hidden">
       {/* Announcement Bar */}
       {announcementVisible && (
         <div style={{
@@ -126,27 +126,6 @@ export default function Navigation() {
                 SẢN PHẨM
               </Link>
               <Link
-                href="/about"
-                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/about') ? 'text-accent' : 'text-foreground hover:text-accent'
-                  }`}
-              >
-                VỀ CHÚNG TÔI
-              </Link>
-              <Link
-                href="/contact"
-                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/contact') ? 'text-accent' : 'text-foreground hover:text-accent'
-                  }`}
-              >
-                LIÊN HỆ
-              </Link>
-              <Link
-                href="/tin-tuc"
-                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/tin-tuc') ? 'text-accent' : 'text-foreground hover:text-accent'
-                  }`}
-              >
-                TIN TỨC
-              </Link>
-              <Link
                 href="/khuyen-mai"
                 className={`font-sans text-sm tracking-wide transition-all relative group flex items-center gap-1 ${isActive('/khuyen-mai')
                     ? 'text-accent font-semibold'
@@ -161,6 +140,27 @@ export default function Navigation() {
                   className={`absolute -bottom-1 left-0 h-px bg-accent transition-all duration-300 ${isActive('/khuyen-mai') ? 'w-full' : 'w-0 group-hover:w-full'
                     }`}
                 />
+              </Link>
+              <Link
+                href="/about"
+                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/about') ? 'text-accent' : 'text-foreground hover:text-accent'
+                  }`}
+              >
+                VỀ CHÚNG TÔI
+              </Link>
+              <Link
+                href="/tin-tuc"
+                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/tin-tuc') ? 'text-accent' : 'text-foreground hover:text-accent'
+                  }`}
+              >
+                TIN TỨC
+              </Link>
+              <Link
+                href="/contact"
+                className={`font-sans text-sm tracking-wide transition-colors ${isActive('/contact') ? 'text-accent' : 'text-foreground hover:text-accent'
+                  }`}
+              >
+                LIÊN HỆ
               </Link>
             </div>
 
