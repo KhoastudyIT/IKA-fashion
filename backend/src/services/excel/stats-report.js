@@ -96,18 +96,27 @@ export function buildStatsWorkbook(data, meta = {}) {
     + (meta.exportedBy ? ` bởi ${meta.exportedBy}` : '');
   s1.getCell('A3').font = { color: { argb: MUTED }, size: 10 };
 
+  // Ghi rõ cách tính ngay đầu báo cáo: người đọc file không có ngữ cảnh của
+  // trang quản trị, thấy số lệch với sổ sách là dễ nghi ngờ cả bản báo cáo.
+  s1.mergeCells('A4:B4');
+  s1.getCell('A4').value = 'Doanh thu chỉ tính đơn ĐÃ HOÀN THÀNH (không gồm đơn hủy, đơn trả và đơn chưa giao xong).';
+  s1.getCell('A4').font = { color: { argb: MUTED }, size: 10, italic: true };
+
   // Định dạng gắn ngay vào từng chỉ tiêu thay vì liệt kê địa chỉ ô: thêm bớt
   // một dòng ở đây không kéo theo việc sửa lại danh sách ô bên dưới.
   const metrics = [
-    { label: 'Doanh thu trong kỳ', value: data.summary.revenue, money: true, strong: true },
-    { label: 'Số đơn trong kỳ', value: data.summary.orders },
+    { label: 'Doanh thu trong kỳ (đơn hoàn thành)', value: data.summary.revenue, money: true, strong: true },
     { label: 'Giá trị đơn trung bình', value: data.summary.avgOrderValue, money: true },
+    { label: 'Tiền chờ thu (đơn chưa giao xong)', value: data.summary.pendingRevenue, money: true },
     { label: 'Số sản phẩm đã bán', value: data.summary.itemsSold },
+    { label: 'Số đơn trong kỳ', value: data.summary.orders },
     { label: 'Đơn hoàn thành', value: data.summary.completedOrders },
+    { label: 'Đơn đang xử lý', value: data.summary.pendingOrders },
     { label: 'Đơn bị hủy', value: data.summary.cancelledOrders },
+    { label: 'Đơn khách trả lại', value: data.summary.returnedOrders },
     { label: 'Khách hàng mới trong kỳ', value: data.summary.newCustomers },
     null,   // dòng trống ngăn khối "trong kỳ" với khối số liệu toàn thời gian
-    { label: 'Tổng doanh thu', value: data.summary.totalRevenue, money: true },
+    { label: 'Tổng doanh thu (toàn thời gian)', value: data.summary.totalRevenue, money: true },
     { label: 'Tổng số đơn hàng', value: data.summary.totalOrders },
     { label: 'Tổng số sản phẩm đang bán', value: data.summary.totalProducts },
     { label: 'Sản phẩm sắp hết hàng (< 10)', value: data.summary.lowStockCount },

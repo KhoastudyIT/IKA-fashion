@@ -16,7 +16,9 @@ export const statsPaths = {
         'Cùng bộ dữ liệu với file Excel: chỉ số tổng hợp, doanh thu theo ngày, sản phẩm bán '
         + 'chạy, danh sách đơn, đơn theo trạng thái, doanh thu theo danh mục, khách mua nhiều '
         + 'nhất, yêu cầu trả/đổi và hàng sắp hết.\n\n'
-        + 'Đơn `cancelled` và `returned` không tính vào doanh thu.',
+        + 'Doanh thu chỉ tính đơn `completed` (cửa hàng thu tiền khi giao). Tiền của đơn '
+        + '`pending` / `confirmed` / `shipped` nằm ở `summary.pendingRevenue`; đơn `cancelled` '
+        + 'và `returned` không tính.',
       security: bearer,
       parameters: rangeParams,
       responses: {

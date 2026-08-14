@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { getAdminOrders, updateOrderStatus, openOrderInvoice, Order } from '@/api'
+import { getAdminOrders, updateOrderStatus, openOrderInvoice, AdminOrderSummary, Order } from '@/api'
 import { Receipt, Search, Eye, RefreshCw, X, Printer } from 'lucide-react'
 import AdminPagination from '@/components/ui/AdminPagination'
 
@@ -13,7 +13,8 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
+  // Thống kê do backend tính trên toàn bộ đơn khớp bộ lọc.
+  const [stats, setStats] = useState<AdminOrderSummary>({ total: 0, pending: 0, completed: 0, revenue: 0 })
 
   // Từ khóa đã "chốt" để gọi API — tách khỏi ô nhập để không bắn request mỗi lần gõ.
   const [appliedSearch, setAppliedSearch] = useState('')
@@ -54,10 +55,10 @@ export default function AdminOrdersPage() {
         page: currentPage,
         limit: 15,
       })
-      const { items: data, pagination } = res
+      const { items: data, pagination, summary } = res
       setOrders(data ?? [])
       setTotalPages(pagination?.totalPages ?? 1)
-      setTotal(pagination?.total ?? (data?.length || 0))
+      setStats(summary)
     } catch (err: any) {
       setError(err.message || 'Lỗi tải đơn hàng')
     } finally {
@@ -136,17 +137,6 @@ export default function AdminOrdersPage() {
   // giờ tra ra.
   const filteredOrders = orders
 
-  // Thống kê nhanh đơn hàng (từ trang hiện tại)
-  const stats = {
-    total,
-    pending:   orders.filter((o) => o.status === 'pending').length,
-    completed: orders.filter((o) => o.status === 'completed').length,
-    // Đơn đã hủy và đơn khách trả lại (đã hoàn tiền) đều không tính doanh thu.
-    revenue: orders
-      .filter((o) => o.status !== 'cancelled' && o.status !== 'returned')
-      .reduce((sum, o) => sum + o.totalPrice, 0),
-  }
-
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -181,7 +171,7 @@ export default function AdminOrdersPage() {
           <p className="text-2xl font-heading font-semibold text-[#2C2C2C] text-green-600">{stats.completed}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Doanh Thu (Không hủy)</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Doanh Thu (đơn hoàn thành)</p>
           <p className="text-2xl font-heading font-semibold text-[#D4AF37]">{stats.revenue.toLocaleString()} đ</p>
         </div>
       </div>
@@ -291,7 +281,7 @@ export default function AdminOrdersPage() {
         {/* Pagination */}
         <div className="border-t border-[#E5DFD8] bg-[#F9F5F0] px-6">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Tổng {total} đơn hàng</span>
+            <span className="text-xs text-muted-foreground">Tổng {stats.total} đơn hàng</span>
             <AdminPagination currentPage={currentPage} totalPages={totalPages} />
           </div>
         </div>

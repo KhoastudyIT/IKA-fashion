@@ -207,13 +207,27 @@ export async function listAllOrders({ status, search, page = 1, limit = 15 } = {
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  const countRes = await db.query(
-    `SELECT COUNT(*)::int AS total
+  // Thống kê tính trên TOÀN BỘ đơn khớp bộ lọc, không phải trang đang xem —
+  // các thẻ ở đầu trang quản lý đơn mà chỉ cộng 15 dòng của trang thì vừa sai
+  // vừa nhảy số mỗi lần lật trang.
+  //
+  // Doanh thu chỉ tính đơn đã hoàn thành: cửa hàng thu tiền khi giao nên đơn
+  // chưa giao xong chưa mang lại đồng nào. Cùng định nghĩa với trang Tổng Quan
+  // (modules/stats/stats.service.js) để hai nơi không lệch nhau.
+  const summaryRes = await db.query(
+    `SELECT COUNT(*)::int                                            AS total,
+            COUNT(*) FILTER (WHERE o.status = 'pending')::int        AS pending,
+            COUNT(*) FILTER (WHERE o.status = 'completed')::int      AS completed,
+            COALESCE(SUM(o.total_price)
+                     FILTER (WHERE o.status = 'completed'), 0)::bigint AS revenue
      FROM orders o LEFT JOIN users u ON u.id = o.user_id
      ${whereSql}`,
     params,
   );
-  const total = countRes.rows[0].total;
+  const summaryRow = summaryRes.rows[0];
+  const summary = { ...summaryRow, revenue: Number(summaryRow.revenue) };
+
+  const total = summary.total;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const listParams = [...params, limit, (page - 1) * limit];
@@ -223,7 +237,7 @@ export async function listAllOrders({ status, search, page = 1, limit = 15 } = {
     listParams,
   );
 
-  return { data: res.rows, pagination: { page, limit, total, totalPages } };
+  return { data: res.rows, pagination: { page, limit, total, totalPages }, summary };
 }
 
 export async function updateOrderStatus(id, { status, paymentStatus }) {

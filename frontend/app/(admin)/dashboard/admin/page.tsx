@@ -157,7 +157,8 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-2">Tổng Quan</h1>
           <p className="text-muted-foreground text-sm">
-            Tổng quan cửa hàng và báo cáo bán hàng của IKA Fashion — số liệu tính trên toàn bộ đơn trong kỳ.
+            Tổng quan cửa hàng và báo cáo bán hàng của IKA Fashion. Doanh thu tính trên đơn đã hoàn thành;
+            đơn chưa giao xong nằm ở mục “Tiền chờ thu”.
           </p>
         </div>
         <span className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -302,7 +303,7 @@ export default function AdminDashboard() {
             <p className="text-2xl font-heading font-semibold text-green-600">
               {loading || !summary ? '...' : `${vnd(summary.totalRevenue)} đ`}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">Không tính đơn hủy và đơn đã trả</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Chỉ tính đơn đã hoàn thành</p>
           </div>
         </div>
       </div>
@@ -320,7 +321,16 @@ export default function AdminDashboard() {
             {loading || !summary ? '...' : `${vnd(summary.revenue)} đ`}
           </p>
           <p className="text-[10px] text-muted-foreground mt-1">
-            Trung bình {summary ? vnd(summary.avgOrderValue) : 0} đ / đơn
+            {summary ? summary.completedOrders : 0} đơn hoàn thành · TB {summary ? vnd(summary.avgOrderValue) : 0} đ/đơn
+          </p>
+        </div>
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tiền chờ thu</p>
+          <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
+            {loading || !summary ? '...' : `${vnd(summary.pendingRevenue)} đ`}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {summary ? summary.pendingOrders : 0} đơn chưa giao xong, chưa tính vào doanh thu
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
@@ -333,21 +343,13 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đơn hoàn thành</p>
-          <p className="text-2xl font-heading font-semibold text-blue-600">
-            {loading || !summary ? '...' : `${summary.completedOrders} đơn`}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Trên {summary ? summary.orders : 0} đơn đặt trong kỳ
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tỷ lệ hủy đơn</p>
           <p className="text-2xl font-heading font-semibold text-red-600">
             {loading || !summary ? '...' : `${cancelRate}%`}
           </p>
           <p className="text-[10px] text-muted-foreground mt-1">
-            {summary ? summary.cancelledOrders : 0} đơn bị hủy
+            {summary ? summary.cancelledOrders : 0} đơn hủy · {summary ? summary.returnedOrders : 0} đơn trả hàng
+            {' '}trên {summary ? summary.orders : 0} đơn đặt
           </p>
         </div>
       </div>
@@ -357,7 +359,9 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 lg:col-span-2 space-y-4 print:break-inside-avoid print:shadow-none">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-heading font-semibold text-[#2C2C2C]">Xu Hướng Doanh Thu</h3>
-            <span className="text-xs text-muted-foreground">Rê chuột lên biểu đồ để xem chi tiết từng ngày</span>
+            <span className="text-xs text-muted-foreground">
+              Đơn đã hoàn thành · rê chuột để xem chi tiết từng ngày
+            </span>
           </div>
 
           {loading ? (

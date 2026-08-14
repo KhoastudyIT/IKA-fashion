@@ -367,16 +367,31 @@ export interface AdminOrderQuery {
   limit?: number
 }
 
+/**
+ * Thống kê kèm theo danh sách đơn — tính trên TOÀN BỘ đơn khớp bộ lọc, không
+ * phải trang đang xem. `revenue` chỉ gồm đơn đã hoàn thành, giống trang Tổng Quan.
+ */
+export interface AdminOrderSummary {
+  total: number
+  pending: number
+  completed: number
+  revenue: number
+}
+
 export async function getAdminOrders(
   query: AdminOrderQuery = {},
-): Promise<{ items: Order[]; pagination: any }> {
+): Promise<{ items: Order[]; pagination: any; summary: AdminOrderSummary }> {
   const qs = new URLSearchParams()
   Object.entries(query).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
   })
   const json = await request(`/admin/orders${qs.toString() ? `?${qs}` : ''}`, { auth: true })
   const items = json.data?.data || json.data || []
-  return { items: items as Order[], pagination: json.data?.pagination || json.pagination || {} }
+  return {
+    items: items as Order[],
+    pagination: json.data?.pagination || json.pagination || {},
+    summary: json.summary ?? { total: 0, pending: 0, completed: 0, revenue: 0 },
+  }
 }
 
 export function updateOrderStatus(id: string, body: { status: string; paymentStatus?: string }): Promise<Order> {
@@ -1045,19 +1060,29 @@ export function flashStatus(fs: FlashSale, now = Date.now()): { label: string; t
 // đang xem như cách tính tay từ /admin/orders trước đây.
 
 export interface StatsSummary {
-  /** Doanh thu trong kỳ — không tính đơn đã hủy và đơn đã trả hàng. */
+  /**
+   * Doanh thu trong kỳ = tiền THỰC THU, chỉ tính đơn đã hoàn thành. Cửa hàng
+   * thu tiền khi giao nên đơn chưa giao xong chưa mang lại đồng nào.
+   */
   revenue: number
   orders: number
   cancelledOrders: number
   completedOrders: number
+  returnedOrders: number
+  /** Tiền của đơn đã đặt nhưng chưa giao xong — chưa tính vào `revenue`. */
+  pendingRevenue: number
+  pendingOrders: number
+  /** Số món đã bán, cũng chỉ tính trên đơn đã hoàn thành. */
   itemsSold: number
   newCustomers: number
+  /** Doanh thu chia cho số đơn đã hoàn thành. */
   avgOrderValue: number
   // Số liệu toàn thời gian, không đổi theo kỳ báo cáo
   totalProducts: number
   lowStockCount: number
   totalCustomers: number
   totalOrders: number
+  /** Doanh thu toàn thời gian, cũng chỉ tính đơn đã hoàn thành. */
   totalRevenue: number
 }
 

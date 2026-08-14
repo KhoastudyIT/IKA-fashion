@@ -1,8 +1,18 @@
 import db from '../../db/index.js';
 
-// Đơn bị hủy và đơn khách đã trả lại không được tính là doanh thu — dùng chung
-// một định nghĩa ở mọi truy vấn dưới đây để các sheet trong báo cáo không đá nhau.
-const REVENUE_STATUS = `o.status NOT IN ('cancelled', 'returned')`;
+// Doanh thu = tiền THỰC THU, tức chỉ đơn đã hoàn thành.
+//
+// Cửa hàng thu tiền khi giao (COD) nên đơn còn ở 'pending' / 'confirmed' /
+// 'shipped' chưa mang lại đồng nào — gộp chúng vào doanh thu là thổi phồng con
+// số và sẽ tụt xuống mỗi khi khách hủy. Đơn 'cancelled' và 'returned' đương
+// nhiên không tính. Phần tiền đang chờ được báo riêng ở `pendingRevenue`.
+//
+// Dùng chung một định nghĩa cho mọi truy vấn dưới đây để các thẻ trên trang
+// Tổng Quan và các sheet trong file Excel không đá nhau.
+const REVENUE_STATUS = `o.status = 'completed'`;
+
+// Đơn đã đặt, chưa hủy, chưa giao xong — tiền còn nằm ở dạng "sẽ thu".
+const PENDING_STATUS = `o.status IN ('pending', 'confirmed', 'shipped')`;
 
 // Ngưỡng cảnh báo tồn kho, khớp với con số hiện trên bảng điều khiển.
 const LOW_STOCK_THRESHOLD = 10;
@@ -27,6 +37,14 @@ async function getSummary(from, to) {
         WHERE o.created_at >= $1 AND o.created_at < $2 AND ${REVENUE_STATUS})                  AS "itemsSold",
        (SELECT COUNT(*)::int
         FROM users WHERE role = 'customer' AND created_at >= $1 AND created_at < $2)           AS "newCustomers",
+       -- Tiền của các đơn đã đặt nhưng chưa giao xong: chưa vào doanh thu, nhưng
+       -- người quản lý cần thấy để biết còn bao nhiêu đang trên đường.
+       (SELECT COALESCE(SUM(o.total_price), 0)::bigint
+        FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND ${PENDING_STATUS})   AS "pendingRevenue",
+       (SELECT COUNT(*)::int
+        FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND ${PENDING_STATUS})   AS "pendingOrders",
+       (SELECT COUNT(*)::int
+        FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND o.status = 'returned') AS "returnedOrders",
        (SELECT COUNT(*)::int FROM products)                                                     AS "totalProducts",
        (SELECT COUNT(*)::int FROM products WHERE stock < $3)                                    AS "lowStockCount",
        (SELECT COUNT(*)::int FROM users WHERE role = 'customer')                                AS "totalCustomers",
@@ -41,13 +59,15 @@ async function getSummary(from, to) {
   // pg trả bigint dạng chuỗi để không mất độ chính xác; số tiền của cửa hàng
   // còn xa giới hạn Number nên ép về số cho tầng trên khỏi phải xử lý.
   const revenue = Number(row.revenue);
-  const paidOrders = row.orders - row.cancelledOrders;
 
   return {
     ...row,
     revenue,
+    pendingRevenue: Number(row.pendingRevenue),
     totalRevenue: Number(row.totalRevenue),
-    avgOrderValue: paidOrders > 0 ? Math.round(revenue / paidOrders) : 0,
+    // Chia cho đúng số đơn đã góp vào `revenue`, không thì "giá trị đơn trung
+    // bình" là tiền của đơn hoàn thành chia cho cả những đơn chưa thu tiền.
+    avgOrderValue: row.completedOrders > 0 ? Math.round(revenue / row.completedOrders) : 0,
   };
 }
 
@@ -72,16 +92,36 @@ async function getRevenueByDay(from, to) {
   return res.rows.map((r) => ({ ...r, revenue: Number(r.revenue) }));
 }
 
+// Mã giảm giá được ghi ở cấp ĐƠN (orders.discount), không chia sẵn xuống từng
+// dòng hàng. Nếu lấy thẳng oi.price * quantity thì tổng doanh thu theo sản phẩm
+// sẽ lớn hơn doanh thu của đơn đúng bằng số tiền giảm — hai chỗ trong cùng một
+// báo cáo đá nhau. Vì vậy phân bổ tiền giảm cho từng dòng theo tỉ trọng của
+// dòng đó trong đơn; tổng lại đúng bằng orders.total_price (chênh vài đồng do
+// làm tròn từng dòng).
+const LINE_REVENUE = `
+  oi.price * oi.quantity
+  * (1 - COALESCE(o.discount, 0)::numeric / NULLIF(s.subtotal, 0))
+`;
+
+// Tổng tiền hàng của mỗi đơn trước khi trừ mã giảm giá.
+const ORDER_SUBTOTAL_JOIN = `
+  JOIN (
+    SELECT order_id, SUM(price * quantity) AS subtotal
+    FROM order_items GROUP BY order_id
+  ) s ON s.order_id = o.id
+`;
+
 /** Sản phẩm bán chạy trong kỳ, kèm tồn kho hiện tại để biết có cần nhập thêm. */
 async function getTopProducts(from, to, limit = 20) {
   const res = await db.query(
     `SELECT oi.name,
             COALESCE(c.name, p.collection, '—')  AS collection,
             SUM(oi.quantity)::int                AS sold,
-            SUM(oi.price * oi.quantity)::bigint  AS revenue,
+            ROUND(SUM(${LINE_REVENUE}))::bigint  AS revenue,
             COALESCE(MAX(p.stock), 0)::int       AS stock
      FROM order_items oi
      JOIN orders o       ON o.id = oi.order_id
+     ${ORDER_SUBTOTAL_JOIN}
      LEFT JOIN products p    ON p.id = oi.product_id
      LEFT JOIN collections c ON c.slug = p.collection
      WHERE o.created_at >= $1 AND o.created_at < $2 AND ${REVENUE_STATUS}
@@ -130,9 +170,10 @@ async function getRevenueByCollection(from, to) {
   const res = await db.query(
     `SELECT COALESCE(c.name, p.collection, '—') AS collection,
             SUM(oi.quantity)::int               AS sold,
-            SUM(oi.price * oi.quantity)::bigint AS revenue
+            ROUND(SUM(${LINE_REVENUE}))::bigint AS revenue
      FROM order_items oi
      JOIN orders o           ON o.id = oi.order_id
+     ${ORDER_SUBTOTAL_JOIN}
      LEFT JOIN products p    ON p.id = oi.product_id
      LEFT JOIN collections c ON c.slug = p.collection
      WHERE o.created_at >= $1 AND o.created_at < $2 AND ${REVENUE_STATUS}
