@@ -129,7 +129,7 @@ export default function CustomerDashboard() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <span
-                      className={`text-[11px] font-medium px-2 py-1 rounded border ${
+                      className={`text-[0.6875rem] font-medium px-2 py-1 rounded border ${
                         STATUS_STYLE[order.status] ?? 'bg-secondary text-muted-foreground border-border'
                       }`}
                     >

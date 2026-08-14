@@ -57,15 +57,15 @@ export default function ProductCard({
 
         {/* Badges: Flash sale > giảm giá thường > badge tùy chỉnh */}
         {isFlashSale ? (
-          <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none flex items-center gap-1">
+          <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-orange-500 to-red-600 text-white text-[0.625rem] font-bold px-2 py-0.5 rounded shadow pointer-events-none flex items-center gap-1">
             <Zap size={10} fill="currentColor" /> FLASH SALE{discount > 0 ? ` -${discount}%` : ''}
           </div>
         ) : discount > 0 ? (
-          <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none">
+          <div className="absolute top-2 left-2 z-10 bg-red-600 text-white text-[0.625rem] font-bold px-2 py-0.5 rounded shadow pointer-events-none">
             -{discount}%
           </div>
         ) : badge ? (
-          <div className="absolute top-2 left-2 z-10 bg-foreground text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded shadow pointer-events-none">
+          <div className="absolute top-2 left-2 z-10 bg-foreground text-primary-foreground text-[0.625rem] font-bold px-2 py-0.5 rounded shadow pointer-events-none">
             {badge}
           </div>
         ) : null}
@@ -84,7 +84,7 @@ export default function ProductCard({
               </div>
             ) : null}
             {product.stock <= 0 && product.stock !== undefined && (
-              <div className="absolute top-2 right-2 bg-destructive text-white px-2 py-0.5 text-[10px] font-semibold rounded pointer-events-none">
+              <div className="absolute top-2 right-2 bg-destructive text-white px-2 py-0.5 text-[0.625rem] font-semibold rounded pointer-events-none">
                 Hết hàng
               </div>
             )}
@@ -111,11 +111,11 @@ export default function ProductCard({
                 )}
               </div>
               {isFlashSale && product.flashRemaining != null && (
-                <p className="text-[10px] font-medium text-orange-600">
+                <p className="text-[0.625rem] font-medium text-orange-600">
                   Chỉ còn {product.flashRemaining} suất giá flash
                 </p>
               )}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <div className="flex items-center gap-1 text-[0.625rem] text-muted-foreground">
                 <span className="text-accent">★ {product.rating}</span>
                 <span>· Đã bán {sold.toLocaleString('vi-VN')}</span>
               </div>

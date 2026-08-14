@@ -12,7 +12,6 @@ import {
   FolderKanban,
   Receipt,
   Users,
-  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -111,8 +110,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Menu đầy đủ của admin; nhân viên chỉ thấy phần canAccessPath cho qua.
+  // Không còn mục "Thống Kê" riêng — báo cáo đã nằm trong Tổng Quan.
   const navItems = [
-    { name: 'Bảng Điều Khiển', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Tổng Quan', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Sản Phẩm', href: '/dashboard/admin/products', icon: ShoppingBag },
     { name: 'Danh Mục', href: '/dashboard/admin/collections', icon: FolderKanban },
     { name: 'Đơn Hàng', href: '/dashboard/admin/orders', icon: Receipt },
@@ -125,7 +125,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Flash Sale', href: '/dashboard/admin/flash-sales', icon: Zap },
     { name: 'Tin Tức', href: '/dashboard/admin/news', icon: Newspaper },
     { name: 'Nhân Viên', href: '/dashboard/admin/staffs', icon: ShieldCheck },
-    { name: 'Thống Kê', href: '/dashboard/admin/analytics', icon: BarChart3 },
     { name: 'Cài Đặt', href: '/dashboard/admin/settings', icon: Settings },
   ].filter((item) => canAccessPath(role, item.href))
 
@@ -169,7 +168,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <Icon className="w-5 h-5 shrink-0" />
                 <span className="flex-1">{item.name}</span>
                 {badge > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  <span className="bg-red-500 text-white text-[0.625rem] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {badge}
                   </span>
                 )}
@@ -242,7 +241,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Icon className="w-5 h-5 shrink-0" />
                     <span className="flex-1">{item.name}</span>
                     {badge > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="bg-red-500 text-white text-[0.625rem] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                         {badge}
                       </span>
                     )}
@@ -271,7 +270,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center">
             <span className="text-[#7A7A7A] text-sm mr-2">Xin chào,</span>
             <span className="text-[#2C2C2C] font-semibold text-sm">{session.user.name}</span>
-            <span className="ml-2 bg-[#D4AF37]/15 text-[#D4AF37] text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded">
+            <span className="ml-2 bg-[#D4AF37]/15 text-[#D4AF37] text-[0.625rem] uppercase font-bold tracking-wider px-2 py-0.5 rounded">
               {ROLE_LABELS[session.user.role] ?? session.user.role}
             </span>
           </div>
@@ -286,7 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <Bell className="w-5 h-5" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[0.625rem] font-bold rounded-full flex items-center justify-center border-2 border-white">
                     {notifications.length}
                   </span>
                 )}
@@ -297,7 +296,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-[#E5DFD8] rounded-lg shadow-lg z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="bg-[#F9F5F0] px-4 py-3 border-b border-[#E5DFD8] flex justify-between items-center">
                     <span className="font-heading font-semibold text-sm text-[#2C2C2C]">Thông Báo Hệ Thống</span>
-                    <span className="text-[10px] bg-[#D4AF37] text-white px-2 py-0.5 rounded font-bold">{notifications.length} mới</span>
+                    <span className="text-[0.625rem] bg-[#D4AF37] text-white px-2 py-0.5 rounded font-bold">{notifications.length} mới</span>
                   </div>
                   <div className="max-h-64 overflow-y-auto divide-y divide-[#E5DFD8]">
                     {notifications.length === 0 ? (
@@ -306,7 +305,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       notifications.map((n) => (
                         <div key={n.id} className="p-3 hover:bg-[#F9F5F0]/50 transition-colors">
                           <p className="text-xs text-[#2C2C2C] font-medium leading-relaxed">{n.text}</p>
-                          <span className="text-[9px] text-muted-foreground block mt-1">
+                          <span className="text-[0.5625rem] text-muted-foreground block mt-1">
                             {new Date(n.date).toLocaleDateString('vi-VN')}
                           </span>
                         </div>
@@ -320,12 +319,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Content Wrapper — trần rộng 1600px thay cho max-w-7xl (1280px).
-            Sidebar đã chiếm 256px nên ở màn 1920px, trần cũ để thừa ~320px lề
-            trống hai bên trong khi các bảng dữ liệu lại phải cuộn ngang.
-            Vẫn giữ trần để trên màn siêu rộng dòng bảng không kéo dài quá cỡ. */}
-        <div className="flex-1 px-4 py-6 md:p-8">
-          <div className="max-w-[1600px] mx-auto">
+        {/* Content Wrapper — trần lấy từ --admin-max, rộng hơn trang khách vì
+            khu quản trị toàn bảng nhiều cột. Màn 1920px trở xuống không chạm
+            trần nên vẫn trải hết chỗ trống. */}
+        <div className="flex-1 px-4 py-6 md:px-6 md:py-8">
+          <div className="max-w-[var(--admin-max)] mx-auto">
             {children}
           </div>
         </div>

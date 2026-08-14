@@ -117,7 +117,7 @@ export default function ImageField({
                 alt="Xem trước"
                 className={`w-full h-full ${isSquare ? 'object-contain p-2' : 'object-cover'}`}
               />
-              <span className="absolute right-1.5 bottom-1.5 inline-flex items-center gap-1 bg-black/60 text-white px-2 py-0.5 rounded-full text-[10px] font-medium pointer-events-none">
+              <span className="absolute right-1.5 bottom-1.5 inline-flex items-center gap-1 bg-black/60 text-white px-2 py-0.5 rounded-full text-[0.625rem] font-medium pointer-events-none">
                 <ZoomIn className="w-3 h-3" /> Phóng to
               </span>
             </>

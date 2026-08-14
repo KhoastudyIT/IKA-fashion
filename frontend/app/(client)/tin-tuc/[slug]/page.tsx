@@ -82,7 +82,7 @@ export default function NewsDetailPage() {
             </Link>
             <div className="flex items-center gap-3 mb-3 flex-wrap">
               {article.category && (
-                <span className="text-[11px] font-semibold tracking-widest text-accent uppercase">
+                <span className="text-[0.6875rem] font-semibold tracking-widest text-accent uppercase">
                   {article.category.name}
                 </span>
               )}
@@ -137,7 +137,7 @@ export default function NewsDetailPage() {
                     )}
                   </div>
                   <div className="py-4 pr-4 min-w-0 flex flex-col justify-center">
-                    <span className="text-[10px] font-semibold tracking-widest text-accent uppercase">
+                    <span className="text-[0.625rem] font-semibold tracking-widest text-accent uppercase">
                       {p.category?.name ?? 'TIN TỨC'}
                     </span>
                     <h3 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-accent transition-colors mt-1">

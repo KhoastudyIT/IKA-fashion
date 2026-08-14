@@ -177,11 +177,11 @@ export default function AdminReturnsPage() {
                   <tr key={r.id} className="border-b border-[#E5DFD8] last:border-none hover:bg-[#F9F5F0]/30 transition-colors align-top">
                     <td className="py-4 px-6">
                       <p className="font-medium text-[#2C2C2C]">#{r.orderId.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-[11px] text-muted-foreground">{vnd(r.orderTotal ?? 0)}</p>
+                      <p className="text-[0.6875rem] text-muted-foreground">{vnd(r.orderTotal ?? 0)}</p>
                     </td>
                     <td className="py-4 px-6">
                       <p className="text-[#2C2C2C]">{r.customerName}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.customerPhone}</p>
+                      <p className="text-[0.6875rem] text-muted-foreground">{r.customerPhone}</p>
                     </td>
                     <td className="py-4 px-6">
                       <span className={`px-2.5 py-0.5 text-xs font-semibold rounded ${
@@ -206,7 +206,7 @@ export default function AdminReturnsPage() {
                         </div>
                       )}
                       {r.adminNote && (
-                        <p className="text-[11px] text-muted-foreground mt-1.5 italic">Ghi chú: {r.adminNote}</p>
+                        <p className="text-[0.6875rem] text-muted-foreground mt-1.5 italic">Ghi chú: {r.adminNote}</p>
                       )}
                     </td>
                     <td className="py-4 px-6 text-xs text-muted-foreground whitespace-nowrap">
@@ -283,21 +283,21 @@ export default function AdminReturnsPage() {
                   { label: 'Khách hàng', value: acting.item.customerName ?? '—' },
                 ].map((f) => (
                   <div key={f.label} className="bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg px-4 py-3">
-                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">{f.label}</p>
+                    <p className="text-[0.6875rem] font-bold text-muted-foreground uppercase tracking-wider mb-1">{f.label}</p>
                     <p className="text-sm font-semibold text-[#2C2C2C] break-words">{f.value}</p>
                   </div>
                 ))}
               </div>
 
               <div className="bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg px-4 py-3">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Lý do khách nêu</p>
+                <p className="text-[0.6875rem] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Lý do khách nêu</p>
                 <p className="text-sm text-[#2C2C2C] leading-relaxed whitespace-pre-wrap">{acting.item.reason}</p>
               </div>
 
               {/* Ảnh khách gửi kèm — đối chiếu với lý do trước khi quyết định */}
               {acting.item.images?.length > 0 ? (
                 <div>
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <p className="text-[0.6875rem] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                     Ảnh khách gửi ({acting.item.images.length}) — bấm để xem cỡ lớn
                   </p>
                   <div className="flex gap-3 flex-wrap">
@@ -348,7 +348,7 @@ export default function AdminReturnsPage() {
                     : 'Ghi chú thêm (không bắt buộc)'}
                   className="w-full px-4 py-3 bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg text-sm text-[#2C2C2C] leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] resize-y"
                 />
-                <div className="flex justify-between mt-1.5 text-[11px] text-muted-foreground">
+                <div className="flex justify-between mt-1.5 text-[0.6875rem] text-muted-foreground">
                   <span>Nội dung này hiện trong trang chi tiết đơn của khách.</span>
                   <span>{note.length}/500</span>
                 </div>

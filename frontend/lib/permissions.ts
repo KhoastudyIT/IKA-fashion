@@ -31,11 +31,12 @@ export function isBackoffice(role?: string) {
  * Các mục nhân viên KHÔNG được mở. Dùng chung cho việc lọc menu và chặn khi
  * người dùng gõ thẳng URL, nên chỉ khai báo một chỗ này.
  */
+// '/dashboard/admin/analytics' không còn ở đây: mục Thống Kê đã gộp vào Bảng
+// Điều Khiển — trang nhân viên vẫn vào để nắm tình hình đơn hàng và tồn kho.
 export const ADMIN_ONLY_PATHS = [
   '/dashboard/admin/reviews',
   '/dashboard/admin/news',
   '/dashboard/admin/staffs',
-  '/dashboard/admin/analytics',
   '/dashboard/admin/settings',
 ]
 

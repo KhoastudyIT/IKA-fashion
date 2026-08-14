@@ -182,7 +182,7 @@ export default function ChatWidget() {
               <p className="text-sm font-semibold text-white">
                 {botOn ? 'Trợ Lý IKA Fashion' : 'Nhân Viên IKA Fashion'}
               </p>
-              <p className="text-[10px] text-gray-400">
+              <p className="text-[0.625rem] text-gray-400">
                 {botOn ? 'Trả lời tự động 24/7' : 'Đang chờ nhân viên phản hồi'}
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function ChatWidget() {
           {pinned && (
             <div className="px-3 py-2 bg-[#FDF8E9] border-b border-[#D4AF37]/30 flex items-center gap-2">
               <ShoppingBag className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
-              <span className="text-[10px] text-[#7A7A7A] truncate flex-1">
+              <span className="text-[0.625rem] text-[#7A7A7A] truncate flex-1">
                 Đang hỏi về: <span className="text-[#2C2C2C] font-medium">{pinned.name}</span>
               </span>
               <button
@@ -228,14 +228,14 @@ export default function ChatWidget() {
                         }`}>
                         {isBot
                           ? <Sparkles className="w-3 h-3 text-white" />
-                          : <span className="text-[10px] font-bold text-[#D4AF37]">A</span>}
+                          : <span className="text-[0.625rem] font-bold text-[#D4AF37]">A</span>}
                       </div>
                     )}
                     <div className={`max-w-[82%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                       {/* Ghim đã bị gỡ sau khi gửi, nên gắn nhãn mẫu lên chính
                           tin nhắn để khách vẫn thấy mình đã hỏi về sản phẩm nào. */}
                       {isMe && msg.product && (
-                        <span className="mb-1 px-2 py-0.5 bg-[#FDF8E9] border border-[#D4AF37]/40 rounded-lg text-[10px] text-[#8A7020] truncate max-w-full">
+                        <span className="mb-1 px-2 py-0.5 bg-[#FDF8E9] border border-[#D4AF37]/40 rounded-lg text-[0.625rem] text-[#8A7020] truncate max-w-full">
                           {msg.product.name}
                         </span>
                       )}
@@ -249,7 +249,7 @@ export default function ChatWidget() {
                         )}
                       </div>
                       <div className={`flex items-center gap-0.5 mt-0.5 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <span className="text-[9px] text-[#7A7A7A]">{formatTime(msg.createdAt)}</span>
+                        <span className="text-[0.5625rem] text-[#7A7A7A]">{formatTime(msg.createdAt)}</span>
                         {isMe && (
                           msg.isRead
                             ? <CheckCheck className="w-2.5 h-2.5 text-[#D4AF37]" />
@@ -258,7 +258,7 @@ export default function ChatWidget() {
                       </div>
                     </div>
                     {isMe && (
-                      <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[10px] font-bold text-white shrink-0 self-end">
+                      <div className="w-6 h-6 rounded-full bg-[#D4AF37] flex items-center justify-center text-[0.625rem] font-bold text-white shrink-0 self-end">
                         {session?.user.name.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -293,7 +293,7 @@ export default function ChatWidget() {
                     key={q}
                     onClick={() => submit(q)}
                     disabled={sending}
-                    className="text-[10px] px-2.5 py-1 rounded-full border border-[#D4AF37]/50 text-[#2C2C2C] bg-white hover:bg-[#D4AF37] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
+                    className="text-[0.625rem] px-2.5 py-1 rounded-full border border-[#D4AF37]/50 text-[#2C2C2C] bg-white hover:bg-[#D4AF37] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
                   >
                     {q}
                   </button>
@@ -354,7 +354,7 @@ export default function ChatWidget() {
           : <MessageSquare className="w-6 h-6 text-[#D4AF37]" />
         }
         {!open && unread > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-bounce">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[0.625rem] font-bold rounded-full flex items-center justify-center border-2 border-white animate-bounce">
             {unread}
           </span>
         )}

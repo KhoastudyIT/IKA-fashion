@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getAdminCustomers, deleteCustomer, toggleLockCustomer, ApiUser } from '@/api'
+import { getAdminCustomers, deleteCustomer, toggleLockCustomer, AdminUserSummary, ApiUser } from '@/api'
 import { Users, Search, Trash2, RefreshCw, Lock, Unlock } from 'lucide-react'
 import { useAdminRole } from '@/lib/permissions'
 import AdminPagination from '@/components/ui/AdminPagination'
@@ -12,7 +12,8 @@ export default function AdminCustomersPage() {
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
   const [totalPages, setTotalPages] = useState(1)
-  const [total, setTotal] = useState(0)
+  // Thống kê do backend tính trên toàn bộ khách hàng, không phải trang đang xem.
+  const [stats, setStats] = useState<AdminUserSummary>({ total: 0, active: 0, locked: 0 })
   const [customers, setCustomers] = useState<ApiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,10 +23,10 @@ export default function AdminCustomersPage() {
     try {
       setLoading(true)
       const res = await getAdminCustomers({ page: pageToLoad, limit: 10 })
-      const { items: data, pagination } = res
+      const { items: data, pagination, summary } = res
       setCustomers(data ?? [])
       setTotalPages(pagination?.totalPages ?? 1)
-      setTotal(pagination?.total ?? (data?.length || 0))
+      setStats(summary)
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách người dùng')
     } finally {
@@ -54,6 +55,10 @@ export default function AdminCustomersPage() {
     try {
       const updated = await toggleLockCustomer(userId)
       setCustomers((prev) => prev.map((u) => (u.id === userId ? updated : u)))
+      // Hai thẻ đếm phải nhích theo, không thì số hiện trên đầu trang là số
+      // trước khi khóa cho tới lần tải lại sau.
+      const delta = updated.isLocked ? 1 : -1
+      setStats((s) => ({ ...s, active: s.active - delta, locked: s.locked + delta }))
     } catch (err: any) {
       alert(err.message || `Lỗi ${action} tài khoản`)
     }
@@ -98,21 +103,15 @@ export default function AdminCustomersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng khách hàng</p>
-          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{total}</p>
-        </div>
-        {/* Hai ô dưới đếm trong trang đang xem — API chưa lọc được theo trạng
-            thái khóa nên không có con số toàn hệ thống để hiển thị. */}
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đang hoạt động (trang này)</p>
-          <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
-            {customers.filter((c) => !c.isLocked).length}
-          </p>
+          <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{stats.total}</p>
         </div>
         <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
-          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Bị khóa (trang này)</p>
-          <p className="text-2xl font-heading font-semibold text-red-600">
-            {customers.filter((c) => c.isLocked).length}
-          </p>
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đang hoạt động</p>
+          <p className="text-2xl font-heading font-semibold text-[#D4AF37]">{stats.active}</p>
+        </div>
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
+          <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Bị khóa</p>
+          <p className="text-2xl font-heading font-semibold text-red-600">{stats.locked}</p>
         </div>
       </div>
 
@@ -159,7 +158,7 @@ export default function AdminCustomersPage() {
                       <div className="flex items-center gap-2">
                         {user.name}
                         {user.isLocked && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
+                          <span className="px-2 py-0.5 text-[0.625rem] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
                             Bị Khóa
                           </span>
                         )}

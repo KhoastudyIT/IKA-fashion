@@ -367,16 +367,31 @@ export interface AdminOrderQuery {
   limit?: number
 }
 
+/**
+ * Thống kê kèm theo danh sách đơn — tính trên TOÀN BỘ đơn khớp bộ lọc, không
+ * phải trang đang xem. `revenue` chỉ gồm đơn đã hoàn thành, giống trang Tổng Quan.
+ */
+export interface AdminOrderSummary {
+  total: number
+  pending: number
+  completed: number
+  revenue: number
+}
+
 export async function getAdminOrders(
   query: AdminOrderQuery = {},
-): Promise<{ items: Order[]; pagination: any }> {
+): Promise<{ items: Order[]; pagination: any; summary: AdminOrderSummary }> {
   const qs = new URLSearchParams()
   Object.entries(query).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== '') qs.set(k, String(v))
   })
   const json = await request(`/admin/orders${qs.toString() ? `?${qs}` : ''}`, { auth: true })
   const items = json.data?.data || json.data || []
-  return { items: items as Order[], pagination: json.data?.pagination || json.pagination || {} }
+  return {
+    items: items as Order[],
+    pagination: json.data?.pagination || json.pagination || {},
+    summary: json.summary ?? { total: 0, pending: 0, completed: 0, revenue: 0 },
+  }
 }
 
 export function updateOrderStatus(id: string, body: { status: string; paymentStatus?: string }): Promise<Order> {
@@ -402,9 +417,19 @@ export interface AdminUserQuery {
  *   getAdminUsers({ roles: ['customer'] })        — trang Khách Hàng
  *   getAdminUsers({ roles: ['staff', 'admin'] })  — trang Nhân Viên
  */
+/**
+ * Thống kê kèm theo danh sách tài khoản — tính trên TOÀN BỘ tài khoản khớp bộ
+ * lọc vai trò, không phải trang đang xem.
+ */
+export interface AdminUserSummary {
+  total: number
+  active: number
+  locked: number
+}
+
 export async function getAdminUsers(
   query: AdminUserQuery = {},
-): Promise<{ items: ApiUser[]; pagination: any }> {
+): Promise<{ items: ApiUser[]; pagination: any; summary: AdminUserSummary }> {
   const { roles, ...rest } = query
   const qs = new URLSearchParams()
   Object.entries(rest).forEach(([k, v]) => {
@@ -413,12 +438,16 @@ export async function getAdminUsers(
   if (roles?.length) qs.set('role', roles.join(','))
   const json = await request(`/admin/users${qs.toString() ? `?${qs}` : ''}`, { auth: true })
   const items = json.data?.data || json.data || []
-  return { items: items as ApiUser[], pagination: json.data?.pagination || json.pagination || {} }
+  return {
+    items: items as ApiUser[],
+    pagination: json.data?.pagination || json.pagination || {},
+    summary: json.summary ?? { total: 0, active: 0, locked: 0 },
+  }
 }
 
 export function getAdminCustomers(
   query: Omit<AdminUserQuery, 'roles'> = {},
-): Promise<{ items: ApiUser[]; pagination: any }> {
+): Promise<{ items: ApiUser[]; pagination: any; summary: AdminUserSummary }> {
   return getAdminUsers({ ...query, roles: ['customer'] })
 }
 
@@ -1038,4 +1067,137 @@ export function flashStatus(fs: FlashSale, now = Date.now()): { label: string; t
   if (ends && ends < now) return { label: 'Đã kết thúc', tone: 'expired' }
   if (fs.remaining <= 0) return { label: 'Hết suất', tone: 'soldout' }
   return { label: 'Đang chạy', tone: 'live' }
+}
+
+// ---------- Thống kê / Báo cáo ----------
+// Backend tính sẵn trên toàn bộ đơn trong kỳ nên số liệu không phụ thuộc trang
+// đang xem như cách tính tay từ /admin/orders trước đây.
+
+export interface StatsSummary {
+  /**
+   * Doanh thu trong kỳ = tiền THỰC THU, chỉ tính đơn đã hoàn thành. Cửa hàng
+   * thu tiền khi giao nên đơn chưa giao xong chưa mang lại đồng nào.
+   */
+  revenue: number
+  orders: number
+  cancelledOrders: number
+  completedOrders: number
+  returnedOrders: number
+  /** Tiền của đơn đã đặt nhưng chưa giao xong — chưa tính vào `revenue`. */
+  pendingRevenue: number
+  pendingOrders: number
+  /** Số món đã bán, cũng chỉ tính trên đơn đã hoàn thành. */
+  itemsSold: number
+  newCustomers: number
+  /** Doanh thu chia cho số đơn đã hoàn thành. */
+  avgOrderValue: number
+  // Số liệu toàn thời gian, không đổi theo kỳ báo cáo
+  totalProducts: number
+  lowStockCount: number
+  totalCustomers: number
+  totalOrders: number
+  /** Doanh thu toàn thời gian, cũng chỉ tính đơn đã hoàn thành. */
+  totalRevenue: number
+}
+
+export interface StatsReport {
+  range: { from: string; to: string }
+  summary: StatsSummary
+  revenueByDay: Array<{ date: string; orders: number; revenue: number }>
+  topProducts: Array<{ name: string; collection: string; sold: number; revenue: number; stock: number }>
+  orders: Array<{
+    id: string; createdAt: string; total: number; discount: number; couponCode: string
+    status: string; paymentStatus: string; phone: string; shippingAddress: string
+    customerName: string | null; customerEmail: string | null; itemCount: number
+  }>
+  ordersByStatus: Array<{ status: string; count: number; revenue: number }>
+  revenueByCollection: Array<{ collection: string; sold: number; revenue: number }>
+  topCustomers: Array<{ name: string; phone: string; email: string; orders: number; spent: number }>
+  returns: Array<{
+    createdAt: string; type: string; reason: string; status: string
+    adminNote: string; orderTotal: number; customerName: string | null
+  }>
+  lowStock: Array<{ name: string; handle: string; collection: string; stock: number; sold: number }>
+}
+
+/** Số liệu báo cáo của một kỳ. Ngày dạng 'YYYY-MM-DD', tính CẢ ngày `to`. */
+export function getStatsReport(
+  { from, to }: { from?: string; to?: string } = {},
+): Promise<StatsReport> {
+  const qs = new URLSearchParams()
+  if (from) qs.set('from', from)
+  if (to) qs.set('to', to)
+  return getData(`/admin/stats/report${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+}
+
+// ---------- Tệp tải về: hóa đơn PDF & báo cáo Excel ----------
+
+/**
+ * Tải tệp nhị phân (PDF, Excel) từ API.
+ *
+ * Không dùng thẻ `<a href>` trực tiếp được vì các tuyến này đòi Bearer token —
+ * trình duyệt sẽ không tự gắn header. Vì vậy phải fetch kèm token rồi tạo URL
+ * tạm từ blob nhận về.
+ */
+async function fetchFile(
+  path: string,
+  fallbackName: string,
+): Promise<{ url: string; fileName: string; revoke: () => void }> {
+  const token = getToken()
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!res.ok) {
+    // Lỗi trả về vẫn là JSON nên đọc ra để hiện đúng thông báo cho người dùng.
+    let message = `Tải tệp thất bại (HTTP ${res.status}).`
+    try {
+      message = (await res.json())?.message || message
+    } catch {
+      /* giữ thông báo mặc định */
+    }
+    throw new Error(message)
+  }
+
+  // Ưu tiên tên tệp do server đặt trong Content-Disposition.
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const matched = disposition.match(/filename="?([^";]+)"?/)
+  const fileName = matched ? matched[1] : fallbackName
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  return { url, fileName, revoke: () => URL.revokeObjectURL(url) }
+}
+
+/**
+ * Mở hóa đơn PDF của một đơn ở tab mới để xem rồi in hoặc lưu lại.
+ *
+ * `admin = true` gọi tuyến quản trị (in được đơn của mọi khách), mặc định là
+ * tuyến của khách — chỉ in được đơn của chính mình.
+ */
+export async function openOrderInvoice(orderId: string, { admin = false } = {}) {
+  const base = admin ? '/admin/orders' : '/customer/orders'
+  const { url, revoke } = await fetchFile(`${base}/${orderId}/invoice`, 'hoa-don.pdf')
+  const win = window.open(url, '_blank')
+  if (!win) throw new Error('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép rồi thử lại.')
+  // Giữ URL đủ lâu cho tab mới nạp xong rồi mới thu hồi.
+  setTimeout(revoke, 60_000)
+}
+
+/** Tải báo cáo thống kê Excel về máy. Ngày dạng 'YYYY-MM-DD', tính cả ngày `to`. */
+export async function downloadStatsExcel({ from, to }: { from?: string; to?: string } = {}) {
+  const qs = new URLSearchParams()
+  if (from) qs.set('from', from)
+  if (to) qs.set('to', to)
+  const { url, fileName, revoke } = await fetchFile(
+    `/admin/stats/export${qs.toString() ? `?${qs}` : ''}`,
+    'thong-ke.xlsx',
+  )
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  revoke()
 }

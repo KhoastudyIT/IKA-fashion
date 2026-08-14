@@ -87,7 +87,7 @@ export default function Footer() {
 
       {/* ── Top Strip: USP bar ──────────────────────────────────────────── */}
       <div style={{ borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '20px 24px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {[
             { icon: '🚚', title: 'Miễn phí vận chuyển', sub: 'Đơn hàng từ 500.000đ' },
             { icon: '🔄', title: 'Đổi trả dễ dàng', sub: 'Trong vòng 7 ngày' },
@@ -106,7 +106,7 @@ export default function Footer() {
       </div>
 
       {/* ── Main Footer ─────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 24px 48px' }}>
+      <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', padding: '64px 24px 48px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
 
           <div>
@@ -271,7 +271,7 @@ export default function Footer() {
 
       {/* ── Bottom Bar ──────────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} {storeSettings.storeName}. Tất cả quyền được bảo lưu.</p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             {[

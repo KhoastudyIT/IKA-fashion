@@ -53,6 +53,29 @@ export const orderPaths = {
     },
   },
 
+  '/api/v1/customer/orders/{id}/invoice': {
+    get: {
+      tags: ['Tài khoản - Đơn hàng'],
+      summary: 'Hoá đơn PDF của đơn',
+      description:
+        'Trả về file PDF (không phải JSON) nên phải gọi bằng fetch kèm token rồi mở blob — '
+        + 'thẻ `<a href>` sẽ không gắn được header Authorization.\n\n'
+        + 'Hoá đơn in tên cửa hàng, thông tin người nhận, bảng sản phẩm kèm mức giảm của từng '
+        + 'dòng và tổng thanh toán. Khách chỉ in được đơn của mình.',
+      security: bearer,
+      parameters: [pathParam('id', { example: 'd73020c9-1f5e-4c2a-9a10-2b7f6c8e4d11' })],
+      responses: {
+        200: {
+          description: 'File PDF hoá đơn',
+          content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } },
+        },
+        401: unauthorized,
+        403: forbidden,
+        404: notFound,
+      },
+    },
+  },
+
   // ══════════════ Admin ══════════════
   '/api/v1/admin/orders': {
     get: {
@@ -77,7 +100,41 @@ export const orderPaths = {
         queryParam('limit', { type: 'integer', default: 15, maximum: 100 }, 'Số đơn mỗi trang'),
       ],
       responses: {
-        200: okPaginated('Đơn hàng khớp bộ lọc, mới nhất lên trước', 'Order'),
+        200: {
+          description: 'Đơn hàng khớp bộ lọc, mới nhất lên trước',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: true },
+                  data: { type: 'array', items: { $ref: '#/components/schemas/Order' } },
+                  pagination: {
+                    type: 'object',
+                    properties: {
+                      page: { type: 'integer', example: 1 },
+                      limit: { type: 'integer', example: 15 },
+                      total: { type: 'integer', example: 81 },
+                      totalPages: { type: 'integer', example: 6 },
+                    },
+                  },
+                  summary: {
+                    type: 'object',
+                    description:
+                      'Thống kê trên TOÀN BỘ đơn khớp bộ lọc (không phải trang đang xem), '
+                      + 'cho các thẻ ở đầu trang quản lý đơn. `revenue` chỉ tính đơn đã hoàn thành.',
+                    properties: {
+                      total: { type: 'integer', example: 81 },
+                      pending: { type: 'integer', example: 1 },
+                      completed: { type: 'integer', example: 28 },
+                      revenue: { type: 'integer', example: 15249000 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
         ...adminErrors,
         422: validationError,
       },
@@ -92,6 +149,24 @@ export const orderPaths = {
       parameters: [pathParam('id', { example: 'DH1720051200000' })],
       responses: {
         200: okData('Chi tiết đơn hàng', 'Order'),
+        ...adminErrors,
+        404: notFound,
+      },
+    },
+  },
+
+  '/api/v1/admin/orders/{id}/invoice': {
+    get: {
+      tags: ['Admin - Đơn hàng'],
+      summary: 'Hoá đơn PDF của một đơn bất kỳ',
+      description: 'Giống bản của khách nhưng admin và nhân viên in được mọi đơn.',
+      security: bearer,
+      parameters: [pathParam('id', { example: 'd73020c9-1f5e-4c2a-9a10-2b7f6c8e4d11' })],
+      responses: {
+        200: {
+          description: 'File PDF hoá đơn',
+          content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } },
+        },
         ...adminErrors,
         404: notFound,
       },

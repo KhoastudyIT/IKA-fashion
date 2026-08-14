@@ -24,6 +24,7 @@ import { uploadAdminRouter, uploadCustomerRouter } from './modules/uploads/uploa
 import { UPLOAD_ROOT } from './modules/uploads/upload.service.js';
 import { flashSalePublicRouter, flashSaleAdminRouter } from './modules/flash-sales/flash_sale.routes.js';
 import { returnCustomerRouter, returnAdminRouter } from './modules/returns/return.routes.js';
+import { statsAdminRouter } from './modules/stats/stats.routes.js';
 
 export function createApp() {
   const app = express();
@@ -80,6 +81,7 @@ export function createApp() {
   app.use(`${v1}/admin/uploads`, uploadAdminRouter);
   app.use(`${v1}/admin/flash-sales`, flashSaleAdminRouter);
   app.use(`${v1}/admin/returns`, returnAdminRouter);
+  app.use(`${v1}/admin/stats`, statsAdminRouter);
 
   if (config.openapiEnabled) setupDocs(app);
 
