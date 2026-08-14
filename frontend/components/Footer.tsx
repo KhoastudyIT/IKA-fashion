@@ -95,10 +95,10 @@ export default function Footer() {
             { icon: '📞', title: 'Hỗ trợ 24/7', sub: `Hotline: ${storeSettings.hotline}` },
           ].map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '24px', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{item.icon}</span>
               <div>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: '13px', color: '#FFFFFF' }}>{item.title}</p>
-                <p style={{ margin: 0, fontSize: '11px', color: '#9A9A9A' }}>{item.sub}</p>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.8125rem', color: '#FFFFFF' }}>{item.title}</p>
+                <p style={{ margin: 0, fontSize: '0.6875rem', color: '#9A9A9A' }}>{item.sub}</p>
               </div>
             </div>
           ))}
@@ -119,27 +119,27 @@ export default function Footer() {
                 style={{ height: '56px', width: 'auto', maxWidth: '220px', objectFit: 'contain', marginBottom: '16px', display: 'inline-block' }}
               />
             </Link>
-            <p style={{ fontSize: '13px', lineHeight: 1.8, color: '#9A9A9A', marginBottom: '20px', maxWidth: '240px' }}>
+            <p style={{ fontSize: '0.8125rem', lineHeight: 1.8, color: '#9A9A9A', marginBottom: '20px', maxWidth: '240px' }}>
               Thương hiệu thời trang Việt Nam với cam kết chất lượng cao, công nghệ vải tiên tiến và phong cách hiện đại.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '28px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MapPin size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
-                <span style={{ fontSize: '12px', color: '#9A9A9A' }}>{storeSettings.address}</span>
+                <span style={{ fontSize: '0.75rem', color: '#9A9A9A' }}>{storeSettings.address}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Phone size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
-                <a href={`tel:${storeSettings.hotline}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.hotline}</a>
+                <a href={`tel:${storeSettings.hotline}`} style={{ fontSize: '0.75rem', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.hotline}</a>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Mail size={14} style={{ color: '#D4AF37', flexShrink: 0 }} />
-                <a href={`mailto:${storeSettings.email}`} style={{ fontSize: '12px', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.email}</a>
+                <a href={`mailto:${storeSettings.email}`} style={{ fontSize: '0.75rem', color: '#9A9A9A', textDecoration: 'none' }}>{storeSettings.email}</a>
               </div>
             </div>
 
             <div>
-              <p style={{ fontSize: '11px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Theo dõi chúng tôi</p>
+              <p style={{ fontSize: '0.6875rem', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Theo dõi chúng tôi</p>
               <div style={{ display: 'flex', gap: '10px' }}>
                 {socialLinks.map((social) => (
                   <a
@@ -166,7 +166,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Điều Hướng
             </h3>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -176,14 +176,14 @@ export default function Footer() {
             </nav>
 
             <div style={{ marginTop: '32px' }}>
-              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Giờ Hoạt Động</h4>
+              <h4 style={{ fontSize: '0.75rem', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>Giờ Hoạt Động</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {[
                   { day: 'Thứ 2 – Thứ 6', time: '9:00 – 18:00' },
                   { day: 'Thứ 7', time: '10:00 – 16:00' },
                   { day: 'Chủ Nhật', time: 'Đóng cửa' },
                 ].map((h) => (
-                  <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#9A9A9A' }}>
+                  <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#9A9A9A' }}>
                     <span>{h.day}</span>
                     <span style={{ color: h.time === 'Đóng cửa' ? '#666' : '#D4AF37' }}>{h.time}</span>
                   </div>
@@ -193,7 +193,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Hỗ Trợ Khách Hàng
             </h3>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -203,7 +203,7 @@ export default function Footer() {
             </nav>
 
             <div style={{ marginTop: '32px' }}>
-              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
+              <h4 style={{ fontSize: '0.75rem', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
                 Phương Thức Thanh Toán
               </h4>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -222,15 +222,15 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '14px', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.875rem', fontWeight: 600, color: '#FFFFFF', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', paddingBottom: '12px', borderBottom: '1px solid rgba(212,175,55,0.3)' }}>
               Nhận Tin Ưu Đãi
             </h3>
-            <p style={{ fontSize: '13px', color: '#9A9A9A', lineHeight: 1.7, marginBottom: '20px' }}>
+            <p style={{ fontSize: '0.8125rem', color: '#9A9A9A', lineHeight: 1.7, marginBottom: '20px' }}>
               Đăng ký để nhận thông báo về bộ sưu tập mới, ưu đãi độc quyền và tips phối đồ mỗi tuần.
             </p>
 
             {subscribed ? (
-              <div style={{ padding: '14px 16px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '8px', fontSize: '13px', color: '#D4AF37', textAlign: 'center' }}>
+              <div style={{ padding: '14px 16px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '8px', fontSize: '0.8125rem', color: '#D4AF37', textAlign: 'center' }}>
                 ✓ Đăng ký thành công! Cảm ơn bạn.
               </div>
             ) : (
@@ -242,7 +242,7 @@ export default function Footer() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Nhập email của bạn..."
                     required
-                    style={{ width: '100%', padding: '12px 48px 12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#FFFFFF', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '12px 48px 12px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.8125rem', outline: 'none', boxSizing: 'border-box' }}
                     onFocus={(e) => (e.target.style.borderColor = '#D4AF37')}
                     onBlur={(e) => (e.target.style.borderColor = 'rgba(255,255,255,0.12)')}
                   />
@@ -250,14 +250,14 @@ export default function Footer() {
                     <ArrowRight size={16} />
                   </button>
                 </div>
-                <p style={{ fontSize: '11px', color: '#666', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.6875rem', color: '#666', lineHeight: 1.5 }}>
                   Bằng cách đăng ký, bạn đồng ý với <Link href="/chinh-sach-bao-mat" style={{ color: '#D4AF37', textDecoration: 'none' }}>Chính sách bảo mật</Link> của chúng tôi.
                 </p>
               </form>
             )}
 
             <div style={{ marginTop: '28px' }}>
-              <h4 style={{ fontSize: '12px', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
+              <h4 style={{ fontSize: '0.75rem', letterSpacing: '2px', color: '#D4AF37', textTransform: 'uppercase', marginBottom: '12px', fontWeight: 600 }}>
                 Tải App IKA
               </h4>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -272,17 +272,17 @@ export default function Footer() {
       {/* ── Bottom Bar ──────────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '20px 24px' }}>
         <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>© {new Date().getFullYear()} {storeSettings.storeName}. Tất cả quyền được bảo lưu.</p>
+          <p style={{ fontSize: '0.75rem', color: '#666', margin: 0 }}>© {new Date().getFullYear()} {storeSettings.storeName}. Tất cả quyền được bảo lưu.</p>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             {[
               { label: 'Bảo Mật', href: '/chinh-sach-bao-mat' },
               { label: 'Điều Khoản', href: '/dieu-khoan' },
               { label: 'Đổi Trả', href: '/chinh-sach-doi-tra' },
             ].map((link) => (
-              <Link key={link.href} href={link.href} style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}>{link.label}</Link>
+              <Link key={link.href} href={link.href} style={{ fontSize: '0.75rem', color: '#666', textDecoration: 'none' }}>{link.label}</Link>
             ))}
           </div>
-          <p style={{ fontSize: '11px', color: '#444', margin: 0 }}>🇻🇳 Thương hiệu thuần Việt — Made with ❤️ in Vietnam</p>
+          <p style={{ fontSize: '0.6875rem', color: '#444', margin: 0 }}>🇻🇳 Thương hiệu thuần Việt — Made with ❤️ in Vietnam</p>
         </div>
       </div>
     </footer>
@@ -298,7 +298,7 @@ function FooterLink({ href, label }: { href: string; label: string }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px',
+        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem',
         color: hovered ? '#D4AF37' : '#9A9A9A', textDecoration: 'none', transition: 'color 0.2s',
         transform: hovered ? 'translateX(4px)' : 'translateX(0)',
       }}

@@ -67,7 +67,7 @@ function OrderSummary({ cart, appliedCoupon, shippingFee, couponSlot }: OrderSum
     <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '28px', border: '1px solid #E5DFD8', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
         <Package size={18} style={{ color: '#D4AF37' }} />
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>
           Đơn hàng của bạn ({cart?.totalItems} sản phẩm)
         </h3>
       </div>
@@ -75,23 +75,23 @@ function OrderSummary({ cart, appliedCoupon, shippingFee, couponSlot }: OrderSum
         {cart?.items.map((item, i) => (
           <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{ width: '52px', height: '52px', background: '#F9F5F0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-              {item.img ? <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '20px' }}>&#128085;</span>}
+              {item.img ? <img src={item.img} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '1.25rem' }}>&#128085;</span>}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#2C2C2C', display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+              <div style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                 {item.isFlashSale && (
-                  <span style={{ fontSize: '10px', padding: '2px 6px', background: '#ea580c', color: '#fff', borderRadius: '999px', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.625rem', padding: '2px 6px', background: '#ea580c', color: '#fff', borderRadius: '999px', whiteSpace: 'nowrap' }}>
                     ⚡ Flash Sale
                   </span>
                 )}
               </div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#7A7A7A' }}>{item.color} / {item.size} x {item.quantity}</p>
+              <p style={{ margin: 0, fontSize: '0.6875rem', color: '#7A7A7A' }}>{item.color} / {item.size} x {item.quantity}</p>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#2C2C2C', display: 'block' }}>{item.lineTotal.toLocaleString('vi-VN')}đ</span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', display: 'block' }}>{item.lineTotal.toLocaleString('vi-VN')}đ</span>
               {item.originalPrice != null && item.originalPrice > item.price && (
-                <span style={{ fontSize: '11px', color: '#9CA3AF', textDecoration: 'line-through' }}>{item.originalLineTotal.toLocaleString('vi-VN')}đ</span>
+                <span style={{ fontSize: '0.6875rem', color: '#9CA3AF', textDecoration: 'line-through' }}>{item.originalLineTotal.toLocaleString('vi-VN')}đ</span>
               )}
             </div>
           </div>
@@ -109,20 +109,20 @@ function OrderSummary({ cart, appliedCoupon, shippingFee, couponSlot }: OrderSum
             value={summary.voucherDiscount} green prefix="−"
           />
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#7A7A7A' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', color: '#7A7A7A' }}>
           <span>Phí vận chuyển</span>
           <span style={{ color: summary.shippingFee === 0 ? '#22c55e' : '#2C2C2C' }}>
             {summary.shippingFee === 0 ? 'Miễn phí' : summary.shippingFee.toLocaleString('vi-VN') + 'đ'}
           </span>
         </div>
         {summary.totalDiscount > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 12px', background: 'rgba(34,197,94,0.08)', border: '1px dashed rgba(34,197,94,0.4)', borderRadius: '8px', fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 12px', background: 'rgba(34,197,94,0.08)', border: '1px dashed rgba(34,197,94,0.4)', borderRadius: '8px', fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
             Bạn đã tiết kiệm được {summary.totalDiscount.toLocaleString('vi-VN')}đ
           </div>
         )}
         <SummaryRow label="Tổng cộng" value={summary.finalTotal} large />
       </div>
-      <div style={{ marginTop: '16px', padding: '12px', background: '#F9F5F0', borderRadius: '8px', fontSize: '12px', color: '#7A7A7A', lineHeight: 1.6 }}>
+      <div style={{ marginTop: '16px', padding: '12px', background: '#F9F5F0', borderRadius: '8px', fontSize: '0.75rem', color: '#7A7A7A', lineHeight: 1.6 }}>
         🔒 Thông tin của bạn được mã hóa và bảo mật tuyệt đối.
       </div>
     </div>
@@ -136,10 +136,10 @@ function StepIndicator({ current }: { current: Step }) {
       {steps.map((s, i) => (
         <div key={s.n} style={{ display: 'flex', alignItems: 'center', flex: i < steps.length - 1 ? 1 : 'none' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: current >= s.n ? '#D4AF37' : '#E5DFD8', color: current >= s.n ? '#1a1a1a' : '#7A7A7A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', transition: 'all 0.3s' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: current >= s.n ? '#D4AF37' : '#E5DFD8', color: current >= s.n ? '#1a1a1a' : '#7A7A7A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.3s' }}>
               {current > s.n ? <Check size={16} /> : s.n}
             </div>
-            <span style={{ fontSize: '11px', color: current >= s.n ? '#D4AF37' : '#7A7A7A', fontWeight: current === s.n ? 600 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
+            <span style={{ fontSize: '0.6875rem', color: current >= s.n ? '#D4AF37' : '#7A7A7A', fontWeight: current === s.n ? 600 : 400, whiteSpace: 'nowrap' }}>{s.label}</span>
           </div>
           {i < steps.length - 1 && <div style={{ flex: 1, height: '2px', background: current > s.n ? '#D4AF37' : '#E5DFD8', margin: '0 8px', marginTop: '-20px', transition: 'background 0.3s' }} />}
         </div>
@@ -204,7 +204,7 @@ export default function CheckoutPage() {
         <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', border: '3px solid #E5DFD8', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-            <p style={{ color: '#7A7A7A', fontSize: '14px' }}>Đang tải...</p>
+            <p style={{ color: '#7A7A7A', fontSize: '0.875rem' }}>Đang tải...</p>
           </div>
         </main>
       </>
@@ -248,15 +248,15 @@ export default function CheckoutPage() {
     }
   }
 
-  const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 14px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '14px', color: '#2C2C2C', background: '#FFFFFF', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }
-  const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#2C2C2C', marginBottom: '6px' }
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '11px 14px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '0.875rem', color: '#2C2C2C', background: '#FFFFFF', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }
+  const labelStyle: React.CSSProperties = { display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '6px' }
 
   const couponSlot = appliedCoupon ? (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '10px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: '8px' }}>
-      <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>
+      <span style={{ fontSize: '0.8125rem', color: '#16a34a', fontWeight: 600 }}>
         ✓ Đã áp mã <strong style={{ fontFamily: 'monospace' }}>{appliedCoupon.code}</strong>
       </span>
-      <button onClick={handleRemoveCoupon} style={{ background: 'transparent', border: 'none', color: '#7A7A7A', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>Bỏ</button>
+      <button onClick={handleRemoveCoupon} style={{ background: 'transparent', border: 'none', color: '#7A7A7A', fontSize: '0.75rem', cursor: 'pointer', textDecoration: 'underline' }}>Bỏ</button>
     </div>
   ) : (
     <>
@@ -264,13 +264,13 @@ export default function CheckoutPage() {
         <input value={couponInput} onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError('') }}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleApplyCoupon() } }}
           placeholder="Nhập mã giảm giá"
-          style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '13px', color: '#2C2C2C', background: '#FFFFFF', outline: 'none', textTransform: 'uppercase', fontFamily: 'monospace' }} />
+          style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '0.8125rem', color: '#2C2C2C', background: '#FFFFFF', outline: 'none', textTransform: 'uppercase', fontFamily: 'monospace' }} />
         <button onClick={handleApplyCoupon} disabled={applyingCoupon || !couponInput.trim()}
-          style={{ padding: '10px 16px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: (applyingCoupon || !couponInput.trim()) ? 0.5 : 1 }}>
+          style={{ padding: '10px 16px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: (applyingCoupon || !couponInput.trim()) ? 0.5 : 1 }}>
           {applyingCoupon ? '...' : 'Áp dụng'}
         </button>
       </div>
-      {couponError && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '6px', marginBottom: 0 }}>{couponError}</p>}
+      {couponError && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginTop: '6px', marginBottom: 0 }}>{couponError}</p>}
     </>
   )
 
@@ -279,7 +279,7 @@ export default function CheckoutPage() {
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       <main style={{ minHeight: '100vh', background: '#FFFBF7', paddingBottom: '80px' }}>
         <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5DFD8', padding: '16px 24px' }}>
-          <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#7A7A7A' }}>
+          <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8125rem', color: '#7A7A7A' }}>
             <Link href="/" style={{ color: '#D4AF37', textDecoration: 'none' }}>Trang chủ</Link>
             <ChevronRight size={14} />
             <Link href="/dashboard/customer/cart" style={{ color: '#D4AF37', textDecoration: 'none' }}>Giỏ hàng</Link>
@@ -289,7 +289,7 @@ export default function CheckoutPage() {
         </div>
 
         <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', padding: '40px 24px' }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '32px' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.25rem', fontWeight: 700, color: '#2C2C2C', marginBottom: '32px' }}>
             Thanh Toán
           </h1>
           <StepIndicator current={step} />
@@ -300,7 +300,7 @@ export default function CheckoutPage() {
                 <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E5DFD8', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
                     <MapPin size={20} style={{ color: '#D4AF37' }} />
-                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Thông tin giao hàng</h2>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.125rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Thông tin giao hàng</h2>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div style={{ gridColumn: '1 / -1' }}>
@@ -314,7 +314,7 @@ export default function CheckoutPage() {
                         onChange={e => { setPhone(e.target.value); setPhoneError('') }} placeholder="0912 345 678" type="tel"
                         onFocus={e => e.target.style.borderColor = phoneError ? '#DC2626' : '#D4AF37'}
                         onBlur={e => e.target.style.borderColor = phoneError ? '#DC2626' : '#E5DFD8'} />
-                      {phoneError && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '6px', marginBottom: 0 }}>{phoneError}</p>}
+                      {phoneError && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginTop: '6px', marginBottom: 0 }}>{phoneError}</p>}
                     </div>
                     <div>
                       <label style={labelStyle}>Tỉnh / Thành phố *</label>
@@ -338,7 +338,7 @@ export default function CheckoutPage() {
                   </div>
                   <button onClick={() => { if (!name || !phone || !address || !city) return; if (!isValidPhone(phone)) { setPhoneError('Số điện thoại không hợp lệ (phải gồm 10 chữ số, bắt đầu bằng 03/05/07/08/09).'); return } setPhoneError(''); setStep(2) }}
                     disabled={!name || !phone || !address || !city}
-                    style={{ marginTop: '24px', width: '100%', padding: '14px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '1px', opacity: (!name || !phone || !address || !city) ? 0.5 : 1 }}>
+                    style={{ marginTop: '24px', width: '100%', padding: '14px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', letterSpacing: '1px', opacity: (!name || !phone || !address || !city) ? 0.5 : 1 }}>
                     Tiếp Theo: Chọn Vận Chuyển
                   </button>
                 </div>
@@ -348,26 +348,26 @@ export default function CheckoutPage() {
                 <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E5DFD8', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
                     <Truck size={20} style={{ color: '#D4AF37' }} />
-                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Phương thức vận chuyển</h2>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.125rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Phương thức vận chuyển</h2>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
                     {SHIPPING_OPTIONS.map(opt => (
                       <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', borderRadius: '10px', cursor: 'pointer', border: `2px solid ${shipping === opt.id ? '#D4AF37' : '#E5DFD8'}`, background: shipping === opt.id ? 'rgba(212,175,55,0.05)' : '#FAFAFA', transition: 'all 0.2s' }}>
                         <input type="radio" name="shipping" value={opt.id} checked={shipping === opt.id} onChange={() => setShipping(opt.id)} style={{ accentColor: '#D4AF37', width: '18px', height: '18px' }} />
-                        <span style={{ fontSize: '22px' }}>{opt.icon}</span>
+                        <span style={{ fontSize: '1.375rem' }}>{opt.icon}</span>
                         <div style={{ flex: 1 }}>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{opt.label}</p>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#7A7A7A' }}>{opt.sub}</p>
+                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#2C2C2C' }}>{opt.label}</p>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#7A7A7A' }}>{opt.sub}</p>
                         </div>
-                        <span style={{ fontWeight: 700, fontSize: '14px', color: opt.price === 0 ? '#22c55e' : '#2C2C2C' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.875rem', color: opt.price === 0 ? '#22c55e' : '#2C2C2C' }}>
                           {opt.price === 0 ? 'Miễn phí' : opt.price.toLocaleString('vi-VN') + 'đ'}
                         </span>
                       </label>
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setStep(1)} style={{ flex: 1, padding: '13px', background: 'transparent', color: '#2C2C2C', border: '1.5px solid #2C2C2C', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>← Quay lại</button>
-                    <button onClick={() => setStep(3)} style={{ flex: 2, padding: '13px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '1px' }}>Tiếp Theo: Thanh Toán →</button>
+                    <button onClick={() => setStep(1)} style={{ flex: 1, padding: '13px', background: 'transparent', color: '#2C2C2C', border: '1.5px solid #2C2C2C', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>← Quay lại</button>
+                    <button onClick={() => setStep(3)} style={{ flex: 2, padding: '13px', background: '#2C2C2C', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', letterSpacing: '1px' }}>Tiếp Theo: Thanh Toán →</button>
                   </div>
                 </div>
               )}
@@ -376,27 +376,27 @@ export default function CheckoutPage() {
                 <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E5DFD8', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
                     <CreditCard size={20} style={{ color: '#D4AF37' }} />
-                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Phương thức thanh toán</h2>
+                    <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.125rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Phương thức thanh toán</h2>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
                     {PAYMENT_OPTIONS.map(opt => (
                       <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', borderRadius: '10px', cursor: 'pointer', border: `2px solid ${payment === opt.id ? '#D4AF37' : '#E5DFD8'}`, background: payment === opt.id ? 'rgba(212,175,55,0.05)' : '#FAFAFA', transition: 'all 0.2s' }}>
                         <input type="radio" name="payment" value={opt.id} checked={payment === opt.id} onChange={() => setPayment(opt.id)} style={{ accentColor: '#D4AF37', width: '18px', height: '18px' }} />
                         <img src={opt.icon} alt={opt.label} style={{ width: '44px', height: '28px', objectFit: 'contain', borderRadius: '4px' }} />
-                        <span style={{ fontWeight: 600, fontSize: '14px', color: '#2C2C2C' }}>{opt.label}</span>
+                        <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#2C2C2C' }}>{opt.label}</span>
                       </label>
                     ))}
                   </div>
-                  <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '16px', marginBottom: '24px', fontSize: '13px', lineHeight: 1.8, color: '#2C2C2C' }}>
+                  <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '16px', marginBottom: '24px', fontSize: '0.8125rem', lineHeight: 1.8, color: '#2C2C2C' }}>
                     <p><strong>👤</strong> {name} &nbsp;|&nbsp; <strong>📞</strong> {phone}</p>
                     <p><strong>📍</strong> {address}, {city}</p>
                     <p><strong>🚚</strong> {SHIPPING_OPTIONS.find(s => s.id === shipping)?.label}</p>
                     <p><strong>💳</strong> {PAYMENT_OPTIONS.find(p => p.id === payment)?.label}</p>
                   </div>
-                  {error && <p style={{ color: '#DC2626', fontSize: '13px', marginBottom: '16px' }}>{error}</p>}
+                  {error && <p style={{ color: '#DC2626', fontSize: '0.8125rem', marginBottom: '16px' }}>{error}</p>}
                   <div style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={() => setStep(2)} style={{ flex: 1, padding: '13px', background: 'transparent', color: '#2C2C2C', border: '1.5px solid #2C2C2C', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>← Quay lại</button>
-                    <button onClick={handlePlaceOrder} disabled={placing} style={{ flex: 2, padding: '13px', background: '#D4AF37', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: placing ? 0.7 : 1, letterSpacing: '0.5px' }}>
+                    <button onClick={() => setStep(2)} style={{ flex: 1, padding: '13px', background: 'transparent', color: '#2C2C2C', border: '1.5px solid #2C2C2C', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}>← Quay lại</button>
+                    <button onClick={handlePlaceOrder} disabled={placing} style={{ flex: 2, padding: '13px', background: '#D4AF37', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', opacity: placing ? 0.7 : 1, letterSpacing: '0.5px' }}>
                       {placing ? 'Đang xử lý...' : `✓ Đặt Hàng — ${summary.finalTotal.toLocaleString('vi-VN')}đ`}
                     </button>
                   </div>

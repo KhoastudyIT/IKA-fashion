@@ -68,7 +68,7 @@ export default function Navigation() {
           overflow: 'hidden',
         }}>
           <p style={{
-            fontSize: '12px',
+            fontSize: '0.75rem',
             letterSpacing: '0.5px',
             margin: 0,
             color: '#F5E6A3',

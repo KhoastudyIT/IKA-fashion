@@ -79,7 +79,7 @@ function SearchPageContent() {
       {/* Search header */}
       <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E5DFD8', padding: '32px 24px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '36px', fontWeight: 700, color: '#2C2C2C', marginBottom: '20px' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.25rem', fontWeight: 700, color: '#2C2C2C', marginBottom: '20px' }}>
             Tìm Kiếm
           </h1>
           {/* Search bar */}
@@ -91,7 +91,7 @@ function SearchPageContent() {
               onChange={(e) => setLocalQ(e.target.value)}
               placeholder="Tìm kiếm sản phẩm IKA..."
               style={{
-                width: '100%', padding: '14px 52px', fontSize: '16px',
+                width: '100%', padding: '14px 52px', fontSize: '1rem',
                 border: '2px solid #E5DFD8', borderRadius: '12px', outline: 'none',
                 background: '#FAFAFA', color: '#2C2C2C', boxSizing: 'border-box',
                 transition: 'border-color 0.2s',
@@ -108,7 +108,7 @@ function SearchPageContent() {
             <button type="submit" style={{
               position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
               padding: '8px 16px', background: '#D4AF37', color: '#1a1a1a', border: 'none',
-              borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              borderRadius: '8px', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer',
             }}>
               Tìm
             </button>
@@ -117,10 +117,10 @@ function SearchPageContent() {
           {/* Suggestions */}
           {!query && (
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', color: '#7A7A7A', alignSelf: 'center' }}>Gợi ý:</span>
+              <span style={{ fontSize: '0.8125rem', color: '#7A7A7A', alignSelf: 'center' }}>Gợi ý:</span>
               {SUGGESTIONS.map(s => (
                 <button key={s} onClick={() => router.push(`/search?q=${encodeURIComponent(s)}`)}
-                  style={{ padding: '6px 14px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '20px', fontSize: '13px', color: '#2C2C2C', cursor: 'pointer' }}>
+                  style={{ padding: '6px 14px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '20px', fontSize: '0.8125rem', color: '#2C2C2C', cursor: 'pointer' }}>
                   {s}
                 </button>
               ))}
@@ -128,7 +128,7 @@ function SearchPageContent() {
           )}
 
           {query && (
-            <p style={{ fontSize: '14px', color: '#7A7A7A' }}>
+            <p style={{ fontSize: '0.875rem', color: '#7A7A7A' }}>
               {isLoading ? 'Đang tìm kiếm...' : `Kết quả cho `}
               {!isLoading && <strong style={{ color: '#2C2C2C' }}>"{query}"</strong>}
               {!isLoading && ` — ${results.length} sản phẩm`}
@@ -142,17 +142,17 @@ function SearchPageContent() {
           {/* Filter bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
             <button onClick={() => setShowFilters(!showFilters)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', border: `1.5px solid ${showFilters ? '#D4AF37' : '#E5DFD8'}`, borderRadius: '8px', background: showFilters ? 'rgba(212,175,55,0.08)' : '#FFFFFF', color: showFilters ? '#D4AF37' : '#2C2C2C', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', border: `1.5px solid ${showFilters ? '#D4AF37' : '#E5DFD8'}`, borderRadius: '8px', background: showFilters ? 'rgba(212,175,55,0.08)' : '#FFFFFF', color: showFilters ? '#D4AF37' : '#2C2C2C', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}>
               <SlidersHorizontal size={15} /> Bộ lọc
             </button>
 
             <select value={sort} onChange={e => setSort(e.target.value)}
-              style={{ padding: '9px 14px', border: '1.5px solid #E5DFD8', borderRadius: '8px', background: '#FFFFFF', fontSize: '13px', color: '#2C2C2C', cursor: 'pointer', outline: 'none' }}>
+              style={{ padding: '9px 14px', border: '1.5px solid #E5DFD8', borderRadius: '8px', background: '#FFFFFF', fontSize: '0.8125rem', color: '#2C2C2C', cursor: 'pointer', outline: 'none' }}>
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
 
             {message && (
-              <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#D4AF37', fontWeight: 500 }}>{message}</span>
+              <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: '#D4AF37', fontWeight: 500 }}>{message}</span>
             )}
           </div>
 
@@ -161,18 +161,18 @@ function SearchPageContent() {
             <div style={{ background: '#FFFFFF', border: '1px solid #E5DFD8', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#2C2C2C', display: 'block', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#2C2C2C', display: 'block', marginBottom: '8px' }}>
                     Giá tối đa: <strong style={{ color: '#D4AF37' }}>{(maxPrice / 1000).toFixed(0)}k đ</strong>
                   </label>
                   <input type="range" min={0} max={1000000} step={50000} value={maxPrice}
                     onChange={e => setMaxPrice(parseInt(e.target.value))}
                     style={{ width: '220px', accentColor: '#D4AF37' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#9A9A9A', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6875rem', color: '#9A9A9A', marginTop: '4px' }}>
                     <span>0đ</span><span>1.000.000đ</span>
                   </div>
                 </div>
                 <button onClick={() => setMaxPrice(1000000)}
-                  style={{ padding: '8px 14px', border: '1px solid #E5DFD8', borderRadius: '6px', background: '#F9F5F0', color: '#7A7A7A', fontSize: '12px', cursor: 'pointer' }}>
+                  style={{ padding: '8px 14px', border: '1px solid #E5DFD8', borderRadius: '6px', background: '#F9F5F0', color: '#7A7A7A', fontSize: '0.75rem', cursor: 'pointer' }}>
                   Đặt lại
                 </button>
               </div>
@@ -192,15 +192,15 @@ function SearchPageContent() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '80px 24px' }}>
-              <p style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</p>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', color: '#2C2C2C', marginBottom: '8px' }}>
+              <p style={{ fontSize: '3rem', marginBottom: '16px' }}>🔍</p>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.375rem', color: '#2C2C2C', marginBottom: '8px' }}>
                 Không tìm thấy kết quả
               </h2>
               <p style={{ color: '#7A7A7A', marginBottom: '24px' }}>Thử từ khóa khác hoặc xem toàn bộ sản phẩm</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 {SUGGESTIONS.map(s => (
                   <button key={s} onClick={() => router.push(`/search?q=${encodeURIComponent(s)}`)}
-                    style={{ padding: '8px 16px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '20px', fontSize: '13px', color: '#2C2C2C', cursor: 'pointer' }}>
+                    style={{ padding: '8px 16px', background: '#F9F5F0', border: '1px solid #E5DFD8', borderRadius: '20px', fontSize: '0.8125rem', color: '#2C2C2C', cursor: 'pointer' }}>
                     {s}
                   </button>
                 ))}
@@ -233,11 +233,11 @@ function ProductSearchCard({ product, onAddToCart }: { product: ApiProduct; onAd
             style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.06)' : 'scale(1)', transition: 'transform 0.4s' }} />
         </div>
         <div style={{ padding: '14px 16px 8px' }}>
-          <p style={{ margin: '0 0 4px', fontSize: '11px', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px' }}>{product.type}</p>
-          <h3 style={{ margin: '0 0 8px', fontSize: '14px', fontWeight: 600, color: '#2C2C2C', lineHeight: 1.4, minHeight: '40px' }}>{product.name}</h3>
+          <p style={{ margin: '0 0 4px', fontSize: '0.6875rem', color: '#7A7A7A', textTransform: 'uppercase', letterSpacing: '1px' }}>{product.type}</p>
+          <h3 style={{ margin: '0 0 8px', fontSize: '0.875rem', fontWeight: 600, color: '#2C2C2C', lineHeight: 1.4, minHeight: '40px' }}>{product.name}</h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '15px', fontWeight: 700, color: '#D4AF37' }}>{product.price.toLocaleString('vi-VN')}đ</span>
-            <span style={{ fontSize: '12px', color: '#9A9A9A' }}>★ {product.rating}</span>
+            <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#D4AF37' }}>{product.price.toLocaleString('vi-VN')}đ</span>
+            <span style={{ fontSize: '0.75rem', color: '#9A9A9A' }}>★ {product.rating}</span>
           </div>
         </div>
       </Link>
@@ -245,7 +245,7 @@ function ProductSearchCard({ product, onAddToCart }: { product: ApiProduct; onAd
         <button onClick={() => onAddToCart(product)}
           style={{
             width: '100%', padding: '9px', background: hovered ? '#2C2C2C' : 'transparent',
-            border: '1.5px solid #2C2C2C', borderRadius: '6px', fontSize: '12px', fontWeight: 600,
+            border: '1.5px solid #2C2C2C', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
             color: hovered ? '#FFFFFF' : '#2C2C2C', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.5px',
           }}>
           Thêm vào giỏ
