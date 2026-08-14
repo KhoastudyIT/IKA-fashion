@@ -158,7 +158,7 @@ export default function AdminCustomersPage() {
                       <div className="flex items-center gap-2">
                         {user.name}
                         {user.isLocked && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
+                          <span className="px-2 py-0.5 text-[0.625rem] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
                             Bị Khóa
                           </span>
                         )}

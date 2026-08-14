@@ -504,7 +504,7 @@ export default function HomePage() {
                 <h3 className="text-sm md:text-lg font-heading font-semibold mb-2 md:mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-primary-foreground/60 text-[11px] md:text-sm leading-relaxed">
+                <p className="text-primary-foreground/60 text-[0.6875rem] md:text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -611,7 +611,7 @@ export default function HomePage() {
                       </div>
                       <div className="p-6">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className="text-[10px] tracking-widest text-accent font-semibold uppercase">
+                          <span className="text-[0.625rem] tracking-widest text-accent font-semibold uppercase">
                             {post.category?.name ?? 'TIN TỨC'}
                           </span>
                           <span className="text-xs text-muted-foreground">

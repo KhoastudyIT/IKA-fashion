@@ -303,7 +303,7 @@ export default function AdminDashboard() {
             <p className="text-2xl font-heading font-semibold text-green-600">
               {loading || !summary ? '...' : `${vnd(summary.totalRevenue)} đ`}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1">Chỉ tính đơn đã hoàn thành</p>
+            <p className="text-[0.625rem] text-muted-foreground mt-1">Chỉ tính đơn đã hoàn thành</p>
           </div>
         </div>
       </div>
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-heading font-semibold text-green-600">
             {loading || !summary ? '...' : `${vnd(summary.revenue)} đ`}
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-[0.625rem] text-muted-foreground mt-1">
             {summary ? summary.completedOrders : 0} đơn hoàn thành · TB {summary ? vnd(summary.avgOrderValue) : 0} đ/đơn
           </p>
         </div>
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-heading font-semibold text-[#D4AF37]">
             {loading || !summary ? '...' : `${vnd(summary.pendingRevenue)} đ`}
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-[0.625rem] text-muted-foreground mt-1">
             {summary ? summary.pendingOrders : 0} đơn chưa giao xong, chưa tính vào doanh thu
           </p>
         </div>
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">
             {loading || !summary ? '...' : `${summary.itemsSold} món`}
           </p>
-          <p className="text-[10px] text-[#D4AF37] font-semibold mt-1">
+          <p className="text-[0.625rem] text-[#D4AF37] font-semibold mt-1">
             {summary ? summary.newCustomers : 0} khách hàng mới trong kỳ
           </p>
         </div>
@@ -347,7 +347,7 @@ export default function AdminDashboard() {
           <p className="text-2xl font-heading font-semibold text-red-600">
             {loading || !summary ? '...' : `${cancelRate}%`}
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-[0.625rem] text-muted-foreground mt-1">
             {summary ? summary.cancelledOrders : 0} đơn hủy · {summary ? summary.returnedOrders : 0} đơn trả hàng
             {' '}trên {summary ? summary.orders : 0} đơn đặt
           </p>
@@ -444,7 +444,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="py-4 px-4">
                         <p className="text-[#2C2C2C]">{order.customerName}</p>
-                        <p className="text-[11px] text-muted-foreground">{order.phone}</p>
+                        <p className="text-[0.6875rem] text-muted-foreground">{order.phone}</p>
                       </td>
                       <td className="py-4 px-4 text-muted-foreground">
                         {new Date(order.createdAt).toLocaleDateString('vi-VN')}

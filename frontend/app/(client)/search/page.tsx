@@ -138,7 +138,7 @@ function SearchPageContent() {
       </div>
 
       {query && (
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px' }}>
+        <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', padding: '24px' }}>
           {/* Filter bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
             <button onClick={() => setShowFilters(!showFilters)}

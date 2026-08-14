@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Khung nội dung của toàn bộ trang công khai.
+     Mọi trang phía khách đều bọc nội dung trong `max-w-7xl`, mà mặc định của
+     Tailwind là 80rem (1280px) — trên màn 1920px thì thừa hơn 600px lề trắng
+     hai bên. Nới token ở đây một lần thay vì sửa 34 chỗ dùng; bề rộng thật lấy
+     từ --site-max để header, nội dung và chân trang luôn thẳng hàng nhau. */
+  --container-7xl: var(--site-max);
+
   --font-heading: var(--font-heading), 'Playfair Display', serif;
   --font-sans: var(--font-sans), 'Inter', sans-serif;
   --font-mono: 'Menlo', monospace;
@@ -50,6 +57,13 @@
 
 :root {
   color-scheme: light;
+  /* Bề rộng tối đa của khung trang khách — dùng cho cả thanh điều hướng, nội
+     dung và chân trang. Đổi một số này là cả trang rộng/hẹp theo. */
+  --site-max: 1760px;
+  /* Trần riêng cho khu quản trị, rộng hơn trang khách vì toàn bảng nhiều cột.
+     Trên màn 1920px trở xuống trần này không chạm tới nên nội dung vẫn trải
+     hết chỗ trống; chỉ màn siêu rộng mới bị chặn lại cho đỡ hẫng. */
+  --admin-max: 1920px;
   /* Minimalist Luxury: Bright White, Charcoal, Gold Accents */
   --background: #FFFBF7;
   --foreground: #2C2C2C;
@@ -96,5 +110,20 @@
   }
   html {
     @apply font-sans;
+  }
+
+  /* ── Cỡ chữ gốc theo bề ngang màn hình ───────────────────────────────────
+     Gần như mọi kích thước trong giao diện (chữ, padding, gap, bề ngang
+     sidebar) đều tính bằng rem, nên đổi cỡ chữ gốc là phóng to/thu nhỏ đồng
+     loạt cả trang khách lẫn khu quản trị — không phải sửa từng lớp tiện ích.
+
+     Điện thoại và tablet giữ nguyên 16px để bố cục hẹp không bị tràn; chỉ màn
+     laptop trở lên mới nới ra, vì đó mới là chỗ giao diện trông nhỏ so với
+     khoảng trống xung quanh. */
+  @media (min-width: 1024px) {
+    html { font-size: 17px; }
+  }
+  @media (min-width: 1536px) {
+    html { font-size: 18px; }
   }
 }

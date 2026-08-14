@@ -125,7 +125,7 @@ export default function NewsListPage() {
                 <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
                   <div className="flex items-center gap-3 mb-3">
                     {featured.category && (
-                      <span className="text-[11px] font-semibold tracking-widest text-accent uppercase">
+                      <span className="text-[0.6875rem] font-semibold tracking-widest text-accent uppercase">
                         {featured.category.name}
                       </span>
                     )}
@@ -158,7 +158,7 @@ export default function NewsListPage() {
 
                 <div className="space-y-3 flex-1 flex flex-col">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold tracking-widest text-accent uppercase">
+                    <span className="text-[0.6875rem] font-semibold tracking-widest text-accent uppercase">
                       {post.category?.name ?? 'TIN TỨC'}
                     </span>
                     <span className="text-xs text-muted-foreground">{viDate(post.publishDate)}</span>

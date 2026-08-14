@@ -242,7 +242,7 @@ export default function AdminStaffPage() {
                       <div className="flex items-center gap-2">
                         {user.name}
                         {user.isLocked && (
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
+                          <span className="px-2 py-0.5 text-[0.625rem] font-bold rounded bg-red-100 text-red-800 uppercase tracking-wider">
                             Bị Khóa
                           </span>
                         )}
@@ -400,7 +400,7 @@ export default function AdminStaffPage() {
                   <option value="staff">Nhân Viên (Staff)</option>
                   <option value="admin">Quản Trị Viên (Admin)</option>
                 </select>
-                <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                <p className="mt-2 text-[0.6875rem] text-muted-foreground leading-relaxed">
                   {newAccount.role === 'staff' ? (
                     <>
                       <strong className="text-[#2C2C2C]">Nhân viên</strong> chỉ xem được sản phẩm, danh mục,
@@ -465,7 +465,7 @@ export default function AdminStaffPage() {
                   <option value="staff">Nhân Viên (Staff)</option>
                   <option value="admin">Quản Trị Viên (Admin)</option>
                 </select>
-                <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                <p className="mt-2 text-[0.6875rem] text-muted-foreground leading-relaxed">
                   <strong className="text-[#2C2C2C]">Nhân viên</strong> chỉ xem được sản phẩm, danh mục,
                   khách hàng, khuyến mãi và quản lý được đơn hàng, tin nhắn, liên hệ.
                   Vai trò mới có hiệu lực khi tài khoản đó đăng nhập lại.

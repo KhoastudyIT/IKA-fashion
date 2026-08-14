@@ -304,14 +304,14 @@ export default function AdminFlashSalesPage() {
                           <img src={fs.img} alt={fs.name} className="w-11 h-11 object-cover rounded border border-[#E5DFD8]" />
                           <div>
                             <p className="font-medium text-[#2C2C2C]">{fs.name}</p>
-                            <p className="text-[11px] text-muted-foreground">Giá niêm yết {vnd(fs.productPrice)}</p>
+                            <p className="text-[0.6875rem] text-muted-foreground">Giá niêm yết {vnd(fs.productPrice)}</p>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-6">
                         <span className="font-semibold text-red-600">{vnd(fs.price)}</span>
                         {fs.discountPercent > 0 && (
-                          <span className="ml-2 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                          <span className="ml-2 text-[0.625rem] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
                             -{fs.discountPercent}%
                           </span>
                         )}
@@ -319,7 +319,7 @@ export default function AdminFlashSalesPage() {
                       <td className="py-4 px-6 text-center">
                         <span className="font-medium text-[#2C2C2C]">{fs.sold}</span>
                         <span className="text-muted-foreground"> / {fs.stock}</span>
-                        <p className="text-[10px] text-muted-foreground">còn {fs.remaining}</p>
+                        <p className="text-[0.625rem] text-muted-foreground">còn {fs.remaining}</p>
                       </td>
                       <td className="py-4 px-6 text-xs text-muted-foreground">
                         <div>{new Date(fs.startsAt).toLocaleString('vi-VN')}</div>
@@ -428,7 +428,7 @@ export default function AdminFlashSalesPage() {
                   />
                 </div>
               </div>
-              <p className="text-[11px] text-muted-foreground -mt-2">
+              <p className="text-[0.6875rem] text-muted-foreground -mt-2">
                 Giá niêm yết hiện tại: <strong className="text-[#2C2C2C]">{vnd(selectedListPrice)}</strong>.
                 Giá flash phải thấp hơn con số này.
               </p>
@@ -441,7 +441,7 @@ export default function AdminFlashSalesPage() {
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
                   className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                 />
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
                   Bán hết số suất này là chương trình tự dừng, giá quay về niêm yết.
                 </p>
               </div>
@@ -464,7 +464,7 @@ export default function AdminFlashSalesPage() {
                     onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
                     className="w-full px-3 py-2 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
                   />
-                  <p className="mt-1 text-[11px] text-muted-foreground">Bỏ trống = chạy tới khi tắt tay.</p>
+                  <p className="mt-1 text-[0.6875rem] text-muted-foreground">Bỏ trống = chạy tới khi tắt tay.</p>
                 </div>
               </div>
 
@@ -477,7 +477,7 @@ export default function AdminFlashSalesPage() {
                 />
                 Bật chương trình ngay
               </label>
-              <p className="text-[11px] text-muted-foreground -mt-2">
+              <p className="text-[0.6875rem] text-muted-foreground -mt-2">
                 Một sản phẩm chỉ được có một chương trình đang bật trong cùng khung giờ.
               </p>
 

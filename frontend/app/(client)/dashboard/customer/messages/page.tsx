@@ -190,14 +190,14 @@ export default function CustomerMessagesPage() {
                         {msg.suggestions?.length > 0 && <SuggestionCards items={msg.suggestions} />}
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                        <span className="text-[10px] text-muted-foreground">{formatTime(msg.createdAt)}</span>
+                        <span className="text-[0.625rem] text-muted-foreground">{formatTime(msg.createdAt)}</span>
                         {isMe && (
                           msg.isRead
                             ? <CheckCheck className="w-3 h-3 text-accent" />
                             : <Check className="w-3 h-3 text-muted-foreground" />
                         )}
                         {!isMe && (
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[0.625rem] text-muted-foreground">
                             · {isBot ? 'Trợ lý IKA' : 'Admin IKA'}
                           </span>
                         )}

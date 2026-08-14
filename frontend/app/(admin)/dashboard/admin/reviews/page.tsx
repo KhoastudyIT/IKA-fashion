@@ -126,7 +126,7 @@ export default function AdminReviewsPage() {
                   <span className="font-semibold text-sm text-[#2C2C2C]">{rev.userName}</span>
                   <span className="text-xs text-muted-foreground">đã đánh giá</span>
                   <span className="font-semibold text-xs text-[#D4AF37] uppercase">{rev.productName}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
+                  <span className="text-[0.625rem] text-muted-foreground font-mono">
                     {new Date(rev.createdAt).toLocaleDateString('vi-VN')}
                   </span>
                 </div>

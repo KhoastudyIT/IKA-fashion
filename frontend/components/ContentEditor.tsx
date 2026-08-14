@@ -184,7 +184,7 @@ export default function ContentEditor({
           onChange={(e) => onChange(e.target.value)}
           rows={rows}
           placeholder={'Đoạn mở đầu...\n\n## Tiêu đề mục\n\n- **Ý chính**: diễn giải'}
-          className="block w-full px-4 py-3 border-0 outline-none resize-y font-mono text-[13px] leading-[1.7] text-[#2C2C2C] bg-white"
+          className="block w-full px-4 py-3 border-0 outline-none resize-y font-mono text-[0.8125rem] leading-[1.7] text-[#2C2C2C] bg-white"
         />
       )}
 

@@ -38,8 +38,8 @@ export function SuggestionCards({
         >
           <img src={p.img} alt={p.name} className="w-10 h-10 rounded object-cover shrink-0 bg-[#F9F5F0]" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-[#2C2C2C] truncate">{p.name}</p>
-            <p className="text-[11px] text-[#D4AF37] font-semibold">{p.price.toLocaleString('vi-VN')} đ</p>
+            <p className="text-[0.6875rem] font-medium text-[#2C2C2C] truncate">{p.name}</p>
+            <p className="text-[0.6875rem] text-[#D4AF37] font-semibold">{p.price.toLocaleString('vi-VN')} đ</p>
           </div>
         </Link>
       ))}

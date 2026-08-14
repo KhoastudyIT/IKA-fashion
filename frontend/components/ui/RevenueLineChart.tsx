@@ -33,7 +33,9 @@ function dm(iso: string) {
 // Hệ toạ độ viewBox. Tỉ lệ W:H quyết định biểu đồ dẹt hay cao; bề ngang hiển thị
 // do thẻ chứa quyết định vì svg đặt width 100%.
 const W = 760
-const H = 260
+// Cao hơn tỉ lệ cũ (260) để thẻ biểu đồ không hụt so với thẻ "Bán chạy nhất"
+// đứng cạnh — hai thẻ cùng hàng luôn bị kéo bằng chiều cao nhau.
+const H = 300
 // right phải đủ rộng cho nửa bề ngang nhãn ngày cuối (canh giữa), nếu không chữ
 // tràn khỏi viewBox và bị xén mất chữ số tháng.
 const PAD = { top: 16, right: 26, bottom: 30, left: 58 }

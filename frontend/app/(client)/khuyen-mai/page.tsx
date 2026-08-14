@@ -152,7 +152,7 @@ export default function KhuyenMaiPage() {
 
         {/* Stats Bar — số liệu lấy từ chính các chương trình đang chạy */}
         <section style={{ background: '#F9F5F0', borderBottom: '1px solid #E5DFD8', padding: '28px 24px' }}>
-          <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px' }}>
+          <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px' }}>
             {[
               { icon: '🏷️', label: 'Sản phẩm đang giảm', value: String(cards.length) },
               { icon: '⚡', label: 'Giảm tối đa', value: maxDiscount > 0 ? `${maxDiscount}%` : '—' },
@@ -171,7 +171,7 @@ export default function KhuyenMaiPage() {
         </section>
 
         {/* Products Grid */}
-        <section id="sale-products" style={{ padding: '72px 24px', maxWidth: '1280px', margin: '0 auto' }}>
+        <section id="sale-products" style={{ padding: '72px 24px', maxWidth: 'var(--site-max)', margin: '0 auto' }}>
           {error && (
             <div style={{ background: '#fef2f2', borderLeft: '4px solid #ef4444', padding: '16px', color: '#b91c1c', fontSize: '14px', borderRadius: '4px', marginBottom: '32px' }}>
               {error}

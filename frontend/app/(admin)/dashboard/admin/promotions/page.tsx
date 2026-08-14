@@ -198,7 +198,7 @@ export default function AdminPromotionsPage() {
                         <span className={isExpired ? 'text-red-500 font-medium' : ''}>
                           {new Date(coupon.expiryDate).toLocaleDateString('vi-VN')}
                         </span>
-                        {isExpired && <span className="text-[10px] block text-red-500">(Đã hết hạn)</span>}
+                        {isExpired && <span className="text-[0.625rem] block text-red-500">(Đã hết hạn)</span>}
                       </td>
                       <td className="py-4 px-6 text-center">
                         {/* Nhân viên chỉ được xem nên ô trạng thái thành nhãn tĩnh. */}

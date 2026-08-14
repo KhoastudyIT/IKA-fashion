@@ -260,7 +260,7 @@ export default function AdminCollectionsPage() {
                     placeholder="vd: ao-khoac"
                     className="w-full px-4 py-3 bg-[#F9F5F0] border border-[#E5DFD8] rounded-lg text-sm text-[#2C2C2C] font-mono focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37]"
                   />
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  <p className="mt-1.5 text-[0.6875rem] text-muted-foreground">
                     Dùng trong đường dẫn: /products?collection={form.slug || '...'}
                   </p>
                 </div>

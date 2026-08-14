@@ -87,14 +87,14 @@ export default function ImageListField({
               <img src={src} alt={`Ảnh ${i + 1}`} className="w-full h-24 object-cover" />
 
               {i === 0 ? (
-                <span className="absolute top-1 left-1 bg-[#D4AF37] text-[#2C2C2C] text-[10px] font-bold px-1.5 py-0.5 rounded">
+                <span className="absolute top-1 left-1 bg-[#D4AF37] text-[#2C2C2C] text-[0.625rem] font-bold px-1.5 py-0.5 rounded">
                   Ảnh bìa
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => makeCover(i)}
-                  className="absolute bottom-1 left-1 bg-black/65 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="absolute bottom-1 left-1 bg-black/65 text-white text-[0.625rem] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 >
                   Đặt làm bìa
                 </button>

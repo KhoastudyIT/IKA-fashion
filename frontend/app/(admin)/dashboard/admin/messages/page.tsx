@@ -287,11 +287,11 @@ export default function AdminMessagesPage() {
                         <span className={`text-sm font-semibold truncate ${hasUnread ? 'text-[#2C2C2C]' : 'text-[#4A4A4A]'}`}>
                           {conv.customerName}
                         </span>
-                        <span className="text-[10px] text-[#7A7A7A] shrink-0">{formatTime(conv.lastMessageAt)}</span>
+                        <span className="text-[0.625rem] text-[#7A7A7A] shrink-0">{formatTime(conv.lastMessageAt)}</span>
                       </div>
                       <p className="text-xs text-[#7A7A7A] truncate mt-0.5">{conv.customerEmail}</p>
                       {!conv.aiEnabled && (
-                        <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
+                        <span className="inline-flex items-center gap-1 mt-1 text-[0.625rem] font-medium text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">
                           <Headset className="w-2.5 h-2.5" /> Chờ nhân viên
                         </span>
                       )}
@@ -300,7 +300,7 @@ export default function AdminMessagesPage() {
                           {conv.lastMessage || 'Chưa có tin nhắn'}
                         </p>
                         {hasUnread && (
-                          <span className="ml-2 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shrink-0">
+                          <span className="ml-2 bg-red-500 text-white text-[0.625rem] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shrink-0">
                             {conv.unreadByAdmin}
                           </span>
                         )}
@@ -337,7 +337,7 @@ export default function AdminMessagesPage() {
                       href={`/products/${selected.lastProduct.handle}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-1 text-[11px] text-[#8A7020] hover:underline"
+                      className="inline-flex items-center gap-1 mt-1 text-[0.6875rem] text-[#8A7020] hover:underline"
                     >
                       <ShoppingBag className="w-3 h-3" />
                       Đang quan tâm: <span className="font-medium">{selected.lastProduct.name}</span>
@@ -389,7 +389,7 @@ export default function AdminMessagesPage() {
                         )}
                         <div className={`max-w-[70%] ${onRight ? 'items-end' : 'items-start'} flex flex-col`}>
                           {isBot && (
-                            <span className="text-[10px] text-[#8A7020] font-medium mb-0.5 flex items-center gap-1">
+                            <span className="text-[0.625rem] text-[#8A7020] font-medium mb-0.5 flex items-center gap-1">
                               <Sparkles className="w-3 h-3" /> Trợ lý tự động
                             </span>
                           )}
@@ -403,8 +403,8 @@ export default function AdminMessagesPage() {
                               className="flex items-center gap-1.5 mb-1 px-2 py-1 bg-[#FDF8E9] border border-[#D4AF37]/40 rounded-lg hover:border-[#D4AF37] transition-colors max-w-full"
                             >
                               <ShoppingBag className="w-3 h-3 text-[#D4AF37] shrink-0" />
-                              <span className="text-[11px] text-[#2C2C2C] font-medium truncate">{msg.product.name}</span>
-                              <span className="text-[11px] text-[#D4AF37] shrink-0">
+                              <span className="text-[0.6875rem] text-[#2C2C2C] font-medium truncate">{msg.product.name}</span>
+                              <span className="text-[0.6875rem] text-[#D4AF37] shrink-0">
                                 {msg.product.price.toLocaleString('vi-VN')} đ
                               </span>
                             </a>
@@ -428,8 +428,8 @@ export default function AdminMessagesPage() {
                                   >
                                     <img src={p.img} alt={p.name} className="w-9 h-9 rounded object-cover shrink-0 bg-[#F9F5F0]" />
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-[11px] font-medium text-[#2C2C2C] truncate">{p.name}</p>
-                                      <p className="text-[11px] text-[#D4AF37] font-semibold">{p.price.toLocaleString('vi-VN')} đ</p>
+                                      <p className="text-[0.6875rem] font-medium text-[#2C2C2C] truncate">{p.name}</p>
+                                      <p className="text-[0.6875rem] text-[#D4AF37] font-semibold">{p.price.toLocaleString('vi-VN')} đ</p>
                                     </div>
                                   </a>
                                 ))}
@@ -437,7 +437,7 @@ export default function AdminMessagesPage() {
                             )}
                           </div>
                           <div className={`flex items-center gap-1 mt-1 ${onRight ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <span className="text-[10px] text-[#7A7A7A]">{formatTime(msg.createdAt)}</span>
+                            <span className="text-[0.625rem] text-[#7A7A7A]">{formatTime(msg.createdAt)}</span>
                             {isAdmin && (
                               msg.isRead
                                 ? <CheckCheck className="w-3 h-3 text-[#D4AF37]" />
@@ -522,7 +522,7 @@ export default function AdminMessagesPage() {
                     }
                   </button>
                 </div>
-                <p className="text-[10px] text-[#7A7A7A] mt-1.5 pl-1">Tự động làm mới mỗi 10 giây</p>
+                <p className="text-[0.625rem] text-[#7A7A7A] mt-1.5 pl-1">Tự động làm mới mỗi 10 giây</p>
               </div>
             </>
           ) : (

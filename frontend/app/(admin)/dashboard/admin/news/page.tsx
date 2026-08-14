@@ -291,7 +291,7 @@ export default function AdminNewsPage() {
                       {article.publishDate ? article.publishDate.split('-').reverse().join('/') : '—'}
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <span className={`text-[11px] font-medium px-2 py-1 rounded border ${STATUS_STYLE[article.status]}`}>
+                      <span className={`text-[0.6875rem] font-medium px-2 py-1 rounded border ${STATUS_STYLE[article.status]}`}>
                         {STATUS_LABEL[article.status]}
                       </span>
                     </td>
