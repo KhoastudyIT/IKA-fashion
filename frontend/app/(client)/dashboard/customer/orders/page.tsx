@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/auth-client'
-import { getMyOrders, Order } from '@/api'
+import { getMyOrders, Order, addToCart } from '@/api'
+import { useShop } from '@/components/context/ShopContext'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Chờ xác nhận',
@@ -20,6 +21,28 @@ export default function CustomerOrdersPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const { refreshCounts } = useShop()
+  const [buyingAgain, setBuyingAgain] = useState<string | null>(null)
+
+  const handleBuyAgain = async (order: Order) => {
+    setBuyingAgain(order.id)
+    try {
+      for (const item of order.items) {
+        await addToCart({
+          productId: item.productId || (item as any).product_id,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity,
+        })
+      }
+      await refreshCounts()
+      router.push('/dashboard/customer/cart')
+    } catch (error: any) {
+      console.error('Lỗi khi mua lại:', error)
+      alert(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng')
+      setBuyingAgain(null)
+    }
+  }
 
   useEffect(() => {
     if (isPending) return
@@ -84,9 +107,18 @@ export default function CustomerOrdersPage() {
                 </div>
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-xs text-muted-foreground">Giao đến: {order.shippingAddress} · {order.phone}</p>
-                  <Link href={`/dashboard/customer/orders/${order.id}`} className="text-sm font-medium text-accent hover:underline flex-shrink-0 ml-4">
-                    Xem chi tiết →
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleBuyAgain(order)}
+                      disabled={buyingAgain === order.id}
+                      className="text-sm font-medium text-[#2C2C2C] hover:text-[#D4AF37] disabled:opacity-50 transition-colors"
+                    >
+                      {buyingAgain === order.id ? 'Đang thêm...' : 'Mua Lại'}
+                    </button>
+                    <Link href={`/dashboard/customer/orders/${order.id}`} className="text-sm font-medium text-accent hover:underline flex-shrink-0">
+                      Xem chi tiết →
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
