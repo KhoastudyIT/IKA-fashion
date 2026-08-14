@@ -54,7 +54,7 @@ async function getSummary(from, to) {
 /** Doanh thu và số đơn theo từng ngày, đã điền đủ cả những ngày không có đơn. */
 async function getRevenueByDay(from, to) {
   const res = await db.query(
-    `SELECT d::date AS date,
+    `SELECT to_char(d, 'YYYY-MM-DD')       AS date,
             COALESCE(t.orders, 0)::int     AS orders,
             COALESCE(t.revenue, 0)::bigint AS revenue
      FROM generate_series($1::date, ($2::date - INTERVAL '1 day'), INTERVAL '1 day') AS d

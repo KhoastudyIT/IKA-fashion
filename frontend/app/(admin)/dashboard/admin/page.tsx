@@ -6,6 +6,7 @@ import {
   getAdminOrders, getStatsReport, downloadStatsExcel,
   Order, StatsReport,
 } from '@/api'
+import RevenueLineChart from '@/components/ui/RevenueLineChart'
 import {
   ShoppingBag,
   Receipt,
@@ -30,36 +31,53 @@ function isoDate(d: Date) {
   return `${d.getFullYear()}-${m}-${day}`
 }
 
-/** Nhãn 'DD/MM' cho trục ngang của biểu đồ. */
-function dayLabel(iso: string) {
-  const d = new Date(iso)
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+/** 'YYYY-MM-DD' → 'DD/MM/YYYY' để hiện cho người đọc. */
+function dmy(iso: string) {
+  const p = iso.split('-')
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso
+}
+
+/** Số ngày của kỳ, tính cả hai đầu mút. */
+function daysBetween(from: string, to: string) {
+  const ms = new Date(`${to}T00:00:00`).getTime() - new Date(`${from}T00:00:00`).getTime()
+  return Math.floor(ms / 86_400_000) + 1
 }
 
 const vnd = (n: number) => n.toLocaleString('vi-VN')
 
-const CHART_WIDTH = 500
-const CHART_HEIGHT = 160
+/** Mốc thời gian đặt sẵn — bấm một cái là xong, khỏi phải chọn từng ngày. */
+const QUICK_RANGES = [
+  { label: '7 ngày', days: 7 },
+  { label: '30 ngày', days: 30 },
+  { label: '90 ngày', days: 90 },
+]
+
+const DEFAULT_DAYS = 30
 
 export default function AdminDashboard() {
-  const [timeRange, setTimeRange] = useState('7')   // 7 / 15 / 30 ngày
+  const today = isoDate(new Date())
+  const defaultFrom = isoDate(new Date(Date.now() - (DEFAULT_DAYS - 1) * 86_400_000))
+
+  // Hai ô ngày là giá trị đang gõ; `range` mới là kỳ đã áp dụng và đang hiển
+  // thị. Tách ra để mỗi lần đổi ngày không bắn một request.
+  const [fromInput, setFromInput] = useState(defaultFrom)
+  const [toInput, setToInput] = useState(today)
+  const [range, setRange] = useState({ from: defaultFrom, to: today })
+
   const [report, setReport] = useState<StatsReport | null>(null)
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
 
-  // Khoảng ngày của kỳ báo cáo, tính cả ngày hôm nay.
-  const numDays = parseInt(timeRange, 10)
-  const to = isoDate(new Date())
-  const from = isoDate(new Date(Date.now() - (numDays - 1) * 86_400_000))
+  const numDays = daysBetween(range.from, range.to)
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
       setError('')
       const [rp, ordersRes] = await Promise.all([
-        getStatsReport({ from, to }),
+        getStatsReport(range),
         // Danh sách "gần đây" lấy riêng để không bị bó trong kỳ báo cáo đang chọn.
         getAdminOrders({ limit: 5 }),
       ])
@@ -70,16 +88,33 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }, [from, to])
+  }, [range])
 
   useEffect(() => {
     loadData()
   }, [loadData])
 
+  const applyRange = () => {
+    if (fromInput > toInput) {
+      setError('Ngày bắt đầu phải trước ngày kết thúc')
+      return
+    }
+    setRange({ from: fromInput, to: toInput })
+  }
+
+  /** Bấm nhanh 7 / 30 / 90 ngày — đặt lại hai ô ngày rồi áp dụng luôn. */
+  const applyQuickRange = (days: number) => {
+    const from = isoDate(new Date(Date.now() - (days - 1) * 86_400_000))
+    setFromInput(from)
+    setToInput(today)
+    setRange({ from, to: today })
+  }
+
   const handleExport = async () => {
+    if (range.from > range.to) return
     try {
       setExporting(true)
-      await downloadStatsExcel({ from, to })
+      await downloadStatsExcel(range)
     } catch (err: any) {
       setError(err.message || 'Không tải được file Excel')
     } finally {
@@ -95,16 +130,6 @@ export default function AdminDashboard() {
   const cancelRate = summary && summary.orders > 0
     ? Math.round((summary.cancelledOrders / summary.orders) * 100)
     : 0
-
-  // Trục dọc lấy mốc tối thiểu 1 triệu để cột ngày ế không dựng thành đỉnh giả.
-  const maxRevenue = Math.max(...revenueByDay.map((d) => d.revenue), 1_000_000)
-  const points = revenueByDay
-    .map((d, i) => {
-      const x = revenueByDay.length > 1 ? (i / (revenueByDay.length - 1)) * CHART_WIDTH : 0
-      const y = CHART_HEIGHT - (d.revenue / maxRevenue) * CHART_HEIGHT
-      return `${x},${y}`
-    })
-    .join(' ')
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -127,7 +152,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Title + thanh công cụ */}
+      {/* Title */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-2">Tổng Quan</h1>
@@ -135,17 +160,48 @@ export default function AdminDashboard() {
             Tổng quan cửa hàng và báo cáo bán hàng của IKA Fashion — số liệu tính trên toàn bộ đơn trong kỳ.
           </p>
         </div>
+        <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+          <Calendar className="w-4 h-4" />
+          Kỳ báo cáo: {dmy(range.from)} – {dmy(range.to)} ({numDays} ngày)
+        </span>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-3 print:hidden">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+      {/* Chọn kỳ báo cáo — áp cho cả trang lẫn tệp Excel */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-[#E5DFD8] print:hidden">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Từ ngày
+            </label>
+            <input
+              type="date"
+              value={fromInput}
+              max={toInput}
+              onChange={(e) => setFromInput(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Đến ngày
+            </label>
+            <input
+              type="date"
+              value={toInput}
+              min={fromInput}
+              max={today}
+              onChange={(e) => setToInput(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37]"
+            />
+          </div>
+
+          <button
+            onClick={applyRange}
+            disabled={loading}
+            className="px-4 py-1.5 bg-[#D4AF37] text-[#2C2C2C] font-semibold rounded text-sm hover:bg-[#c39f2c] disabled:opacity-60 transition-colors cursor-pointer"
           >
-            <option value="7">7 ngày qua</option>
-            <option value="15">15 ngày qua</option>
-            <option value="30">30 ngày qua</option>
-          </select>
+            {loading ? 'Đang tải...' : 'Áp dụng'}
+          </button>
 
           <button
             onClick={handleExport}
@@ -171,6 +227,25 @@ export default function AdminDashboard() {
           >
             <RefreshCw className="w-5 h-5 text-[#2C2C2C]" />
           </button>
+
+          <div className="flex items-center gap-2 ml-auto">
+            {QUICK_RANGES.map((r) => {
+              const active = numDays === r.days && range.to === today
+              return (
+                <button
+                  key={r.days}
+                  onClick={() => applyQuickRange(r.days)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer ${
+                    active
+                      ? 'border-[#D4AF37] text-[#2C2C2C] bg-[#D4AF37]/10'
+                      : 'border-[#E5DFD8] text-muted-foreground hover:bg-[#F9F5F0]'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
@@ -235,9 +310,7 @@ export default function AdminDashboard() {
       {/* ── Báo cáo theo kỳ ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 pt-2">
         <h2 className="text-xl font-heading font-semibold text-[#2C2C2C]">Báo Cáo &amp; Thống Kê</h2>
-        <span className="text-xs text-muted-foreground">
-          {from.split('-').reverse().join('/')} – {to.split('-').reverse().join('/')}
-        </span>
+        <span className="text-xs text-muted-foreground">{dmy(range.from)} – {dmy(range.to)}</span>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -281,73 +354,17 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Biểu đồ doanh thu */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 lg:col-span-2 space-y-6 print:break-inside-avoid print:shadow-none">
+        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 lg:col-span-2 space-y-4 print:break-inside-avoid print:shadow-none">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-heading font-semibold text-[#2C2C2C]">Xu Hướng Doanh Thu</h3>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Theo ngày ({timeRange} ngày qua)</span>
-            </div>
+            <span className="text-xs text-muted-foreground">Rê chuột lên biểu đồ để xem chi tiết từng ngày</span>
           </div>
 
-          <div className="relative pt-4">
-            <div className="absolute left-0 top-0 text-[10px] text-muted-foreground">{vnd(maxRevenue)} đ</div>
-            <div className="absolute left-0 bottom-6 text-[10px] text-muted-foreground">0 đ</div>
-
-            <div className="w-full pl-12 pr-4">
-              <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="w-full overflow-visible">
-                {/* Lưới ngang */}
-                <line x1="0" y1="0" x2={CHART_WIDTH} y2="0" stroke="#E5DFD8" strokeDasharray="4 4" />
-                <line x1="0" y1={CHART_HEIGHT / 2} x2={CHART_WIDTH} y2={CHART_HEIGHT / 2} stroke="#E5DFD8" strokeDasharray="4 4" />
-                <line x1="0" y1={CHART_HEIGHT} x2={CHART_WIDTH} y2={CHART_HEIGHT} stroke="#E5DFD8" />
-
-                {revenueByDay.length > 1 && (
-                  <>
-                    <path
-                      d={`M0,${CHART_HEIGHT} L${points} L${CHART_WIDTH},${CHART_HEIGHT} Z`}
-                      fill="url(#chart-gradient)"
-                      opacity="0.1"
-                    />
-                    <path d={`M${points}`} fill="none" stroke="#D4AF37" strokeWidth="3" strokeLinecap="round" />
-                    {revenueByDay.map((d, i) => {
-                      const x = (i / (revenueByDay.length - 1)) * CHART_WIDTH
-                      const y = CHART_HEIGHT - (d.revenue / maxRevenue) * CHART_HEIGHT
-                      return (
-                        <g key={d.date}>
-                          <circle cx={x} cy={y} r="4" className="fill-[#2C2C2C] stroke-[#D4AF37] stroke-2" />
-                          <title>{`${dayLabel(d.date)}: ${vnd(d.revenue)} đ · ${d.orders} đơn`}</title>
-                        </g>
-                      )
-                    })}
-                  </>
-                )}
-
-                <defs>
-                  <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D4AF37" />
-                    <stop offset="100%" stopColor="#D4AF37" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {/* Nhãn trục ngang — thưa bớt để không chen chúc */}
-              <div className="flex justify-between mt-3 text-[10px] text-muted-foreground font-medium">
-                {revenueByDay.map((d, idx) => {
-                  const showLabel =
-                    numDays === 7 ||
-                    (numDays === 15 && idx % 2 === 0) ||
-                    (numDays === 30 && idx % 5 === 0) ||
-                    idx === 0 ||
-                    idx === revenueByDay.length - 1
-                  return (
-                    <span key={d.date} style={{ visibility: showLabel ? 'visible' : 'hidden' }}>
-                      {dayLabel(d.date)}
-                    </span>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
+          {loading ? (
+            <p className="text-sm text-muted-foreground text-center py-16">Đang dựng biểu đồ...</p>
+          ) : (
+            <RevenueLineChart data={revenueByDay} />
+          )}
         </div>
 
         {/* Sản phẩm bán chạy */}

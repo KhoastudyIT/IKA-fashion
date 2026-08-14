@@ -33,7 +33,10 @@ const RETURN_STATUS_LABEL = {
   rejected: 'Từ chối', completed: 'Hoàn tất',
 };
 
-const dmy = (d) => new Date(d).toLocaleDateString('vi-VN');
+const dmy = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d));
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : new Date(d).toLocaleDateString('vi-VN');
+};
 const dmyhm = (d) => new Date(d).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 
 /** Mã đơn hiển thị cho người đọc — 8 ký tự đầu của UUID, như trên giao diện. */
