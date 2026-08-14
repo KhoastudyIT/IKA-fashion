@@ -110,9 +110,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Menu đầy đủ của admin; nhân viên chỉ thấy phần canAccessPath cho qua.
-  // Không còn mục "Thống Kê" riêng — báo cáo đã nằm trong Bảng Điều Khiển.
+  // Không còn mục "Thống Kê" riêng — báo cáo đã nằm trong Tổng Quan.
   const navItems = [
-    { name: 'Bảng Điều Khiển', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Tổng Quan', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Sản Phẩm', href: '/dashboard/admin/products', icon: ShoppingBag },
     { name: 'Danh Mục', href: '/dashboard/admin/collections', icon: FolderKanban },
     { name: 'Đơn Hàng', href: '/dashboard/admin/orders', icon: Receipt },

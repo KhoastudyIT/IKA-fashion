@@ -20,7 +20,7 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 
-// Bảng Điều Khiển gộp luôn phần Thống Kê: một trang duy nhất cho cả số liệu
+// Trang Tổng Quan gộp luôn phần Thống Kê: một trang duy nhất cho cả số liệu
 // tổng quan lẫn báo cáo theo kỳ, thay vì hai mục rời như trước.
 
 /** 'YYYY-MM-DD' theo giờ máy — dùng toISOString sẽ lệch ngày do quy về UTC. */
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
       setReport(rp)
       setRecentOrders(ordersRes.items ?? [])
     } catch (err: any) {
-      setError(err.message || 'Lỗi tải dữ liệu bảng điều khiển')
+      setError(err.message || 'Lỗi tải dữ liệu tổng quan')
     } finally {
       setLoading(false)
     }
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       {/* Title + thanh công cụ */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-2">Bảng Điều Khiển</h1>
+          <h1 className="text-3xl font-heading font-semibold text-[#2C2C2C] mb-2">Tổng Quan</h1>
           <p className="text-muted-foreground text-sm">
             Tổng quan cửa hàng và báo cáo bán hàng của IKA Fashion — số liệu tính trên toàn bộ đơn trong kỳ.
           </p>
