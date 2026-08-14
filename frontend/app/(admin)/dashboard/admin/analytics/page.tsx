@@ -107,7 +107,13 @@ export default function AdminAnalyticsPage() {
           <p className="text-muted-foreground text-sm">Phân tích hiệu suất bán hàng, doanh thu thực tế, sản phẩm bán chạy và tăng trưởng.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 print:hidden">
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] rounded text-sm text-[#2C2C2C] hover:bg-[#E5DFD8] transition-colors cursor-pointer"
+          >
+            🖨️ In Báo Cáo
+          </button>
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
@@ -131,22 +137,22 @@ export default function AdminAnalyticsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tổng doanh thu</p>
           <p className="text-2xl font-heading font-semibold text-green-600">{totalRevenue.toLocaleString()} đ</p>
           <p className="text-[10px] text-muted-foreground mt-1">Không tính các đơn bị hủy</p>
         </div>
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Sản phẩm đã bán</p>
           <p className="text-2xl font-heading font-semibold text-[#2C2C2C]">{itemsSold} món</p>
           <p className="text-[10px] text-[#D4AF37] font-semibold mt-1">Đã đóng gói thành công</p>
         </div>
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Đơn hoàn thành</p>
           <p className="text-2xl font-heading font-semibold text-blue-600">{completedOrders.length} đơn</p>
           <p className="text-[10px] text-muted-foreground mt-1">Đã giao hàng và thu tiền</p>
         </div>
-        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8]">
+        <div className="bg-white rounded-lg p-5 shadow-sm border border-[#E5DFD8] print:break-inside-avoid print:shadow-none">
           <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Tỷ lệ hủy đơn</p>
           <p className="text-2xl font-heading font-semibold text-red-600">
             {orders.length ? Math.round((orders.filter((o) => o.status === 'cancelled').length / orders.length) * 100) : 0}%
@@ -157,7 +163,7 @@ export default function AdminAnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* SVG Premium Chart Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 lg:col-span-2 space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 lg:col-span-2 space-y-6 print:break-inside-avoid print:shadow-none">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-heading font-semibold text-[#2C2C2C]">Xu Hướng Doanh Thu</h2>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -247,7 +253,7 @@ export default function AdminAnalyticsPage() {
         </div>
 
         {/* Top Products Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-[#E5DFD8] p-6 space-y-6 print:break-inside-avoid print:shadow-none">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-heading font-semibold text-[#2C2C2C]">Bán Chạy Nhất</h2>
             <BarChart2 className="w-5 h-5 text-[#D4AF37]" />

@@ -99,14 +99,14 @@ export default function CustomerDashboardLayout({ children }: { children: React.
         {/* Thanh mở menu cho màn hẹp — sidebar bị ẩn ở đó */}
         <button
           onClick={() => setMenuOpen(true)}
-          className="md:hidden flex items-center gap-2 mb-6 px-4 py-2.5 rounded border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+          className="md:hidden flex items-center gap-2 mb-6 px-4 py-2.5 rounded border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors print:hidden"
         >
           <Menu className="w-4 h-4" />
           Menu tài khoản
         </button>
 
         <div className="flex gap-8">
-          <aside className="hidden md:flex flex-col w-60 shrink-0 bg-card border border-border rounded-lg overflow-hidden self-start sticky top-28">
+          <aside className="hidden md:flex flex-col w-60 shrink-0 bg-card border border-border rounded-lg overflow-hidden self-start sticky top-28 print:hidden">
             {sidebar}
           </aside>
 
