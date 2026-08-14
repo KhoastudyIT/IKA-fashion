@@ -91,6 +91,7 @@ API chia 3 nhóm namespace: **Public** `/api/v1/...`, **Customer** `/api/v1/cust
 | PUT/DELETE | `/customer/cart/items/:key` | Cập nhật / xóa 1 dòng |
 | POST   | `/customer/orders` | Đặt hàng (từ giỏ, có `couponCode`) |
 | GET    | `/customer/orders` · `/customer/orders/:id` | Đơn của tôi |
+| GET    | `/customer/orders/:id/invoice` | Hóa đơn PDF của đơn (trả về file) |
 | GET/POST | `/customer/wishlist` | Yêu thích |
 | DELETE | `/customer/wishlist/:productId` | Xóa yêu thích |
 | POST   | `/customer/coupons/apply` | Áp mã lúc checkout |
@@ -108,6 +109,9 @@ API chia 3 nhóm namespace: **Public** `/api/v1/...`, **Customer** `/api/v1/cust
 | POST/PUT/DELETE | `/admin/collections` · `/admin/collections/:id` | CRUD danh mục |
 | GET    | `/admin/orders` (?status=) · `/admin/orders/:id` | Tất cả đơn |
 | PUT    | `/admin/orders/:id/status` | Cập nhật trạng thái đơn |
+| GET    | `/admin/orders/:id/invoice` | Hóa đơn PDF của đơn bất kỳ (trả về file) |
+| GET    | `/admin/stats/report` (?from=&to=) | Số liệu báo cáo theo kỳ (JSON) |
+| GET    | `/admin/stats/export` (?from=&to=) | Tải báo cáo Excel nhiều sheet (.xlsx) |
 | GET/DELETE | `/admin/users` · `/admin/users/:id` | Danh sách / xóa user |
 | PUT    | `/admin/users/:id/toggle-lock` · `/admin/users/:id/role` | Khóa / đổi vai trò |
 | GET/POST/PUT/DELETE | `/admin/coupons` · `/admin/coupons/:id` | CRUD mã giảm giá |

@@ -19,7 +19,10 @@ const ORDER_SELECT = `
              json_build_object(
                'productId', oi.product_id, 'name', oi.name, 'img', oi.img,
                'price', oi.price, 'size', oi.size, 'color', oi.color,
-               'quantity', oi.quantity, 'lineTotal', oi.price * oi.quantity
+               'quantity', oi.quantity, 'lineTotal', oi.price * oi.quantity,
+               -- Giá niêm yết và chương trình flash lúc đặt: hoá đơn PDF cần để
+               -- in mức giảm của từng dòng hàng.
+               'listPrice', oi.list_price, 'flashSaleId', oi.flash_sale_id
              ) ORDER BY oi.id
            ) FILTER (WHERE oi.id IS NOT NULL),
            '[]'

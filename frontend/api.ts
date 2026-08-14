@@ -1039,3 +1039,126 @@ export function flashStatus(fs: FlashSale, now = Date.now()): { label: string; t
   if (fs.remaining <= 0) return { label: 'Hết suất', tone: 'soldout' }
   return { label: 'Đang chạy', tone: 'live' }
 }
+
+// ---------- Thống kê / Báo cáo ----------
+// Backend tính sẵn trên toàn bộ đơn trong kỳ nên số liệu không phụ thuộc trang
+// đang xem như cách tính tay từ /admin/orders trước đây.
+
+export interface StatsSummary {
+  /** Doanh thu trong kỳ — không tính đơn đã hủy và đơn đã trả hàng. */
+  revenue: number
+  orders: number
+  cancelledOrders: number
+  completedOrders: number
+  itemsSold: number
+  newCustomers: number
+  avgOrderValue: number
+  // Số liệu toàn thời gian, không đổi theo kỳ báo cáo
+  totalProducts: number
+  lowStockCount: number
+  totalCustomers: number
+  totalOrders: number
+  totalRevenue: number
+}
+
+export interface StatsReport {
+  range: { from: string; to: string }
+  summary: StatsSummary
+  revenueByDay: Array<{ date: string; orders: number; revenue: number }>
+  topProducts: Array<{ name: string; collection: string; sold: number; revenue: number; stock: number }>
+  orders: Array<{
+    id: string; createdAt: string; total: number; discount: number; couponCode: string
+    status: string; paymentStatus: string; phone: string; shippingAddress: string
+    customerName: string | null; customerEmail: string | null; itemCount: number
+  }>
+  ordersByStatus: Array<{ status: string; count: number; revenue: number }>
+  revenueByCollection: Array<{ collection: string; sold: number; revenue: number }>
+  topCustomers: Array<{ name: string; phone: string; email: string; orders: number; spent: number }>
+  returns: Array<{
+    createdAt: string; type: string; reason: string; status: string
+    adminNote: string; orderTotal: number; customerName: string | null
+  }>
+  lowStock: Array<{ name: string; handle: string; collection: string; stock: number; sold: number }>
+}
+
+/** Số liệu báo cáo của một kỳ. Ngày dạng 'YYYY-MM-DD', tính CẢ ngày `to`. */
+export function getStatsReport(
+  { from, to }: { from?: string; to?: string } = {},
+): Promise<StatsReport> {
+  const qs = new URLSearchParams()
+  if (from) qs.set('from', from)
+  if (to) qs.set('to', to)
+  return getData(`/admin/stats/report${qs.toString() ? `?${qs}` : ''}`, { auth: true })
+}
+
+// ---------- Tệp tải về: hóa đơn PDF & báo cáo Excel ----------
+
+/**
+ * Tải tệp nhị phân (PDF, Excel) từ API.
+ *
+ * Không dùng thẻ `<a href>` trực tiếp được vì các tuyến này đòi Bearer token —
+ * trình duyệt sẽ không tự gắn header. Vì vậy phải fetch kèm token rồi tạo URL
+ * tạm từ blob nhận về.
+ */
+async function fetchFile(
+  path: string,
+  fallbackName: string,
+): Promise<{ url: string; fileName: string; revoke: () => void }> {
+  const token = getToken()
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+
+  if (!res.ok) {
+    // Lỗi trả về vẫn là JSON nên đọc ra để hiện đúng thông báo cho người dùng.
+    let message = `Tải tệp thất bại (HTTP ${res.status}).`
+    try {
+      message = (await res.json())?.message || message
+    } catch {
+      /* giữ thông báo mặc định */
+    }
+    throw new Error(message)
+  }
+
+  // Ưu tiên tên tệp do server đặt trong Content-Disposition.
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const matched = disposition.match(/filename="?([^";]+)"?/)
+  const fileName = matched ? matched[1] : fallbackName
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  return { url, fileName, revoke: () => URL.revokeObjectURL(url) }
+}
+
+/**
+ * Mở hóa đơn PDF của một đơn ở tab mới để xem rồi in hoặc lưu lại.
+ *
+ * `admin = true` gọi tuyến quản trị (in được đơn của mọi khách), mặc định là
+ * tuyến của khách — chỉ in được đơn của chính mình.
+ */
+export async function openOrderInvoice(orderId: string, { admin = false } = {}) {
+  const base = admin ? '/admin/orders' : '/customer/orders'
+  const { url, revoke } = await fetchFile(`${base}/${orderId}/invoice`, 'hoa-don.pdf')
+  const win = window.open(url, '_blank')
+  if (!win) throw new Error('Trình duyệt đã chặn cửa sổ bật lên. Vui lòng cho phép rồi thử lại.')
+  // Giữ URL đủ lâu cho tab mới nạp xong rồi mới thu hồi.
+  setTimeout(revoke, 60_000)
+}
+
+/** Tải báo cáo thống kê Excel về máy. Ngày dạng 'YYYY-MM-DD', tính cả ngày `to`. */
+export async function downloadStatsExcel({ from, to }: { from?: string; to?: string } = {}) {
+  const qs = new URLSearchParams()
+  if (from) qs.set('from', from)
+  if (to) qs.set('to', to)
+  const { url, fileName, revoke } = await fetchFile(
+    `/admin/stats/export${qs.toString() ? `?${qs}` : ''}`,
+    'thong-ke.xlsx',
+  )
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  revoke()
+}

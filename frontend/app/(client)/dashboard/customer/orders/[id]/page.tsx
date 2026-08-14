@@ -7,7 +7,7 @@ import { useSession } from '@/auth-client'
 import {
   getMyOrders, createReturnRequest, canRequestReturn, uploadImage, validateImageFile,
   RETURN_WINDOW_DAYS, RETURN_TYPE_LABEL, RETURN_STATUS_LABEL,
-  Order, ReturnType, addToCart
+  Order, ReturnType, addToCart, openOrderInvoice,
 } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
 import { ArrowLeft, Package, MapPin, Phone, Clock, RotateCcw, Undo2, X, ImagePlus } from 'lucide-react'
@@ -48,6 +48,20 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true)
   const { refreshCounts } = useShop()
   const [buyingAgain, setBuyingAgain] = useState(false)
+  const [invoicing, setInvoicing] = useState(false)
+
+  /** Hóa đơn PDF do backend dựng — mở tab mới để khách xem, in hoặc lưu lại. */
+  const handleInvoice = async () => {
+    if (!order) return
+    setInvoicing(true)
+    try {
+      await openOrderInvoice(order.id)
+    } catch (error: any) {
+      alert(error.message || 'Không mở được hóa đơn')
+    } finally {
+      setInvoicing(false)
+    }
+  }
 
   const handleBuyAgain = async () => {
     if (!order) return
@@ -185,11 +199,12 @@ export default function OrderDetailPage() {
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
-            onClick={() => window.print()}
-            className="print:hidden px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-sm rounded hover:bg-[#E5DFD8] transition-colors cursor-pointer"
+            onClick={handleInvoice}
+            disabled={invoicing}
+            className="print:hidden px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-sm rounded hover:bg-[#E5DFD8] disabled:opacity-60 transition-colors cursor-pointer"
             style={{ color: '#2C2C2C', fontWeight: 600 }}
           >
-            📄 Xuất Hóa Đơn
+            📄 {invoicing ? 'Đang tạo...' : 'Xuất Hóa Đơn'}
           </button>
           <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, background: status.bg, color: status.color }}>
             {status.label}

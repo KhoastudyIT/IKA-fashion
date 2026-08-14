@@ -15,6 +15,7 @@ import { uploadPaths } from './uploads.js';
 import { flashSalePaths } from './flash-sales.js';
 import { returnPaths } from './returns.js';
 import { contactPaths } from './contacts.js';
+import { statsPaths } from './stats.js';
 
 export const paths = {
   ...systemPaths,
@@ -34,4 +35,5 @@ export const paths = {
   ...flashSalePaths,
   ...returnPaths,
   ...contactPaths,
+  ...statsPaths,
 };

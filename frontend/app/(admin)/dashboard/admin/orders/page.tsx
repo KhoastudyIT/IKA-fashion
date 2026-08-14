@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { getAdminOrders, updateOrderStatus, Order } from '@/api'
-import { Receipt, Search, Eye, RefreshCw, X } from 'lucide-react'
+import { getAdminOrders, updateOrderStatus, openOrderInvoice, Order } from '@/api'
+import { Receipt, Search, Eye, RefreshCw, X, Printer } from 'lucide-react'
 import AdminPagination from '@/components/ui/AdminPagination'
 
 export default function AdminOrdersPage() {
@@ -31,6 +31,19 @@ export default function AdminOrdersPage() {
   // Modal xem chi tiết
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [invoiceId, setInvoiceId] = useState<string | null>(null)
+
+  /** Mở hóa đơn PDF do backend dựng, ở tab mới để admin xem rồi in hoặc lưu. */
+  const handleInvoice = async (orderId: string) => {
+    try {
+      setInvoiceId(orderId)
+      await openOrderInvoice(orderId, { admin: true })
+    } catch (err: any) {
+      setError(err.message || 'Không mở được hóa đơn')
+    } finally {
+      setInvoiceId(null)
+    }
+  }
 
   const loadOrders = async () => {
     try {
@@ -251,12 +264,23 @@ export default function AdminOrdersPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => setSelectedOrder(order)}
-                        className="px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-xs font-semibold rounded hover:bg-[#2C2C2C] hover:text-white transition-all inline-flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Chi tiết
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => handleInvoice(order.id)}
+                          disabled={invoiceId === order.id}
+                          className="px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-xs font-semibold rounded hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                          title="Xuất hóa đơn PDF"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          {invoiceId === order.id ? 'Đang tạo...' : 'Hóa đơn'}
+                        </button>
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className="px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-xs font-semibold rounded hover:bg-[#2C2C2C] hover:text-white transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Chi tiết
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -291,6 +315,14 @@ export default function AdminOrdersPage() {
               <div className="flex items-center gap-3">
                 {getStatusBadge(selectedOrder.status)}
                 {getPaymentStatusBadge(selectedOrder.paymentStatus)}
+                <button
+                  onClick={() => handleInvoice(selectedOrder.id)}
+                  disabled={invoiceId === selectedOrder.id}
+                  className="px-3 py-1.5 bg-[#F9F5F0] border border-[#E5DFD8] text-xs font-semibold rounded hover:bg-[#2C2C2C] hover:text-white disabled:opacity-60 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  {invoiceId === selectedOrder.id ? 'Đang tạo...' : 'Xuất hóa đơn'}
+                </button>
                 <button
                   onClick={() => setSelectedOrder(null)}
                   className="p-2 hover:bg-[#F9F5F0] rounded-full transition-colors cursor-pointer"

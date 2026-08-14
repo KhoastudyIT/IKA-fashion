@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/auth-client'
-import { getMyOrders, Order, addToCart } from '@/api'
+import { getMyOrders, Order, addToCart, openOrderInvoice } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -23,6 +23,19 @@ export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(true)
   const { refreshCounts } = useShop()
   const [buyingAgain, setBuyingAgain] = useState<string | null>(null)
+  const [invoicingId, setInvoicingId] = useState<string | null>(null)
+
+  /** Hóa đơn PDF của một đơn, mở ở tab mới để khách xem rồi in hoặc lưu. */
+  const handleInvoice = async (orderId: string) => {
+    setInvoicingId(orderId)
+    try {
+      await openOrderInvoice(orderId)
+    } catch (error: any) {
+      alert(error.message || 'Không mở được hóa đơn')
+    } finally {
+      setInvoicingId(null)
+    }
+  }
 
   const handleBuyAgain = async (order: Order) => {
     setBuyingAgain(order.id)
@@ -108,6 +121,13 @@ export default function CustomerOrdersPage() {
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-xs text-muted-foreground">Giao đến: {order.shippingAddress} · {order.phone}</p>
                   <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleInvoice(order.id)}
+                      disabled={invoicingId === order.id}
+                      className="text-sm font-medium text-muted-foreground hover:text-[#D4AF37] disabled:opacity-50 transition-colors"
+                    >
+                      {invoicingId === order.id ? 'Đang tạo...' : 'Hóa đơn'}
+                    </button>
                     <button
                       onClick={() => handleBuyAgain(order)}
                       disabled={buyingAgain === order.id}

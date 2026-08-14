@@ -10,6 +10,8 @@ export const orderCustomerRouter = Router();
 orderCustomerRouter.use(authenticate, authorize('customer'));
 orderCustomerRouter.post('/',    validate(createOrderSchema), orderController.create);
 orderCustomerRouter.get('/',     orderController.listMine);
+// Đặt trước '/:id' cũng được vì đường dẫn khác nhau, nhưng để cạnh nhau cho dễ đọc.
+orderCustomerRouter.get('/:id/invoice', orderController.invoice);
 orderCustomerRouter.get('/:id',  orderController.getById);
 
 // Admin quản lý tất cả đơn — mount tại /api/v1/admin/orders
@@ -17,5 +19,6 @@ orderCustomerRouter.get('/:id',  orderController.getById);
 export const orderAdminRouter = Router();
 orderAdminRouter.use(authenticate, authorize('admin', 'staff'));
 orderAdminRouter.get('/',            validateQuery(orderQuerySchema), orderController.listAll);
+orderAdminRouter.get('/:id/invoice', orderController.invoice);
 orderAdminRouter.get('/:id',         orderController.getById);
 orderAdminRouter.put('/:id/status',  validate(updateOrderStatusSchema), orderController.updateStatus);

@@ -37,7 +37,10 @@ backend/src/
   middleware/         # authenticate(JWT) · authorize(role) · validate(zod) · errorHandler
   db/                 # index.js (pg Pool) · seed.js (admin) · setup.js (tạo DB local)
   modules/<feature>/  # mỗi feature: routes → controller → service + schema
-    auth · products · collections · cart · orders · wishlist · messages
+    auth · products · collections · cart · orders · wishlist · messages · stats
+  services/pdf/       # hóa đơn PDF (pdfkit + font Be Vietnam Pro cho tiếng Việt)
+  services/excel/     # báo cáo thống kê nhiều sheet (exceljs)
+  assets/fonts/       # font nhúng vào PDF
   docs/openapi.js     # OpenAPI 3 (Scalar UI tại /api-docs)
 backend/database/ika_database.sql  # schema + seed PostgreSQL (Postgres tự nạp lúc init)
 ```

@@ -12,7 +12,6 @@ import {
   FolderKanban,
   Receipt,
   Users,
-  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -111,6 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Menu đầy đủ của admin; nhân viên chỉ thấy phần canAccessPath cho qua.
+  // Không còn mục "Thống Kê" riêng — báo cáo đã nằm trong Bảng Điều Khiển.
   const navItems = [
     { name: 'Bảng Điều Khiển', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Sản Phẩm', href: '/dashboard/admin/products', icon: ShoppingBag },
@@ -125,7 +125,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Flash Sale', href: '/dashboard/admin/flash-sales', icon: Zap },
     { name: 'Tin Tức', href: '/dashboard/admin/news', icon: Newspaper },
     { name: 'Nhân Viên', href: '/dashboard/admin/staffs', icon: ShieldCheck },
-    { name: 'Thống Kê', href: '/dashboard/admin/analytics', icon: BarChart3 },
     { name: 'Cài Đặt', href: '/dashboard/admin/settings', icon: Settings },
   ].filter((item) => canAccessPath(role, item.href))
 
