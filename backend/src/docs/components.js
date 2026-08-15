@@ -220,6 +220,11 @@ export const components = {
         shippingAddress: { type: 'string', example: '123 Lê Lợi, Quận 1, TP.HCM' },
         phone: { type: 'string', example: '0901234567' },
         notes: { type: 'string', example: 'Giao giờ hành chính' },
+        cancelReason: {
+          type: 'string',
+          description: 'Lý do khách ghi khi tự hủy đơn. Rỗng nếu đơn không bị hủy hoặc do cửa hàng hủy.',
+          example: '',
+        },
         createdAt: { type: 'string', format: 'date-time', example: '2026-07-15T08:00:00.000Z' },
         updatedAt: { type: 'string', format: 'date-time', example: '2026-07-15T08:00:00.000Z' },
         items: { type: 'array', items: { $ref: '#/components/schemas/OrderItem' } },
@@ -335,7 +340,11 @@ export const components = {
           description: 'Ảnh khách gửi để cửa hàng đối chiếu với lý do',
           example: ['/uploads/returns/1786552323984-17a10225.png', '/uploads/returns/1786552323991-3ff8200f.png'],
         },
-        status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'completed'], example: 'pending' },
+        status: {
+          type: 'string', enum: ['pending', 'approved', 'rejected', 'completed', 'cancelled'],
+          description: '`cancelled` = khách tự rút yêu cầu khi cửa hàng chưa duyệt.',
+          example: 'pending',
+        },
         adminNote: { type: 'string', description: 'Phản hồi của cửa hàng, khách đọc được', example: 'Đã nhận được hàng gửi về' },
         resolvedAt: { type: 'string', format: 'date-time', nullable: true, example: null },
         createdAt: { type: 'string', format: 'date-time', example: '2026-08-13T02:00:00.000Z' },
@@ -360,6 +369,16 @@ export const components = {
             'BẮT BUỘC ít nhất 2 ảnh. Chỉ nhận đường dẫn do POST /customer/uploads/returns sinh ra, '
             + 'không nhận URL ngoài.',
           example: ['/uploads/returns/a.png', '/uploads/returns/b.png'],
+        },
+      },
+    },
+    OrderCancelBody: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string', maxLength: 500,
+          description: 'Lý do hủy, không bắt buộc. Cửa hàng đọc được ở trang quản lý đơn.',
+          example: 'Em đặt nhầm size, muốn đặt lại đơn khác',
         },
       },
     },

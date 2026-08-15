@@ -16,6 +16,12 @@ export const updateOrderStatusSchema = z.object({
   paymentStatus: z.enum(['unpaid', 'paid', 'refunded']).optional(),
 });
 
+// Khách tự hủy đơn. Lý do không bắt buộc — bắt khách giải thích mới cho hủy chỉ
+// làm họ gõ bừa; có ghi thì cửa hàng đọc được ở trang quản lý đơn.
+export const cancelOrderSchema = z.object({
+  reason: z.string().trim().max(500, 'Lý do tối đa 500 ký tự').optional().default(''),
+});
+
 // Bộ lọc danh sách đơn của admin. 'returned' được phép LỌC (chỉ không được đặt
 // tay qua updateOrderStatusSchema).
 export const orderQuerySchema = z.object({

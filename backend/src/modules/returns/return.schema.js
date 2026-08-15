@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
 export const RETURN_TYPES = ['return', 'exchange'];
-export const RETURN_STATUSES = ['pending', 'approved', 'rejected', 'completed'];
+// 'cancelled' = khách tự rút yêu cầu. Admin không đặt tay được trạng thái này
+// (bảng NEXT_STATUSES trong service không có bước nào dẫn tới nó), nhưng vẫn cần
+// nằm trong danh sách để lọc được ở trang quản trị.
+export const RETURN_STATUSES = ['pending', 'approved', 'rejected', 'completed', 'cancelled'];
 
 export const MIN_RETURN_IMAGES = 2;
 export const MAX_RETURN_IMAGES = 5;

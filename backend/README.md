@@ -92,6 +92,9 @@ API chia 3 nhóm namespace: **Public** `/api/v1/...`, **Customer** `/api/v1/cust
 | POST   | `/customer/orders` | Đặt hàng (từ giỏ, có `couponCode`) |
 | GET    | `/customer/orders` · `/customer/orders/:id` | Đơn của tôi |
 | GET    | `/customer/orders/:id/invoice` | Hóa đơn PDF của đơn (trả về file) |
+| PATCH  | `/customer/orders/:id/cancel` | Tự hủy đơn (chỉ khi đơn còn `pending`/`confirmed`), body `{ reason? }` |
+| GET/POST | `/customer/returns` | Yêu cầu trả / đổi hàng của tôi · gửi yêu cầu mới |
+| PATCH  | `/customer/returns/:id/cancel` | Rút lại yêu cầu trả / đổi khi cửa hàng chưa duyệt |
 | GET/POST | `/customer/wishlist` | Yêu thích |
 | DELETE | `/customer/wishlist/:productId` | Xóa yêu thích |
 | POST   | `/customer/coupons/apply` | Áp mã lúc checkout |

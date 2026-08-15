@@ -25,6 +25,7 @@ const FILTERS: { value: ReturnStatus | ''; label: string }[] = [
   { value: 'approved', label: 'Đã duyệt' },
   { value: 'completed', label: 'Đã xử lý xong' },
   { value: 'rejected', label: 'Bị từ chối' },
+  { value: 'cancelled', label: 'Khách đã hủy' },
   { value: '', label: 'Tất cả' },
 ]
 
@@ -33,6 +34,7 @@ const STATUS_STYLE: Record<ReturnStatus, string> = {
   approved: 'bg-blue-100 text-blue-800',
   rejected: 'bg-red-100 text-red-700',
   completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-gray-200 text-gray-700',
 }
 
 /** Bước tiếp theo hợp lệ — khớp với NEXT_STATUSES ở backend. */
@@ -41,6 +43,8 @@ const NEXT: Record<ReturnStatus, ReturnStatus[]> = {
   approved: ['completed', 'rejected'],
   rejected: [],
   completed: [],
+  // Khách tự rút — admin không mở lại được, khách phải gửi yêu cầu mới.
+  cancelled: [],
 }
 
 const ACTION_LABEL: Record<ReturnStatus, string> = {
@@ -48,6 +52,7 @@ const ACTION_LABEL: Record<ReturnStatus, string> = {
   rejected: 'Từ chối',
   completed: 'Hoàn tất',
   pending: 'Chờ duyệt',
+  cancelled: 'Khách đã hủy',
 }
 
 const vnd = (n: number) => Number(n).toLocaleString('vi-VN') + ' đ'

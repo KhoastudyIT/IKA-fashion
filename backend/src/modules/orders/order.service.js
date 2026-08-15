@@ -13,6 +13,7 @@ const ORDER_SELECT = `
          o.discount, o.coupon_code AS "couponCode",
          o.status, o.payment_status AS "paymentStatus",
          o.shipping_address AS "shippingAddress", o.phone, o.notes,
+         o.cancel_reason AS "cancelReason",
          o.created_at AS "createdAt", o.updated_at AS "updatedAt",
          COALESCE(
            json_agg(
@@ -282,29 +283,95 @@ export async function updateOrderStatus(id, { status, paymentStatus }) {
     if (!upd.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
 
     // Chỉ hoàn khi đơn thực sự CHUYỂN SANG hủy — cập nhật lại đơn đã hủy thì thôi.
-    if (nowCancelled && !wasCancelled) {
-      const items = await client.query(
-        'SELECT product_id, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
-        [id],
+    if (nowCancelled && !wasCancelled) await restoreStock(client, id);
+
+    await client.query('COMMIT');
+    return getOrderRow(id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Hoàn tồn kho và suất flash sale của một đơn bị hủy.
+ *
+ * Chạy trong transaction của lời gọi, sau khi đơn đã được khóa bằng FOR UPDATE —
+ * nếu không, hai lần hủy chồng nhau sẽ cộng kho hai lần.
+ */
+async function restoreStock(client, orderId) {
+  const items = await client.query(
+    'SELECT product_id, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
+    [orderId],
+  );
+  for (const it of items.rows) {
+    await client.query(
+      `UPDATE products
+       SET stock = stock + $2, sold = GREATEST(0, sold - $2)
+       WHERE id = $1`,
+      [it.product_id, it.quantity],
+    );
+    // Trả lại suất flash, không thì đơn hủy vẫn ăn mất suất của chương trình.
+    if (it.flash_sale_id) {
+      await client.query(
+        `UPDATE flash_sales
+         SET sold = GREATEST(0, sold - $2), updated_at = NOW()
+         WHERE id = $1`,
+        [it.flash_sale_id, it.quantity],
       );
-      for (const it of items.rows) {
-        await client.query(
-          `UPDATE products
-           SET stock = stock + $2, sold = GREATEST(0, sold - $2)
-           WHERE id = $1`,
-          [it.product_id, it.quantity],
-        );
-        // Trả lại suất flash, không thì đơn hủy vẫn ăn mất suất của chương trình.
-        if (it.flash_sale_id) {
-          await client.query(
-            `UPDATE flash_sales
-             SET sold = GREATEST(0, sold - $2), updated_at = NOW()
-             WHERE id = $1`,
-            [it.flash_sale_id, it.quantity],
-          );
-        }
-      }
     }
+  }
+}
+
+/** Trạng thái mà khách còn tự hủy đơn được — hàng chưa rời cửa hàng. */
+export const CUSTOMER_CANCELLABLE = ['pending', 'confirmed'];
+
+/** Vì sao đơn ở trạng thái này không tự hủy được — nói rõ để khách biết làm gì tiếp. */
+const CANCEL_BLOCKED_REASON = {
+  shipped:   'Đơn đã được giao cho đơn vị vận chuyển nên không tự hủy được. Vui lòng liên hệ cửa hàng để được hỗ trợ.',
+  completed: 'Đơn đã giao xong. Nếu sản phẩm chưa vừa ý, bạn hãy gửi yêu cầu trả hoặc đổi hàng.',
+  cancelled: 'Đơn hàng này đã được hủy trước đó.',
+  returned:  'Đơn hàng này đã được trả lại nên không hủy được nữa.',
+};
+
+/**
+ * Khách tự hủy đơn của mình.
+ *
+ * Chỉ áp dụng cho đơn chưa rời cửa hàng (`pending`, `confirmed`); đơn đang giao
+ * phải liên hệ cửa hàng, đơn đã giao xong thì đi đường trả/đổi hàng. Kho và suất
+ * flash được hoàn y hệt khi admin hủy đơn.
+ *
+ * Lượt dùng mã giảm giá KHÔNG được trả lại, giống luồng admin hủy đơn — hai nơi
+ * hủy mà tính khác nhau thì số liệu mã giảm giá sẽ lệch.
+ */
+export async function cancelMyOrder(id, userId, reason = '') {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Khóa đơn trước khi đọc trạng thái: hai lần bấm "Hủy" liên tiếp thì lần sau
+    // phải thấy đơn đã hủy chứ không hoàn kho thêm lần nữa.
+    const cur = await client.query(
+      'SELECT user_id, status FROM orders WHERE id = $1 FOR UPDATE', [id],
+    );
+    if (!cur.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
+
+    const { user_id: ownerId, status } = cur.rows[0];
+    if (ownerId !== userId) {
+      throw new AppError('Bạn không có quyền hủy đơn hàng này', 403);
+    }
+    if (!CUSTOMER_CANCELLABLE.includes(status)) {
+      throw new AppError(CANCEL_BLOCKED_REASON[status] ?? 'Đơn hàng này không hủy được', 400);
+    }
+
+    await client.query(
+      `UPDATE orders SET status = 'cancelled', cancel_reason = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [id, reason],
+    );
+    await restoreStock(client, id);
 
     await client.query('COMMIT');
     return getOrderRow(id);

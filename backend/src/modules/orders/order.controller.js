@@ -37,6 +37,17 @@ export async function invoice(req, res) {
   buildInvoicePdf(order, settings).pipe(res);
 }
 
+/**
+ * PATCH /customer/orders/:id/cancel — khách tự hủy đơn của mình.
+ *
+ * Quyền sở hữu và trạng thái nào được hủy do service kiểm tra, cùng một chỗ với
+ * việc hoàn kho nên không có kẽ hở giữa lúc kiểm tra và lúc cập nhật.
+ */
+export async function cancelMine(req, res) {
+  const order = await orderService.cancelMyOrder(req.params.id, req.user.id, req.body.reason);
+  ok(res, order, 'Đã hủy đơn hàng');
+}
+
 export async function listAll(req, res) {
   const result = await orderService.listAllOrders(req.query);
   res.status(200).json({ success: true, ...result });

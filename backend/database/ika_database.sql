@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS orders (
   shipping_address VARCHAR(255) NOT NULL,
   phone            VARCHAR(20)  NOT NULL,
   notes            VARCHAR(500) NOT NULL DEFAULT '',
+  cancel_reason    VARCHAR(500) NOT NULL DEFAULT '',
   created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -150,7 +151,7 @@ CREATE TABLE IF NOT EXISTS order_returns (
   reason       VARCHAR(500) NOT NULL,
   images       JSONB        NOT NULL DEFAULT '[]'::jsonb,
   status       VARCHAR(20)  NOT NULL DEFAULT 'pending'
-               CHECK (status IN ('pending', 'approved', 'rejected', 'completed')),
+               CHECK (status IN ('pending', 'approved', 'rejected', 'completed', 'cancelled')),
   admin_note   VARCHAR(500) NOT NULL DEFAULT '',
   resolved_at  TIMESTAMPTZ,
   created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

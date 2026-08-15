@@ -76,6 +76,47 @@ export const orderPaths = {
     },
   },
 
+  '/api/v1/customer/orders/{id}/cancel': {
+    patch: {
+      tags: ['Tài khoản - Đơn hàng'],
+      summary: 'Khách tự hủy đơn',
+      description:
+        'Chỉ hủy được đơn của chính mình và chỉ khi đơn còn ở `pending` hoặc `confirmed` — '
+        + 'hàng chưa rời cửa hàng.\n\n'
+        + '- `shipped`: phải liên hệ cửa hàng, không tự hủy được.\n'
+        + '- `completed`: dùng luồng trả / đổi hàng (`POST /customer/returns`).\n\n'
+        + 'Hủy thành công sẽ HOÀN tồn kho và hoàn suất flash sale, giống hệt khi admin hủy đơn; '
+        + 'bấm nhiều lần cũng chỉ hoàn một lần. Lượt dùng mã giảm giá KHÔNG được trả lại.',
+      security: bearer,
+      parameters: [pathParam('id', { example: 'd73020c9-1f5e-4c2a-9a10-2b7f6c8e4d11' })],
+      requestBody: jsonBody('OrderCancelBody'),
+      responses: {
+        200: okData('Đơn hàng sau khi hủy', 'Order'),
+        400: {
+          description: 'Đơn ở trạng thái không tự hủy được',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' },
+              example: { success: false, message: 'Đơn đã được giao cho đơn vị vận chuyển nên không tự hủy được. Vui lòng liên hệ cửa hàng để được hỗ trợ.' },
+            },
+          },
+        },
+        401: unauthorized,
+        403: {
+          description: 'Đơn hàng không thuộc về khách đang đăng nhập',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' },
+              example: { success: false, message: 'Bạn không có quyền hủy đơn hàng này' },
+            },
+          },
+        },
+        404: notFound,
+        422: validationError,
+      },
+    },
+  },
+
   // ══════════════ Admin ══════════════
   '/api/v1/admin/orders': {
     get: {

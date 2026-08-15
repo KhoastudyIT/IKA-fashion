@@ -141,6 +141,8 @@ export interface Order {
   shippingAddress: string
   phone: string
   notes: string
+  /** Lý do khách ghi khi tự hủy đơn — rỗng nếu đơn không bị khách hủy. */
+  cancelReason: string
   createdAt: string
   updatedAt: string
   /** Yêu cầu trả/đổi mới nhất của đơn — null nếu khách chưa gửi lần nào. */
@@ -151,7 +153,7 @@ export interface Order {
 // Mỗi yêu cầu áp cho CẢ ĐƠN. Một đơn chỉ có một yêu cầu đang mở tại một thời điểm.
 
 export type ReturnType = 'return' | 'exchange'
-export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'completed'
+export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled'
 
 export interface OrderReturn {
   id: number
@@ -186,6 +188,7 @@ export const RETURN_STATUS_LABEL: Record<ReturnStatus, string> = {
   approved: 'Đã duyệt',
   rejected: 'Bị từ chối',
   completed: 'Đã xử lý xong',
+  cancelled: 'Đã hủy',
 }
 
 /** Đơn có còn trong hạn đổi trả không — đối xứng với kiểm tra ở backend. */
@@ -207,6 +210,16 @@ export function createReturnRequest(body: {
 
 export function getMyReturns(): Promise<OrderReturn[]> {
   return getData('/customer/returns', { auth: true })
+}
+
+/** Yêu cầu còn rút lại được không — đối xứng với kiểm tra ở backend. */
+export function canCancelReturn(rq: OrderReturn | null | undefined) {
+  return rq?.status === 'pending'
+}
+
+/** Khách rút lại yêu cầu trả / đổi khi cửa hàng chưa duyệt. */
+export function cancelMyReturn(returnId: number): Promise<OrderReturn> {
+  return getData(`/customer/returns/${returnId}/cancel`, { method: 'PATCH', auth: true })
 }
 
 export async function getAdminReturns(
@@ -344,6 +357,30 @@ export function createOrder(body: { shippingAddress: string; phone: string; note
 }
 export function getMyOrders(): Promise<Order[]> {
   return getData('/customer/orders', { auth: true })
+}
+
+/** Trạng thái mà khách còn tự hủy đơn được — khớp CUSTOMER_CANCELLABLE ở backend. */
+export const CANCELLABLE_ORDER_STATUSES = ['pending', 'confirmed']
+
+export function canCancelOrder(order: Order) {
+  return CANCELLABLE_ORDER_STATUSES.includes(order.status)
+}
+
+/**
+ * Đơn đã "khép lại" thì mới mời khách mua lại — đơn đã giao xong hoặc đã hủy.
+ * Đơn đang chờ xử lý mà mua lại chỉ khiến khách đặt trùng hai lần cùng món.
+ */
+export function canBuyAgain(order: Order) {
+  return order.status === 'completed' || order.status === 'cancelled'
+}
+
+/** Khách tự hủy đơn chưa giao. `reason` không bắt buộc. */
+export function cancelMyOrder(orderId: string, reason = ''): Promise<Order> {
+  return getData(`/customer/orders/${orderId}/cancel`, {
+    method: 'PATCH',
+    body: { reason },
+    auth: true,
+  })
 }
 
 // ---------- Admin ----------

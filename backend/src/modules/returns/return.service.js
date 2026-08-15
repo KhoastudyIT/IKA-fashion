@@ -75,6 +75,61 @@ export async function createReturn(userId, { orderId, type, reason, images }) {
   }
 }
 
+/**
+ * Khách tự rút yêu cầu trả / đổi của mình.
+ *
+ * Chỉ rút được khi cửa hàng CHƯA duyệt: yêu cầu đã duyệt là hai bên đã hẹn nhau
+ * nhận hàng về, hủy một phía sẽ làm lệch việc xử lý — trường hợp đó khách phải
+ * liên hệ cửa hàng. Yêu cầu đã rút không nằm trong chỉ số một-yêu-cầu-đang-mở
+ * nên khách gửi lại được ngay (miễn là đơn còn trong hạn đổi trả).
+ */
+export async function cancelMyReturn(id, userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Khóa yêu cầu rồi mới đọc trạng thái, để lần bấm thứ hai hoặc thao tác
+    // duyệt của admin chạy song song không cùng thấy 'pending'.
+    const cur = await client.query(
+      `SELECT r.status, o.user_id
+       FROM order_returns r JOIN orders o ON o.id = r.order_id
+       WHERE r.id = $1 FOR UPDATE OF r`,
+      [Number(id)],
+    );
+    if (!cur.rows.length) throw new AppError('Không tìm thấy yêu cầu', 404);
+
+    const { status, user_id: ownerId } = cur.rows[0];
+    if (ownerId !== userId) {
+      throw new AppError('Bạn không có quyền hủy yêu cầu này', 403);
+    }
+    if (status === 'cancelled') {
+      throw new AppError('Yêu cầu này đã được hủy trước đó', 400);
+    }
+    if (status !== 'pending') {
+      throw new AppError(
+        'Cửa hàng đã xử lý yêu cầu này nên bạn không tự hủy được nữa. '
+        + 'Vui lòng liên hệ cửa hàng nếu cần thay đổi.',
+        400,
+      );
+    }
+
+    await client.query(
+      `UPDATE order_returns
+       SET status = 'cancelled', resolved_at = NOW(), updated_at = NOW()
+       WHERE id = $1`,
+      [Number(id)],
+    );
+
+    await client.query('COMMIT');
+    return getReturnById(id);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function listMyReturns(userId) {
   const res = await db.query(
     `SELECT ${RETURN_COLS}, ${ORDER_COLS}
@@ -145,6 +200,8 @@ const NEXT_STATUSES = {
   approved: ['completed', 'rejected'],
   rejected: [],
   completed: [],
+  // Khách đã rút thì admin không mở lại được; khách gửi yêu cầu mới nếu cần.
+  cancelled: [],
 };
 
 /**

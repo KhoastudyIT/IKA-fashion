@@ -8,9 +8,10 @@ import {
   getMyOrders, createReturnRequest, canRequestReturn, uploadImage, validateImageFile,
   RETURN_WINDOW_DAYS, RETURN_TYPE_LABEL, RETURN_STATUS_LABEL,
   Order, ReturnType, addToCart, openOrderInvoice,
+  canCancelOrder, cancelMyOrder, canCancelReturn, cancelMyReturn, canBuyAgain,
 } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
-import { ArrowLeft, Package, MapPin, Phone, Clock, RotateCcw, Undo2, X, ImagePlus } from 'lucide-react'
+import { ArrowLeft, Package, MapPin, Phone, Clock, RotateCcw, Undo2, X, ImagePlus, Ban } from 'lucide-react'
 
 // Khớp với ràng buộc ở backend (return.schema.js).
 const MIN_RETURN_IMAGES = 2
@@ -31,6 +32,7 @@ const RETURN_TONE: Record<string, { color: string; bg: string }> = {
   approved:  { color: '#1e40af', bg: '#dbeafe' },
   rejected:  { color: '#991b1b', bg: '#fee2e2' },
   completed: { color: '#065f46', bg: '#d1fae5' },
+  cancelled: { color: '#57534e', bg: '#e7e5e4' },
 }
 
 const TIMELINE = [
@@ -81,6 +83,48 @@ export default function OrderDetailPage() {
       console.error('Lỗi khi mua lại:', error)
       alert(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng')
       setBuyingAgain(false)
+    }
+  }
+
+  // Hủy đơn — hỏi lại trước khi gọi API vì đã hủy là không quay lại được.
+  const [showCancel, setShowCancel] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+
+  const handleCancelOrder = async () => {
+    if (!order) return
+    setCancelling(true)
+    setCancelError('')
+    try {
+      const updated = await cancelMyOrder(order.id, cancelReason.trim())
+      setOrder(updated)
+      setShowCancel(false)
+      setCancelReason('')
+    } catch (err: any) {
+      setCancelError(err.message || 'Hủy đơn hàng không thành công')
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  // Rút lại yêu cầu trả / đổi — xác nhận ngay tại chỗ, không cần hộp thoại riêng.
+  const [confirmDropReturn, setConfirmDropReturn] = useState(false)
+  const [droppingReturn, setDroppingReturn] = useState(false)
+  const [dropReturnError, setDropReturnError] = useState('')
+
+  const handleCancelReturn = async () => {
+    if (!order?.returnRequest) return
+    setDroppingReturn(true)
+    setDropReturnError('')
+    try {
+      await cancelMyReturn(order.returnRequest.id)
+      setConfirmDropReturn(false)
+      await loadOrder()
+    } catch (err: any) {
+      setDropReturnError(err.message || 'Hủy yêu cầu không thành công')
+    } finally {
+      setDroppingReturn(false)
     }
   }
 
@@ -206,6 +250,15 @@ export default function OrderDetailPage() {
           >
             📄 {invoicing ? 'Đang tạo...' : 'Xuất Hóa Đơn'}
           </button>
+          {canCancelOrder(order) && (
+            <button
+              onClick={() => { setCancelError(''); setShowCancel(true) }}
+              className="print:hidden px-3 py-1.5 border border-red-200 text-sm rounded hover:bg-red-50 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              style={{ color: '#dc2626', fontWeight: 600 }}
+            >
+              <Ban size={14} /> Hủy Đơn
+            </button>
+          )}
           <span style={{ padding: '4px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, background: status.bg, color: status.color }}>
             {status.label}
           </span>
@@ -269,7 +322,11 @@ export default function OrderDetailPage() {
             <span style={{ fontSize: '1.75rem' }}>❌</span>
             <div>
               <p style={{ margin: 0, fontWeight: 600, color: '#991b1b' }}>Đơn hàng đã bị hủy</p>
-              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#b91c1c' }}>Vui lòng liên hệ hỗ trợ nếu bạn có thắc mắc.</p>
+              <p style={{ margin: 0, fontSize: '0.8125rem', color: '#b91c1c' }}>
+                {order.cancelReason
+                  ? `Lý do: ${order.cancelReason}`
+                  : 'Vui lòng liên hệ hỗ trợ nếu bạn có thắc mắc.'}
+              </p>
             </div>
           </div>
         )}
@@ -334,6 +391,62 @@ export default function OrderDetailPage() {
               <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: '#b91c1c' }}>
                 Yêu cầu bị từ chối. Bạn có thể gửi lại nếu bổ sung được thông tin.
               </p>
+            )}
+            {rq.status === 'cancelled' && (
+              <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: '#7A7A7A' }}>
+                Bạn đã rút lại yêu cầu này. Nếu vẫn cần, hãy gửi yêu cầu mới khi đơn còn trong hạn đổi trả.
+              </p>
+            )}
+
+            {/* Rút lại yêu cầu — chỉ khi cửa hàng chưa duyệt */}
+            {canCancelReturn(rq) && (
+              <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F0EBE5' }}>
+                {dropReturnError && (
+                  <p style={{ margin: '0 0 10px', fontSize: '0.75rem', color: '#b91c1c' }}>{dropReturnError}</p>
+                )}
+                {confirmDropReturn ? (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.8125rem', color: '#2C2C2C' }}>
+                      Rút lại yêu cầu này? Bạn vẫn gửi lại được nếu đơn còn trong hạn.
+                    </span>
+                    <button
+                      onClick={handleCancelReturn}
+                      disabled={droppingReturn}
+                      className="cursor-pointer"
+                      style={{
+                        padding: '7px 16px', borderRadius: '8px', border: 'none', background: '#dc2626',
+                        color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 700,
+                        opacity: droppingReturn ? 0.6 : 1,
+                      }}
+                    >
+                      {droppingReturn ? 'Đang hủy...' : 'Rút yêu cầu'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDropReturn(false)}
+                      disabled={droppingReturn}
+                      className="cursor-pointer"
+                      style={{
+                        padding: '7px 16px', borderRadius: '8px', border: '1px solid #E5DFD8',
+                        background: 'transparent', color: '#2C2C2C', fontSize: '0.75rem', fontWeight: 600,
+                      }}
+                    >
+                      Giữ lại
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setDropReturnError(''); setConfirmDropReturn(true) }}
+                    className="cursor-pointer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      padding: '7px 14px', borderRadius: '8px', border: '1px solid #E5DFD8',
+                      background: 'transparent', color: '#7A7A7A', fontSize: '0.75rem', fontWeight: 600,
+                    }}
+                  >
+                    <X size={13} /> Hủy yêu cầu
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -404,19 +517,21 @@ export default function OrderDetailPage() {
               ))}
             </div>
 
-            {/* Reorder CTA */}
-            <button
-              onClick={handleBuyAgain}
-              disabled={buyingAgain}
-              className="print:hidden"
-              style={{
-                width: '100%', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                padding: '12px', border: '1.5px solid #2C2C2C', borderRadius: '8px', background: 'transparent',
-                fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', cursor: buyingAgain ? 'wait' : 'pointer', opacity: buyingAgain ? 0.7 : 1,
-              }}
-            >
-              <RotateCcw size={15} /> {buyingAgain ? 'Đang thêm...' : 'Mua lại đơn hàng'}
-            </button>
+            {/* Reorder CTA — chỉ mời mua lại khi đơn đã khép lại (hoàn thành hoặc đã hủy) */}
+            {canBuyAgain(order) && (
+              <button
+                onClick={handleBuyAgain}
+                disabled={buyingAgain}
+                className="print:hidden"
+                style={{
+                  width: '100%', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px', border: '1.5px solid #2C2C2C', borderRadius: '8px', background: 'transparent',
+                  fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', cursor: buyingAgain ? 'wait' : 'pointer', opacity: buyingAgain ? 0.7 : 1,
+                }}
+              >
+                <RotateCcw size={15} /> {buyingAgain ? 'Đang thêm...' : 'Mua lại đơn hàng'}
+              </button>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -467,6 +582,83 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Hộp xác nhận hủy đơn */}
+      {showCancel && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          onClick={() => !cancelling && setShowCancel(false)}
+        >
+          <div
+            style={{ background: '#FFFFFF', borderRadius: '14px', width: '100%', maxWidth: '460px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '22px 26px', borderBottom: '1px solid #E5DFD8' }}>
+              <span style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Ban size={19} />
+              </span>
+              <div>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', fontWeight: 700, color: '#2C2C2C', margin: 0 }}>
+                  Hủy đơn hàng
+                </h2>
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#7A7A7A' }}>
+                  Đơn #{order.id.slice(0, 8).toUpperCase()} · {order.totalPrice.toLocaleString('vi-VN')}đ
+                </p>
+              </div>
+            </div>
+
+            <div style={{ padding: '22px 26px' }}>
+              {cancelError && (
+                <p style={{ color: '#b91c1c', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8125rem', margin: '0 0 16px' }}>
+                  {cancelError}
+                </p>
+              )}
+              <p style={{ margin: '0 0 16px', fontSize: '0.8125rem', color: '#7A7A7A', lineHeight: 1.6 }}>
+                Đơn đã hủy thì không khôi phục lại được, bạn cần đặt lại từ đầu nếu đổi ý.
+              </p>
+              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '8px' }}>
+                Lý do hủy <span style={{ fontWeight: 400, color: '#9A9A9A' }}>(không bắt buộc)</span>
+              </label>
+              <textarea
+                rows={3}
+                maxLength={500}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #E5DFD8',
+                  background: '#F9F5F0', fontSize: '0.8125rem', color: '#2C2C2C', resize: 'none',
+                  fontFamily: 'inherit', outline: 'none', lineHeight: 1.6,
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', padding: '0 26px 22px' }}>
+              <button
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+                className="cursor-pointer"
+                style={{
+                  flex: 1, padding: '13px', background: '#dc2626', color: '#FFFFFF', border: 'none',
+                  borderRadius: '10px', fontSize: '0.8125rem', fontWeight: 700, opacity: cancelling ? 0.6 : 1,
+                }}
+              >
+                {cancelling ? 'Đang hủy...' : 'Xác nhận hủy đơn'}
+              </button>
+              <button
+                onClick={() => setShowCancel(false)}
+                disabled={cancelling}
+                className="cursor-pointer"
+                style={{
+                  padding: '13px 24px', background: 'transparent', color: '#2C2C2C',
+                  border: '1px solid #E5DFD8', borderRadius: '10px', fontSize: '0.8125rem', fontWeight: 600,
+                }}
+              >
+                Giữ đơn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal gửi yêu cầu trả / đổi */}
       {showReturn && (

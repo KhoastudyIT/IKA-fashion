@@ -10,6 +10,7 @@ export const returnCustomerRouter = Router();
 returnCustomerRouter.use(authenticate, authorize('customer'));
 returnCustomerRouter.post('/', validate(createReturnSchema), ctrl.create);
 returnCustomerRouter.get('/',                                ctrl.listMine);
+returnCustomerRouter.patch('/:id/cancel',                    ctrl.cancelMine);
 
 // Admin — mount tại /api/v1/admin/returns
 // Nhân viên xử lý trả/đổi như admin, vì đây là một phần của quản lý đơn hàng.

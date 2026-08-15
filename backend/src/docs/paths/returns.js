@@ -65,6 +65,43 @@ export const returnPaths = {
     },
   },
 
+  '/api/v1/customer/returns/{id}/cancel': {
+    patch: {
+      tags: ['Tài khoản - Trả / Đổi hàng'],
+      summary: 'Rút lại yêu cầu trả / đổi',
+      description:
+        'Chỉ rút được yêu cầu của chính mình và chỉ khi còn `pending` — cửa hàng đã duyệt hoặc '
+        + 'đã xử lý xong thì phải liên hệ cửa hàng.\n\n'
+        + 'Yêu cầu chuyển sang `cancelled`; trạng thái này không tính là "đang mở" nên khách gửi '
+        + 'yêu cầu mới được ngay, miễn là đơn còn trong hạn 7 ngày.',
+      security: bearer,
+      parameters: [returnId],
+      responses: {
+        200: okData('Yêu cầu sau khi hủy', 'OrderReturn'),
+        400: {
+          description: 'Yêu cầu đã được cửa hàng xử lý hoặc đã hủy trước đó',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' },
+              example: { success: false, message: 'Cửa hàng đã xử lý yêu cầu này nên bạn không tự hủy được nữa. Vui lòng liên hệ cửa hàng nếu cần thay đổi.' },
+            },
+          },
+        },
+        401: unauthorized,
+        403: {
+          description: 'Yêu cầu không thuộc về khách đang đăng nhập',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ErrorResponse' },
+              example: { success: false, message: 'Bạn không có quyền hủy yêu cầu này' },
+            },
+          },
+        },
+        404: notFound,
+      },
+    },
+  },
+
   // ══════════════ Admin / nhân viên ══════════════
   '/api/v1/admin/returns': {
     get: {
@@ -73,7 +110,7 @@ export const returnPaths = {
       description: 'Nhân viên xử lý được như admin vì đây là một phần của quản lý đơn hàng.',
       security: bearer,
       parameters: [
-        queryParam('status', { type: 'string', enum: ['pending', 'approved', 'rejected', 'completed'] }, 'Lọc theo trạng thái'),
+        queryParam('status', { type: 'string', enum: ['pending', 'approved', 'rejected', 'completed', 'cancelled'] }, 'Lọc theo trạng thái'),
         queryParam('page', { type: 'integer', default: 1 }, 'Trang, bắt đầu từ 1'),
         queryParam('limit', { type: 'integer', default: 15, maximum: 100 }, 'Số yêu cầu mỗi trang'),
       ],
