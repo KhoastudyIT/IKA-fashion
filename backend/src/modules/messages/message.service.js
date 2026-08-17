@@ -131,6 +131,41 @@ async function getOrCreateConversation(customerId) {
 // tiếp lúc nửa đêm sẽ không ai đáp.
 const STAFF_IDLE_MS = 15 * 60 * 1000;
 
+// Mỗi tin của khách kéo theo vài truy vấn của bot (quét catalog, tra đơn, tra
+// mã giảm giá). Không có trần này thì một vòng lặp gửi tin là đủ để ghì DB.
+const MAX_MESSAGES_PER_MINUTE = 15;
+
+async function assertNotFlooding(conversationId) {
+  const res = await db.query(
+    `SELECT COUNT(*)::int AS n FROM messages
+     WHERE conversation_id = $1 AND sender_role = 'customer'
+       AND created_at > NOW() - INTERVAL '1 minute'`,
+    [conversationId],
+  );
+  if (res.rows[0].n >= MAX_MESSAGES_PER_MINUTE) {
+    throw new AppError('Anh/chị gửi hơi nhanh, vui lòng chờ một chút rồi nhắn tiếp giúp em ạ.', 429);
+  }
+}
+
+/**
+ * Số câu trả lời "chưa hiểu" liên tiếp ngay trước lượt này. Bot dùng nó để
+ * biết khi nào nên thôi hỏi lại và giao cho nhân viên.
+ */
+async function unknownStreak(conversationId) {
+  const res = await db.query(
+    `SELECT intent FROM messages
+     WHERE conversation_id = $1 AND sender_role = 'ai'
+     ORDER BY created_at DESC LIMIT 3`,
+    [conversationId],
+  );
+  let streak = 0;
+  for (const row of res.rows) {
+    if (row.intent !== 'unknown') break;
+    streak += 1;
+  }
+  return streak;
+}
+
 /**
  * Chỉ áp dụng khi hội thoại ĐÃ có tin của admin. Khách vừa gõ "gặp nhân viên"
  * mà chưa ai vào thì giữ nguyên bot tắt — đó là yêu cầu rõ ràng của khách.
@@ -199,6 +234,7 @@ export async function sendMessage({ senderId, senderRole, content, conversationI
     if (!conv) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
   } else {
     conv = await getOrCreateConversation(senderId);
+    await assertNotFlooding(conv.id);
     conv = await maybeReviveBot(conv);
   }
 
@@ -223,6 +259,7 @@ export async function sendMessage({ senderId, senderRole, content, conversationI
     userId: senderId,
     productId,
     lastProductId: conv.lastProductId,
+    unknownStreak: await unknownStreak(conv.id),
   });
 
   const botMessage = await insertMessage(conv.id, {
@@ -257,10 +294,19 @@ export async function setAiEnabled(conversationId, aiEnabled) {
   return convById(conversationId);
 }
 
-/** Đánh dấu đã đọc */
-export async function markRead(conversationId, readerRole) {
+/**
+ * Đánh dấu đã đọc.
+ *
+ * Phải kiểm chủ sở hữu như `getMessages`: thiếu vế này thì bất kỳ khách nào
+ * đăng nhập cũng xoá được badge chưa đọc trên hội thoại của người khác chỉ
+ * bằng cách đoán id.
+ */
+export async function markRead(conversationId, readerId, readerRole) {
   const conv = await convById(conversationId);
   if (!conv) throw new AppError('Không tìm thấy cuộc trò chuyện', 404);
+  if (readerRole !== 'admin' && conv.customerId !== readerId) {
+    throw new AppError('Bạn không có quyền xem cuộc trò chuyện này', 403);
+  }
 
   await db.query(
     `UPDATE conversations SET

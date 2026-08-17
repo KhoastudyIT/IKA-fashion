@@ -205,7 +205,7 @@ CREATE INDEX IF NOT EXISTS idx_products_discount   ON products(discount);
 CREATE INDEX IF NOT EXISTS idx_orders_user         ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_cart_user           ON cart_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_wishlist_user       ON wishlist(user_id);
-CREATE INDEX IF NOT EXISTS idx_messages_conv       ON messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conv       ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_flash_sales_product     ON flash_sales (product_id);
 CREATE INDEX IF NOT EXISTS idx_flash_sales_active_time ON flash_sales (active, starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_flash       ON order_items (flash_sale_id);

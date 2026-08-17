@@ -51,7 +51,7 @@ export async function toggleBot(req, res) {
 
 /** PUT /messages/:conversationId/read — Đánh dấu đã đọc */
 export async function markRead(req, res) {
-  const conv = await svc.markRead(req.params.conversationId, actorRole(req));
+  const conv = await svc.markRead(req.params.conversationId, req.user.id, actorRole(req));
   res.json({ success: true, data: conv });
 }
 

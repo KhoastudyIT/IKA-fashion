@@ -131,6 +131,12 @@ const STATEMENTS = [
    `ALTER TABLE order_returns ADD CONSTRAINT order_returns_status_check
      CHECK (status IN ('pending', 'approved', 'rejected', 'completed', 'cancelled'))`,
 
+   // Khung chat poll lại toàn bộ tin của một hội thoại mỗi 12 giây, và bot
+   // đọc ngược vài tin gần nhất để biết nó vừa "chưa hiểu" mấy lần. Cả hai đều
+   // là (conversation_id, created_at) — index một cột như cũ vẫn phải sort.
+   `CREATE INDEX IF NOT EXISTS idx_messages_conv_created
+     ON messages (conversation_id, created_at)`,
+
    // Cửa hàng thu tiền khi giao, nên đơn đã hoàn thành phải là đã thanh toán.
    // Dọn các đơn cũ còn mắc kẹt ở trạng thái mâu thuẫn này.
    `UPDATE orders SET payment_status = 'paid'
