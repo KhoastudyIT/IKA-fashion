@@ -152,7 +152,7 @@ export async function createOrder(userId, {
                            phone, notes, shipping_fee, shipping_method, payment_method)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
       [userId, totalPrice, discount, appliedCode, shippingAddress, phone, notes ?? '',
-       shippingFee, shippingMethod, paymentMethod],
+        shippingFee, shippingMethod, paymentMethod],
     );
     const orderId = orderRes.rows[0].id;
 
@@ -162,7 +162,7 @@ export async function createOrder(userId, {
            (order_id, product_id, name, img, price, list_price, flash_sale_id, size, color, quantity)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [orderId, it.product_id, it.name, it.img, it.price, it.list_price,
-         it.flash_sale_id ?? null, it.size, it.color, it.quantity],
+          it.flash_sale_id ?? null, it.size, it.color, it.quantity],
       );
       // Trừ kho của ĐÚNG biến thể trước. Câu UPDATE có điều kiện `stock >= $4`
       // nên tự nó đã nguyên tử: hai người cùng mua size cuối cùng thì chỉ một
@@ -213,7 +213,7 @@ export async function getOrder(id, user) {
 }
 
 export async function listAllOrders({ status, search, page = 1, limit = 15 } = {}) {
-  page  = Math.max(1, Number(page)  || 1);
+  page = Math.max(1, Number(page) || 1);
   limit = Math.max(1, Number(limit) || 15);
 
   const params = [];
@@ -289,23 +289,23 @@ export async function listAllOrders({ status, search, page = 1, limit = 15 } = {
  */
 /** Tên tiếng Việt để câu báo lỗi đọc được, thay vì in ra mã trạng thái. */
 const ORDER_STATUS_VI = {
-  pending:   'Chờ xác nhận',
+  pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
-  shipped:   'Đang giao',
+  shipped: 'Đang giao',
   completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
-  returned:  'Đã trả hàng',
+  returned: 'Đã trả hàng',
 };
 
 const NEXT_STATUSES = {
-  pending:   ['confirmed', 'cancelled'],
+  pending: ['confirmed', 'cancelled'],
   confirmed: ['shipped', 'cancelled'],
   // Hàng đã rời cửa hàng: giao xong, hoặc giao không thành thì hủy.
-  shipped:   ['completed', 'cancelled'],
+  shipped: ['completed', 'cancelled'],
   // Đã chốt — muốn trả hàng thì đi đường yêu cầu trả/đổi.
   completed: [],
   cancelled: [],
-  returned:  [],
+  returned: [],
 };
 
 export async function updateOrderStatus(id, { status, paymentStatus }) {
@@ -416,7 +416,19 @@ async function decVariantStock(client, it) {
   );
 }
 
-async function restoreStock(client, orderId) {
+/**
+ * Trả hàng về kho cho mọi dòng của một đơn: tồn kho tổng, tồn kho theo biến
+ * thể, và suất flash sale.
+ *
+ * Tách riêng và EXPORT vì có hai nơi cần: hủy đơn (order.service) và chốt trả
+ * hàng (return.service). Trước đây module trả hàng chép lại logic này, nên khi
+ * thêm bảng product_variants thì chỉ đường hủy đơn được cập nhật — trả hàng
+ * xong tổng tồn kho tăng mà không size nào được cộng lại.
+ *
+ * KHÔNG hoàn lượt mã giảm giá ở đây: hủy đơn thì hoàn (xem restoreStock), còn
+ * trả hàng là một quyết định nghiệp vụ khác.
+ */
+export async function restoreOrderStock(client, orderId) {
   const items = await client.query(
     'SELECT product_id, size, color, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
     [orderId],
@@ -448,12 +460,14 @@ async function restoreStock(client, orderId) {
     }
   }
 
-  // Hoàn lượt dùng mã giảm giá.
-  //
-  // Trước đây lượt dùng KHÔNG được trả lại, nên khách áp mã rồi hủy đơn là mất
-  // mã oan. Đặt việc hoàn ngay trong restoreStock để hai đường hủy — admin hủy
-  // và khách tự hủy — dùng chung một đường code, không thể tính khác nhau.
-  //
+}
+
+/**
+ * Hoàn kho khi HỦY đơn: trả hàng về kho, đồng thời trả lại lượt dùng mã giảm giá.
+ */
+async function restoreStock(client, orderId) {
+  await restoreOrderStock(client, orderId);
+
   // GREATEST(0, ...) chặn số âm nếu admin đã sửa tay lượt dùng của mã.
   await client.query(
     `UPDATE coupons c
@@ -471,10 +485,10 @@ export const CUSTOMER_CANCELLABLE = ['pending', 'confirmed'];
 
 /** Vì sao đơn ở trạng thái này không tự hủy được — nói rõ để khách biết làm gì tiếp. */
 const CANCEL_BLOCKED_REASON = {
-  shipped:   'Đơn đã được giao cho đơn vị vận chuyển nên không tự hủy được. Vui lòng liên hệ cửa hàng để được hỗ trợ.',
+  shipped: 'Đơn đã được giao cho đơn vị vận chuyển nên không tự hủy được. Vui lòng liên hệ cửa hàng để được hỗ trợ.',
   completed: 'Đơn đã giao xong. Nếu sản phẩm chưa vừa ý, bạn hãy gửi yêu cầu trả hoặc đổi hàng.',
   cancelled: 'Đơn hàng này đã được hủy trước đó.',
-  returned:  'Đơn hàng này đã được trả lại nên không hủy được nữa.',
+  returned: 'Đơn hàng này đã được trả lại nên không hủy được nữa.',
 };
 
 /**

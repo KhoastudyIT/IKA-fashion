@@ -1,6 +1,7 @@
 import pool from '../../db/index.js';
 import db from '../../db/index.js';
 import { AppError } from '../../middleware/errorHandler.js';
+import { restoreOrderStock } from '../orders/order.service.js';
 
 /** Số ngày kể từ lúc đơn hoàn tất mà khách còn được yêu cầu trả / đổi. */
 export const RETURN_WINDOW_DAYS = 7;
@@ -161,7 +162,7 @@ export async function getReturnById(id) {
 // ─── Admin / nhân viên ───────────────────────────────────────────────────────
 
 export async function listReturns({ status, page = 1, limit = 15 } = {}) {
-  page  = Math.max(1, Number(page)  || 1);
+  page = Math.max(1, Number(page) || 1);
   limit = Math.max(1, Number(limit) || 15);
 
   const params = [];
@@ -196,7 +197,7 @@ export async function listReturns({ status, page = 1, limit = 15 } = {}) {
 
 /** Bước chuyển hợp lệ — không cho quay lại trạng thái đã chốt. */
 const NEXT_STATUSES = {
-  pending:  ['approved', 'rejected'],
+  pending: ['approved', 'rejected'],
   approved: ['completed', 'rejected'],
   rejected: [],
   completed: [],
@@ -246,27 +247,8 @@ export async function updateReturnStatus(id, { status, adminNote }) {
     );
 
     if (nextStatus === 'completed' && row.status !== 'completed' && row.type === 'return') {
-      const items = await client.query(
-        'SELECT product_id, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
-        [row.order_id],
-      );
-      for (const it of items.rows) {
-        await client.query(
-          `UPDATE products
-           SET stock = stock + $2, sold = GREATEST(0, sold - $2)
-           WHERE id = $1`,
-          [it.product_id, it.quantity],
-        );
-        // Hàng trả về thì suất flash cũng phải trả lại cho chương trình.
-        if (it.flash_sale_id) {
-          await client.query(
-            `UPDATE flash_sales
-             SET sold = GREATEST(0, sold - $2), updated_at = NOW()
-             WHERE id = $1`,
-            [it.flash_sale_id, it.quantity],
-          );
-        }
-      }
+      // Dùng CHUNG hàm hoàn kho với luồng hủy đơn.
+      await restoreOrderStock(client, row.order_id);
       await client.query(
         `UPDATE orders SET
            status = 'returned',
