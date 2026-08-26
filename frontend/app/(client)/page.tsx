@@ -406,7 +406,7 @@ export default function HomePage() {
             />
           </div>
           {/* Right: Content */}
-          <div className="flex items-center justify-center bg-foreground text-primary-foreground py-16 px-8 lg:px-16">
+          <div className="flex items-center justify-center bg-muted text-foreground py-16 px-8 lg:px-16">
             <div className="max-w-md text-center md:text-left">
               <p className="text-xs tracking-[0.3em] text-accent uppercase mb-4">
                 Ưu Đãi Có Hạn
@@ -414,7 +414,7 @@ export default function HomePage() {
               <h2 className="text-3xl sm:text-4xl font-heading font-semibold mb-4 leading-tight">
                 Mua 2 Giảm Thêm 10%
               </h2>
-              <p className="text-primary-foreground/70 mb-8 font-light leading-relaxed">
+              <p className="text-foreground/70 mb-8 font-light leading-relaxed">
                 Áp dụng cho tất cả sản phẩm Polo & Sơ Mi. Cơ hội tuyệt vời để làm mới tủ đồ công sở của bạn với mức giá không thể tốt hơn.
               </p>
               <Link
@@ -463,7 +463,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════
           7. WHY IKA - BRAND VALUES
       ═══════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-foreground text-primary-foreground">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary text-foreground">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
@@ -498,13 +498,14 @@ export default function HomePage() {
               },
             ].map((feature) => (
               <div key={feature.title} className="text-center group">
-                <div className="w-12 h-12 md:w-16 md:h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-5 text-xl md:text-2xl group-hover:bg-accent/20 transition-colors">
+                {/* Trên nền sáng, accent/10 gần như tàng hình — đậm hơn một nấc. */}
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-5 text-xl md:text-2xl group-hover:bg-accent/30 transition-colors">
                   {feature.icon}
                 </div>
                 <h3 className="text-sm md:text-lg font-heading font-semibold mb-2 md:mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-primary-foreground/60 text-[0.6875rem] md:text-sm leading-relaxed">
+                <p className="text-foreground/70 text-[0.6875rem] md:text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -674,15 +675,15 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════
           11. NEWSLETTER
       ═══════════════════════════════════════════════ */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-foreground to-neutral-800">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-secondary to-muted">
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-xs font-sans tracking-[0.3em] text-accent uppercase mb-3">
             Bản Tin
           </p>
-          <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-foreground mb-4">
             Nhận Ưu Đãi Độc Quyền
           </h2>
-          <p className="text-white/60 mb-8 font-light leading-relaxed">
+          <p className="text-foreground/70 mb-8 font-light leading-relaxed">
             Đăng ký nhận bản tin để không bỏ lỡ các chương trình khuyến mãi, bộ sưu tập mới và mẹo phối đồ từ IKA Fashion.
           </p>
           <form
@@ -692,7 +693,7 @@ export default function HomePage() {
             <input
               type="email"
               placeholder="Nhập email của bạn"
-              className="flex-1 px-5 py-3.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent backdrop-blur-sm"
+              className="flex-1 px-5 py-3.5 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
               required
             />
             <button
@@ -702,7 +703,7 @@ export default function HomePage() {
               Đăng Ký
             </button>
           </form>
-          <p className="text-white/30 text-xs mt-4">
+          <p className="text-foreground/60 text-xs mt-4">
             Chúng tôi cam kết không gửi spam. Bạn có thể hủy đăng ký bất cứ lúc nào.
           </p>
         </div>
