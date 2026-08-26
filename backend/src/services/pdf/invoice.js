@@ -262,7 +262,7 @@ export function buildInvoicePdf(order, settings = {}) {
       const tw = doc.widthOfString(txt);
       const tx = COL.price + COL_W.price - tw;
       const ty = y + 5 + 11;
-      doc.fillColor(COLOR.muted2).text(txt, tx, ty, { width: tw });
+      doc.fillColor(COLOR.muted2).text(txt, tx, ty, { lineBreak: false });
       doc.moveTo(tx, ty + 4).lineTo(tx + tw, ty + 4)
         .strokeColor(COLOR.muted2).lineWidth(0.6).stroke();
       doc.fontSize(9.5).fillColor(COLOR.muted);
