@@ -279,7 +279,7 @@ export default function ProductDetailPage() {
               )}
 
               <div className="bg-secondary rounded-lg p-4 text-sm space-y-2">
-                <p className="font-medium text-foreground">✓ Miễn phí vận chuyển toàn quốc</p>
+                <p className="font-medium text-foreground">✓ Giao hàng tiêu chuẩn miễn phí toàn quốc</p>
                 <p className="font-medium text-foreground">✓ Đổi trả miễn phí trong 7 ngày</p>
                 <p className="font-medium text-foreground">✓ Bảo hành chất lượng</p>
               </div>

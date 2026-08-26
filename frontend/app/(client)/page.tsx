@@ -257,7 +257,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
             {[
-              { icon: Truck, title: 'Miễn Phí Ship', desc: 'Đơn từ 500.000đ' },
+              { icon: Truck, title: 'Giao Tiêu Chuẩn', desc: 'Miễn phí toàn quốc' },
               { icon: ShieldCheck, title: 'Cam Kết Chính Hãng', desc: 'Sản phẩm 100% authentic' },
               { icon: RefreshCcw, title: 'Đổi Trả 7 Ngày', desc: 'Miễn phí, không lý do' },
               { icon: Headphones, title: 'Hỗ Trợ 24/7', desc: 'Hotline: 0123 456 789' },

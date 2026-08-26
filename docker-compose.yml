@@ -40,12 +40,18 @@ services:
     environment:
       PORT: 4000
       NODE_ENV: production
-      JWT_SECRET: ${JWT_SECRET:-ika-fashion-dev-secret-change-in-prod}
+      # KHÔNG đặt giá trị mặc định cho hai biến bí mật này. Trước đây cả secret
+      # ký JWT lẫn mật khẩu admin đều nằm sẵn trong repo, ai đọc được mã nguồn
+      # là ký được token admin giả. Thiếu biến thì compose dừng ngay kèm thông
+      # báo — tốt hơn nhiều so với chạy bằng giá trị ai cũng đoán được.
+      JWT_SECRET: ${JWT_SECRET:?thiếu JWT_SECRET — chép .env.example thành .env rồi điền}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@ika.vn}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-      OPENAPI_ENABLED: "true"
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?thiếu ADMIN_PASSWORD — chép .env.example thành .env rồi điền}
+      # Trang /api-docs phơi toàn bộ sơ đồ API. Bật khi cần xem tài liệu, còn
+      # mặc định để tắt.
+      OPENAPI_ENABLED: "false"
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ika_fashion
     depends_on:
       postgres:

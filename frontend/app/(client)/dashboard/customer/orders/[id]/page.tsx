@@ -540,12 +540,28 @@ export default function OrderDetailPage() {
             <div className="print:shadow-none print:border-none print:bg-transparent print:p-0 print:w-full" style={{ background: '#FFFFFF', borderRadius: '12px', padding: '24px', border: '1px solid #E5DFD8' }}>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9375rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '16px' }}>Tóm tắt đơn hàng</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8125rem' }}>
+                {/* totalPrice = tiền hàng − giảm giá + phí ship, nên tạm tính phải
+                    cộng lại phần giảm và gỡ phí ship ra. Trước đây dòng vận chuyển
+                    in cứng "Miễn phí" nên đơn giao hỏa tốc vẫn hiện miễn phí dù
+                    khách đã trả 60.000đ, và dòng giảm giá thì thiếu hẳn. */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
-                  <span>Tạm tính</span><span style={{ color: '#2C2C2C' }}>{order.totalPrice.toLocaleString('vi-VN')}đ</span>
+                  <span>Tạm tính</span>
+                  <span style={{ color: '#2C2C2C' }}>
+                    {(order.totalPrice + order.discount - order.shippingFee).toLocaleString('vi-VN')}đ
+                  </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
-                  <span>Vận chuyển</span><span style={{ color: '#22c55e' }}>Miễn phí</span>
+                  <span>Vận chuyển</span>
+                  <span style={{ color: order.shippingFee > 0 ? '#2C2C2C' : '#22c55e' }}>
+                    {order.shippingFee > 0 ? `${order.shippingFee.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
+                  </span>
                 </div>
+                {order.discount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7A7A7A' }}>
+                    <span>Giảm giá{order.couponCode ? ` (${order.couponCode})` : ''}</span>
+                    <span style={{ color: '#22c55e' }}>−{order.discount.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E5DFD8', paddingTop: '10px', fontWeight: 700, fontSize: '0.9375rem', color: '#2C2C2C' }}>
                   <span>Tổng cộng</span><span style={{ color: '#D4AF37' }}>{order.totalPrice.toLocaleString('vi-VN')}đ</span>
                 </div>

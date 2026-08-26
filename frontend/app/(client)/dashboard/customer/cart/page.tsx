@@ -156,9 +156,12 @@ export default function CustomerCartPage() {
                   <span className="text-muted-foreground">Tạm tính</span>
                   <span className="text-foreground font-medium">{subtotal.toLocaleString()} đ</span>
                 </div>
+                {/* Ở giỏ hàng khách CHƯA chọn hình thức giao nên chưa biết phí là
+                    bao nhiêu. In cứng "Miễn phí" ở đây là hứa sai với người chọn
+                    giao nhanh (30.000đ) hoặc hỏa tốc (60.000đ) ở bước sau. */}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Vận chuyển</span>
-                  <span className="text-foreground font-medium">Miễn phí</span>
+                  <span className="text-muted-foreground">Tính ở bước thanh toán</span>
                 </div>
               </div>
               <div className="border-t border-border pt-4 mb-6">

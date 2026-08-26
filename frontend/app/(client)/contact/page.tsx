@@ -14,7 +14,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Thời gian giao hàng mất bao lâu?',
-    a: 'Nội thành Hà Nội/HCM: 1-2 ngày. Các tỉnh thành khác: 3-5 ngày làm việc. Miễn phí ship cho đơn từ 500.000đ.',
+    a: 'Tùy hình thức bạn chọn: giao tiêu chuẩn 3–5 ngày làm việc (miễn phí), giao nhanh 1–2 ngày (30.000đ), giao hỏa tốc nhận trong ngày (60.000đ, chỉ TP. Hồ Chí Minh).',
   },
   {
     q: 'Làm sao để chọn đúng size?',

@@ -38,7 +38,7 @@ const STAFF_QUICK = [
   { label: 'Hết size', text: 'Dạ size này hiện đã hết ạ. Em xin phép gợi ý anh/chị vài mẫu tương tự cùng tầm giá nhé?' },
   { label: 'Tư vấn size', text: 'Anh/chị cho em xin chiều cao và cân nặng, em tư vấn size vừa nhất ạ.' },
   { label: 'Đổi size', text: 'Dạ bên em hỗ trợ đổi size miễn phí trong 7 ngày nếu sản phẩm còn nguyên tem mác và chưa giặt ạ. Anh/chị cho em xin mã đơn để em kiểm tra nhé.' },
-  { label: 'Phí giao hàng', text: 'Dạ đơn từ 500.000 đ bên em miễn phí giao hàng toàn quốc, dưới mức đó phí đồng giá 30.000 đ ạ.' },
+  { label: 'Phí giao hàng', text: 'Dạ phí tính theo hình thức giao anh/chị chọn ở bước thanh toán ạ: giao tiêu chuẩn miễn phí (3–5 ngày), giao nhanh 30.000 đ (1–2 ngày), giao hỏa tốc 60.000 đ (nhận trong ngày, chỉ TP. Hồ Chí Minh).' },
   { label: 'Cảm ơn / kết thúc', text: 'Em cảm ơn anh/chị đã quan tâm tới IKA Fashion ạ. Có gì cần hỗ trợ thêm mình cứ nhắn em nhé!' },
 ]
 

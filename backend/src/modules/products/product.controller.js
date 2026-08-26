@@ -24,6 +24,11 @@ export async function update(req, res) {
   ok(res, product, 'Sản phẩm đã được cập nhật');
 }
 
+export async function updateVariantStock(req, res) {
+  const product = await productService.setVariantStock(req.params.id, req.body.variantStock);
+  ok(res, product, 'Đã cập nhật tồn kho theo size và màu');
+}
+
 export async function remove(req, res) {
   await productService.deleteProduct(req.params.id);
   noContent(res);

@@ -11,6 +11,14 @@ import db from '../../db/index.js';
 // Tổng Quan và các sheet trong file Excel không đá nhau.
 const REVENUE_STATUS = `o.status = 'completed'`;
 
+// Doanh thu là tiền HÀNG, không gồm phí vận chuyển.
+//
+// orders.total_price nay đã cộng phí ship (số nhân viên giao hàng phải thu),
+// nhưng phí đó là tiền trả hộ đơn vị vận chuyển chứ không phải doanh thu của
+// cửa hàng. Gộp vào sẽ thổi phồng con số và làm tổng doanh thu theo sản phẩm
+// (LINE_REVENUE) không còn khớp với tổng doanh thu theo đơn.
+const GOODS_REVENUE = `(o.total_price - o.shipping_fee)`;
+
 // Đơn đã đặt, chưa hủy, chưa giao xong — tiền còn nằm ở dạng "sẽ thu".
 const PENDING_STATUS = `o.status IN ('pending', 'confirmed', 'shipped')`;
 
@@ -24,7 +32,7 @@ const LOW_STOCK_THRESHOLD = 10;
 async function getSummary(from, to) {
   const res = await db.query(
     `SELECT
-       (SELECT COALESCE(SUM(o.total_price), 0)::bigint
+       (SELECT COALESCE(SUM(${GOODS_REVENUE}), 0)::bigint
         FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND ${REVENUE_STATUS})   AS revenue,
        (SELECT COUNT(*)::int
         FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2)                          AS orders,
@@ -39,7 +47,7 @@ async function getSummary(from, to) {
         FROM users WHERE role = 'customer' AND created_at >= $1 AND created_at < $2)           AS "newCustomers",
        -- Tiền của các đơn đã đặt nhưng chưa giao xong: chưa vào doanh thu, nhưng
        -- người quản lý cần thấy để biết còn bao nhiêu đang trên đường.
-       (SELECT COALESCE(SUM(o.total_price), 0)::bigint
+       (SELECT COALESCE(SUM(${GOODS_REVENUE}), 0)::bigint
         FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND ${PENDING_STATUS})   AS "pendingRevenue",
        (SELECT COUNT(*)::int
         FROM orders o WHERE o.created_at >= $1 AND o.created_at < $2 AND ${PENDING_STATUS})   AS "pendingOrders",
@@ -51,7 +59,7 @@ async function getSummary(from, to) {
        -- Hai số toàn thời gian cho khối "tổng quan cửa hàng" trên bảng điều khiển,
        -- không phụ thuộc kỳ báo cáo đang chọn.
        (SELECT COUNT(*)::int FROM orders)                                                       AS "totalOrders",
-       (SELECT COALESCE(SUM(o.total_price), 0)::bigint FROM orders o WHERE ${REVENUE_STATUS})   AS "totalRevenue"`,
+       (SELECT COALESCE(SUM(${GOODS_REVENUE}), 0)::bigint FROM orders o WHERE ${REVENUE_STATUS})   AS "totalRevenue"`,
     [from, to, LOW_STOCK_THRESHOLD],
   );
 
@@ -81,7 +89,7 @@ async function getRevenueByDay(from, to) {
      LEFT JOIN (
        SELECT o.created_at::date AS day,
               COUNT(*)::int      AS orders,
-              SUM(o.total_price) AS revenue
+              SUM(${GOODS_REVENUE}) AS revenue
        FROM orders o
        WHERE o.created_at >= $1 AND o.created_at < $2 AND ${REVENUE_STATUS}
        GROUP BY day
@@ -156,7 +164,7 @@ async function getOrders(from, to) {
 async function getOrdersByStatus(from, to) {
   const res = await db.query(
     `SELECT o.status, COUNT(*)::int AS count,
-            COALESCE(SUM(o.total_price), 0)::bigint AS revenue
+            COALESCE(SUM(${GOODS_REVENUE}), 0)::bigint AS revenue
      FROM orders o
      WHERE o.created_at >= $1 AND o.created_at < $2
      GROUP BY o.status
@@ -186,6 +194,9 @@ async function getRevenueByCollection(from, to) {
 
 async function getTopCustomers(from, to, limit = 20) {
   const res = await db.query(
+    // `spent` cố ý dùng total_price (đã gồm phí ship) chứ không dùng
+    // GOODS_REVENUE: đây là số tiền khách thực sự đã trả, không phải doanh thu
+    // của cửa hàng.
     `SELECT u.name, u.phone, u.email,
             COUNT(o.id)::int                 AS orders,
             COALESCE(SUM(o.total_price), 0)::bigint AS spent

@@ -4,6 +4,7 @@ import { AppError } from '../../middleware/errorHandler.js';
 import { isBackoffice } from '../../utils/roles.js';
 import { activeFlashJoin, effectivePriceSQL } from '../../utils/price.js';
 import { assertUsable, computeDiscount } from '../coupons/coupon.service.js';
+import { shippingFeeOf, isExpressAvailable, EXPRESS_CITY } from './shipping.js';
 
 // SELECT chung: 1 đơn kèm mảng items (json_agg), alias camelCase cho FE
 const ORDER_SELECT = `
@@ -14,6 +15,10 @@ const ORDER_SELECT = `
          o.status, o.payment_status AS "paymentStatus",
          o.shipping_address AS "shippingAddress", o.phone, o.notes,
          o.cancel_reason AS "cancelReason",
+         -- totalPrice ĐÃ gồm shippingFee; tiền hàng = totalPrice - shippingFee.
+         o.shipping_fee AS "shippingFee",
+         o.shipping_method AS "shippingMethod",
+         o.payment_method AS "paymentMethod",
          o.created_at AS "createdAt", o.updated_at AS "updatedAt",
          COALESCE(
            json_agg(
@@ -51,7 +56,23 @@ async function getOrderRow(id) {
   return res.rows[0] ?? null;
 }
 
-export async function createOrder(userId, { shippingAddress, phone, notes, couponCode }) {
+export async function createOrder(userId, {
+  shippingAddress, phone, notes, couponCode, city,
+  shippingMethod = 'standard', paymentMethod = 'cod',
+}) {
+  // Giao hỏa tốc là giao trong ngày nên chỉ chạy được ở nơi có kho. Chặn ở
+  // SERVER chứ không chỉ ẩn nút trên giao diện — ẩn nút thì gọi thẳng API vẫn
+  // đặt được hỏa tốc cho địa chỉ ở tỉnh, mà shop thì không giao nổi.
+  //
+  // Ưu tiên trường `city` client gửi kèm; không có thì dò trong chuỗi địa chỉ.
+  if (shippingMethod === 'express' && !isExpressAvailable(city || shippingAddress)) {
+    throw new AppError(
+      `Giao hỏa tốc hiện chỉ áp dụng cho địa chỉ tại ${EXPRESS_CITY}. `
+      + 'Vui lòng chọn giao hàng nhanh hoặc tiêu chuẩn.',
+      400,
+    );
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -118,12 +139,20 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
       await client.query('UPDATE coupons SET used = used + 1 WHERE id = $1', [coupon.id]);
     }
 
-    const totalPrice = subtotal - discount;
+    // Phí ship tra từ bảng ở server theo MÃ phương thức. Không nhận số tiền từ
+    // client — nếu nhận thì sửa request là đặt được hỏa tốc với phí 0 đồng.
+    const shippingFee = shippingFeeOf(shippingMethod);
+
+    // total_price = số tiền nhân viên giao hàng phải thu, tức đã gồm phí ship.
+    // Trước đây phí bị bỏ ra ngoài nên tổng trong CSDL luôn thiếu đúng bằng phí.
+    const totalPrice = subtotal - discount + shippingFee;
 
     const orderRes = await client.query(
-      `INSERT INTO orders (user_id, total_price, discount, coupon_code, shipping_address, phone, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [userId, totalPrice, discount, appliedCode, shippingAddress, phone, notes ?? ''],
+      `INSERT INTO orders (user_id, total_price, discount, coupon_code, shipping_address,
+                           phone, notes, shipping_fee, shipping_method, payment_method)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [userId, totalPrice, discount, appliedCode, shippingAddress, phone, notes ?? '',
+       shippingFee, shippingMethod, paymentMethod],
     );
     const orderId = orderRes.rows[0].id;
 
@@ -135,6 +164,11 @@ export async function createOrder(userId, { shippingAddress, phone, notes, coupo
         [orderId, it.product_id, it.name, it.img, it.price, it.list_price,
          it.flash_sale_id ?? null, it.size, it.color, it.quantity],
       );
+      // Trừ kho của ĐÚNG biến thể trước. Câu UPDATE có điều kiện `stock >= $4`
+      // nên tự nó đã nguyên tử: hai người cùng mua size cuối cùng thì chỉ một
+      // người trừ được, người kia nhận 0 dòng và bị báo hết hàng.
+      await decVariantStock(client, it);
+
       await client.query(
         `UPDATE products SET stock = stock - $2, sold = sold + $2 WHERE id = $1`,
         [it.product_id, it.quantity],
@@ -241,6 +275,39 @@ export async function listAllOrders({ status, search, page = 1, limit = 15 } = {
   return { data: res.rows, pagination: { page, limit, total, totalPages }, summary };
 }
 
+/**
+ * Bước chuyển trạng thái đơn hợp lệ.
+ *
+ * Trước đây updateOrderStatus nhận bất kỳ giá trị nào trong enum nên admin bấm
+ * thẳng từ "chờ xác nhận" sang "hoàn thành" được — bỏ qua cả khâu đóng gói lẫn
+ * giao hàng, và mâu thuẫn với đặc tả use case 3.5.9 trong báo cáo.
+ *
+ * Làm theo đúng khuôn NEXT_STATUSES của return.service.js.
+ *
+ * 'returned' KHÔNG nằm trong bảng này: đơn chỉ vào trạng thái đó qua luồng duyệt
+ * yêu cầu trả hàng, để không ai đặt tay mà quên hoàn kho.
+ */
+/** Tên tiếng Việt để câu báo lỗi đọc được, thay vì in ra mã trạng thái. */
+const ORDER_STATUS_VI = {
+  pending:   'Chờ xác nhận',
+  confirmed: 'Đã xác nhận',
+  shipped:   'Đang giao',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+  returned:  'Đã trả hàng',
+};
+
+const NEXT_STATUSES = {
+  pending:   ['confirmed', 'cancelled'],
+  confirmed: ['shipped', 'cancelled'],
+  // Hàng đã rời cửa hàng: giao xong, hoặc giao không thành thì hủy.
+  shipped:   ['completed', 'cancelled'],
+  // Đã chốt — muốn trả hàng thì đi đường yêu cầu trả/đổi.
+  completed: [],
+  cancelled: [],
+  returned:  [],
+};
+
 export async function updateOrderStatus(id, { status, paymentStatus }) {
   const client = await pool.connect();
   try {
@@ -252,7 +319,21 @@ export async function updateOrderStatus(id, { status, paymentStatus }) {
     );
     if (!cur.rows.length) throw new AppError('Không tìm thấy đơn hàng', 404);
 
-    const wasCancelled = cur.rows[0].status === 'cancelled';
+    const curStatus = cur.rows[0].status;
+
+    // Chặn bước nhảy sai logic. Đặt lại đúng trạng thái đang có thì bỏ qua —
+    // giao diện admin gửi cả cụm form nên hay gửi lại giá trị cũ.
+    if (status && status !== curStatus) {
+      if (!(NEXT_STATUSES[curStatus] ?? []).includes(status)) {
+        throw new AppError(
+          `Không thể chuyển đơn từ "${ORDER_STATUS_VI[curStatus] ?? curStatus}" `
+          + `sang "${ORDER_STATUS_VI[status] ?? status}".`,
+          400,
+        );
+      }
+    }
+
+    const wasCancelled = curStatus === 'cancelled';
     const nowCancelled = status === 'cancelled';
 
     // Cửa hàng thu tiền khi giao (COD), nên đơn đã giao xong thì đương nhiên đã
@@ -301,9 +382,43 @@ export async function updateOrderStatus(id, { status, paymentStatus }) {
  * Chạy trong transaction của lời gọi, sau khi đơn đã được khóa bằng FOR UPDATE —
  * nếu không, hai lần hủy chồng nhau sẽ cộng kho hai lần.
  */
+/**
+ * Trừ kho của đúng biến thể (size + màu) khi đặt hàng.
+ *
+ * Điều kiện `stock >= $4` nằm ngay trong câu UPDATE nên phép kiểm và phép trừ
+ * là một thao tác nguyên tử — không cần đọc trước rồi so sánh, vốn có khe hở
+ * cho hai đơn cùng lúc lấy chung số suất cuối.
+ *
+ * Chỉ khi UPDATE không đụng dòng nào mới đọc lại để báo lỗi cho rõ nguyên nhân.
+ */
+async function decVariantStock(client, it) {
+  const res = await client.query(
+    `UPDATE product_variants
+     SET stock = stock - $4, updated_at = NOW()
+     WHERE product_id = $1 AND size = $2 AND color = $3 AND stock >= $4
+     RETURNING stock`,
+    [it.product_id, it.size, it.color, it.quantity],
+  );
+  if (res.rows.length) return;
+
+  const cur = await client.query(
+    'SELECT stock FROM product_variants WHERE product_id = $1 AND size = $2 AND color = $3',
+    [it.product_id, it.size, it.color],
+  );
+  if (!cur.rows.length) {
+    throw new AppError(
+      `Sản phẩm "${it.name}" không còn bán size ${it.size} màu ${it.color}`, 400,
+    );
+  }
+  throw new AppError(
+    `Sản phẩm "${it.name}" size ${it.size} màu ${it.color} chỉ còn ${cur.rows[0].stock} sản phẩm`,
+    400,
+  );
+}
+
 async function restoreStock(client, orderId) {
   const items = await client.query(
-    'SELECT product_id, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
+    'SELECT product_id, size, color, quantity, flash_sale_id FROM order_items WHERE order_id = $1',
     [orderId],
   );
   for (const it of items.rows) {
@@ -312,6 +427,15 @@ async function restoreStock(client, orderId) {
        SET stock = stock + $2, sold = GREATEST(0, sold - $2)
        WHERE id = $1`,
       [it.product_id, it.quantity],
+    );
+    // Hoàn về đúng biến thể đã trừ. Nếu biến thể đã bị admin xoá (đổi bảng
+    // size/màu của sản phẩm) thì không có gì để cộng lại — tổng ở products vẫn
+    // đúng, chỉ là phần dôi ra không quy được về size nào.
+    await client.query(
+      `UPDATE product_variants
+       SET stock = stock + $4, updated_at = NOW()
+       WHERE product_id = $1 AND size = $2 AND color = $3`,
+      [it.product_id, it.size, it.color, it.quantity],
     );
     // Trả lại suất flash, không thì đơn hủy vẫn ăn mất suất của chương trình.
     if (it.flash_sale_id) {
@@ -323,6 +447,23 @@ async function restoreStock(client, orderId) {
       );
     }
   }
+
+  // Hoàn lượt dùng mã giảm giá.
+  //
+  // Trước đây lượt dùng KHÔNG được trả lại, nên khách áp mã rồi hủy đơn là mất
+  // mã oan. Đặt việc hoàn ngay trong restoreStock để hai đường hủy — admin hủy
+  // và khách tự hủy — dùng chung một đường code, không thể tính khác nhau.
+  //
+  // GREATEST(0, ...) chặn số âm nếu admin đã sửa tay lượt dùng của mã.
+  await client.query(
+    `UPDATE coupons c
+     SET used = GREATEST(0, c.used - 1)
+     FROM orders o
+     WHERE o.id = $1
+       AND o.coupon_code <> ''
+       AND UPPER(c.code) = UPPER(o.coupon_code)`,
+    [orderId],
+  );
 }
 
 /** Trạng thái mà khách còn tự hủy đơn được — hàng chưa rời cửa hàng. */
@@ -343,8 +484,8 @@ const CANCEL_BLOCKED_REASON = {
  * phải liên hệ cửa hàng, đơn đã giao xong thì đi đường trả/đổi hàng. Kho và suất
  * flash được hoàn y hệt khi admin hủy đơn.
  *
- * Lượt dùng mã giảm giá KHÔNG được trả lại, giống luồng admin hủy đơn — hai nơi
- * hủy mà tính khác nhau thì số liệu mã giảm giá sẽ lệch.
+ * Lượt dùng mã giảm giá ĐƯỢC trả lại, giống luồng admin hủy đơn — cả hai đều gọi
+ * chung restoreStock nên không thể tính khác nhau.
  */
 export async function cancelMyOrder(id, userId, reason = '') {
   const client = await pool.connect();

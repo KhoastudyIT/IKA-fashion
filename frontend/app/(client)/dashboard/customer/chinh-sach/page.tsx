@@ -18,7 +18,7 @@ const GROUPS = [
         href: '/dashboard/customer/chinh-sach/chinh-sach-giao-hang',
         icon: Truck,
         title: 'Chính Sách Giao Hàng',
-        desc: 'Miễn phí giao hàng cho đơn từ 500.000 đ. Nội thành 1–2 ngày, tỉnh khác 3–5 ngày.',
+        desc: 'Ba hình thức giao: tiêu chuẩn miễn phí, giao nhanh 30.000đ, hỏa tốc 60.000đ (chỉ TP.HCM).',
       },
     ],
   },

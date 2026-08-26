@@ -20,7 +20,7 @@ const faqCategories = [
         icon: '🚚',
         items: [
             { q: 'IKA Fashion có giao hàng toàn quốc không?', a: 'Có, chúng tôi giao hàng đến tất cả 63 tỉnh thành trên toàn quốc. Nội thành HN/HCM giao trong 1-2 ngày, các tỉnh khác 3-5 ngày làm việc.' },
-            { q: 'Phí vận chuyển được tính như thế nào?', a: 'Miễn phí vận chuyển toàn quốc cho đơn hàng từ 500.000 VNĐ. Đơn hàng dưới mức này phí đồng giá là 30.000 VNĐ. Riêng khu vực hải đảo phí 50.000 VNĐ.' },
+            { q: 'Phí vận chuyển được tính như thế nào?', a: 'Phí tính theo hình thức giao bạn chọn ở bước thanh toán, không phụ thuộc giá trị đơn: Giao tiêu chuẩn miễn phí (3–5 ngày làm việc), Giao nhanh 30.000đ (1–2 ngày làm việc), Giao hỏa tốc 60.000đ (nhận trong ngày, chỉ áp dụng tại TP. Hồ Chí Minh).' },
             { q: 'Nếu tôi không có nhà khi shipper giao hàng?', a: 'Shipper sẽ liên hệ bạn qua số điện thoại trước khi giao. Nếu không liên lạc được, đơn hàng sẽ được giao lại vào ngày làm việc tiếp theo, tối đa 3 lần giao.' },
         ],
     },

@@ -157,7 +157,7 @@ export default function KhuyenMaiPage() {
               { icon: '🏷️', label: 'Sản phẩm đang giảm', value: String(cards.length) },
               { icon: '⚡', label: 'Giảm tối đa', value: maxDiscount > 0 ? `${maxDiscount}%` : '—' },
               { icon: '🛍️', label: 'Suất ưu đãi còn lại', value: String(totalRemaining) },
-              { icon: '🚚', label: 'Miễn phí vận chuyển', value: 'Đơn từ 500K' },
+              { icon: '🚚', label: 'Giao tiêu chuẩn', value: 'Miễn phí' },
             ].map((stat, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ fontSize: '1.75rem' }}>{stat.icon}</span>

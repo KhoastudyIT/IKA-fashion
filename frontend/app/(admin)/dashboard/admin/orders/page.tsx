@@ -344,9 +344,21 @@ export default function AdminOrdersPage() {
                 <div className="bg-[#F9F5F0] p-5 rounded-lg border border-[#E5DFD8]">
                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Thanh toán</h3>
                   <div className="space-y-3 text-sm">
+                    {/* totalPrice = tiền hàng − giảm giá + phí ship, nên muốn ra
+                        tạm tính phải cộng lại phần giảm và gỡ phí ship ra. */}
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Tạm tính</span>
-                      <span className="text-[#2C2C2C]">{(selectedOrder.totalPrice + selectedOrder.discount).toLocaleString()} đ</span>
+                      <span className="text-[#2C2C2C]">
+                        {(selectedOrder.totalPrice + selectedOrder.discount - selectedOrder.shippingFee).toLocaleString()} đ
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Phí vận chuyển</span>
+                      <span className={selectedOrder.shippingFee > 0 ? 'text-[#2C2C2C]' : 'text-green-600'}>
+                        {selectedOrder.shippingFee > 0
+                          ? `${selectedOrder.shippingFee.toLocaleString()} đ`
+                          : 'Miễn phí'}
+                      </span>
                     </div>
                     {selectedOrder.discount > 0 && (
                       <div className="flex items-center justify-between">

@@ -11,16 +11,29 @@ import { VN_CITIES, isValidPhone } from '@/lib/validation'
 
 type Step = 1 | 2 | 3
 
+// Giá phải khớp SHIPPING_METHODS ở backend/src/modules/orders/shipping.js —
+// server mới là nơi tính tiền thật, đây chỉ là phần hiển thị.
+const EXPRESS_CITY = 'TP. Hồ Chí Minh'
+
 const SHIPPING_OPTIONS = [
   { id: 'standard', label: 'Giao hàng tiêu chuẩn', sub: '3–5 ngày làm việc', price: 0, icon: '📦' },
   { id: 'fast', label: 'Giao hàng nhanh', sub: '1–2 ngày làm việc', price: 30000, icon: '⚡' },
-  { id: 'express', label: 'Giao hỏa tốc', sub: 'Trong ngày (nội thành)', price: 60000, icon: '🚀' },
+  // Giao trong ngày chỉ làm được ở nơi có kho. Server cũng chặn lại, đây chỉ là
+  // để khách không chọn rồi mới bị báo lỗi ở bước cuối.
+  { id: 'express', label: 'Giao hỏa tốc', sub: `Trong ngày — chỉ ${EXPRESS_CITY}`, price: 60000, icon: '🚀', cityOnly: EXPRESS_CITY },
 ]
 
+/** Các hình thức giao được cho tỉnh/thành đang chọn. */
+function shippingOptionsFor(city: string) {
+  return SHIPPING_OPTIONS.filter(o => !o.cityOnly || o.cityOnly === city)
+}
+
+// Chỉ COD. MoMo và VNPay từng nằm ở đây nhưng không có luồng thanh toán nào
+// chạy phía sau — khách chọn xong vẫn thành đơn COD mà không được báo. Bao giờ
+// tích hợp cổng thanh toán thật thì mở lại, cùng lúc với PAYMENT_METHODS ở
+// backend/src/modules/orders/shipping.js.
 const PAYMENT_OPTIONS = [
   { id: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: '/payments/cod.png' },
-  { id: 'momo', label: 'Ví MoMo', icon: '/payments/momo.png' },
-  { id: 'vnpay', label: 'VNPay / Chuyển khoản', icon: '/payments/vnpay.png' },
 ]
 
 export function computeSummary(
@@ -189,7 +202,15 @@ export default function CheckoutPage() {
   // ── ALL hooks must be above every early return (Rules of Hooks) ──────────
   // shippingFee and summary are derived state — keep them here so useMemo is
   // always called on every render, regardless of loading/session state.
-  const shippingFee = SHIPPING_OPTIONS.find(s => s.id === shipping)?.price ?? 0
+  const shippingOptions = useMemo(() => shippingOptionsFor(city), [city])
+
+  // Khách chọn hỏa tốc ở bước 2 rồi quay lại bước 1 đổi sang tỉnh khác thì hình
+  // thức đó không còn hợp lệ — bỏ chọn ngay thay vì để server từ chối ở bước cuối.
+  useEffect(() => {
+    if (!shippingOptions.some(o => o.id === shipping)) setShipping('standard')
+  }, [shippingOptions, shipping])
+
+  const shippingFee = shippingOptions.find(s => s.id === shipping)?.price ?? 0
 
   // computeSummary handles cart === null gracefully (returns all-zero values),
   // so it is safe to call before the cart has loaded.
@@ -234,14 +255,22 @@ export default function CheckoutPage() {
     setPlacing(true)
     setError('')
     try {
+      // Ghi chú giờ chỉ còn lời nhắn của khách. Phương thức vận chuyển và
+      // thanh toán đi thành trường riêng, và server tự tra phí ship theo mã —
+      // trước đây cả hai bị nhét vào chuỗi ghi chú còn phí ship thì mất hẳn.
       const order = await createOrder({
         shippingAddress: `${address}, ${city}`,
         phone,
-        notes: `Van chuyen: ${shipping} | Thanh toan: ${payment}${notes ? ' | Ghi chu: ' + notes : ''}`,
+        notes,
         couponCode: appliedCoupon?.code,
+        city,
+        shippingMethod: shipping as 'standard' | 'fast' | 'express',
+        paymentMethod: payment as 'cod',
       })
       await refreshCounts()
-      router.push(`/order-success?orderId=${order.id}&total=${summary.finalTotal}`)
+      // Lấy tổng do server trả về, không lấy số tính ở client — hai bên lệch
+      // nhau chính là lỗi đang sửa.
+      router.push(`/order-success?orderId=${order.id}&total=${order.totalPrice}`)
     } catch (e: any) {
       setError(e.message || 'Đặt hàng thất bại, vui lòng thử lại')
       setPlacing(false)
@@ -351,7 +380,7 @@ export default function CheckoutPage() {
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.125rem', fontWeight: 600, color: '#2C2C2C', margin: 0 }}>Phương thức vận chuyển</h2>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
-                    {SHIPPING_OPTIONS.map(opt => (
+                    {shippingOptions.map(opt => (
                       <label key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', borderRadius: '10px', cursor: 'pointer', border: `2px solid ${shipping === opt.id ? '#D4AF37' : '#E5DFD8'}`, background: shipping === opt.id ? 'rgba(212,175,55,0.05)' : '#FAFAFA', transition: 'all 0.2s' }}>
                         <input type="radio" name="shipping" value={opt.id} checked={shipping === opt.id} onChange={() => setShipping(opt.id)} style={{ accentColor: '#D4AF37', width: '18px', height: '18px' }} />
                         <span style={{ fontSize: '1.375rem' }}>{opt.icon}</span>
@@ -390,7 +419,7 @@ export default function CheckoutPage() {
                   <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '16px', marginBottom: '24px', fontSize: '0.8125rem', lineHeight: 1.8, color: '#2C2C2C' }}>
                     <p><strong>👤</strong> {name} &nbsp;|&nbsp; <strong>📞</strong> {phone}</p>
                     <p><strong>📍</strong> {address}, {city}</p>
-                    <p><strong>🚚</strong> {SHIPPING_OPTIONS.find(s => s.id === shipping)?.label}</p>
+                    <p><strong>🚚</strong> {shippingOptions.find(s => s.id === shipping)?.label}</p>
                     <p><strong>💳</strong> {PAYMENT_OPTIONS.find(p => p.id === payment)?.label}</p>
                   </div>
                   {error && <p style={{ color: '#DC2626', fontSize: '0.8125rem', marginBottom: '16px' }}>{error}</p>}

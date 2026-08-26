@@ -1,10 +1,21 @@
 import { z } from 'zod';
+import { SHIPPING_CODES, PAYMENT_CODES } from './shipping.js';
 
 export const createOrderSchema = z.object({
   shippingAddress: z.string().min(5).max(255),
   phone:           z.string().min(8).max(20),
   notes:           z.string().max(500).optional().default(''),
   couponCode:      z.string().max(50).optional(),
+
+  // Tỉnh/thành gửi riêng để server kiểm tra điều kiện giao hỏa tốc. Không lưu
+  // thành cột — shipping_address đã chứa sẵn tên tỉnh/thành ở cuối chuỗi.
+  city:            z.string().max(100).optional(),
+
+  // Chỉ nhận MÃ phương thức; phí ship do server tra bảng, không lấy từ client.
+  shippingMethod:  z.enum(SHIPPING_CODES).optional().default('standard'),
+  paymentMethod:   z.enum(PAYMENT_CODES, {
+    message: 'Hiện cửa hàng chỉ hỗ trợ thanh toán khi nhận hàng (COD).',
+  }).optional().default('cod'),
 });
 
 // 'returned' KHÔNG có ở đây: đơn chỉ vào trạng thái đó qua luồng duyệt yêu cầu

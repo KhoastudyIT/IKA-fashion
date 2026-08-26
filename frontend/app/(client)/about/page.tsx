@@ -205,7 +205,7 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: Truck, title: 'Giao Hàng Nhanh', desc: 'Miễn phí ship toàn quốc cho đơn từ 500.000đ. Giao trong 2-5 ngày.' },
+              { icon: Truck, title: 'Giao Hàng Nhanh', desc: 'Giao tiêu chuẩn miễn phí toàn quốc trong 3–5 ngày. Cần gấp thì chọn giao nhanh hoặc hỏa tốc ở bước thanh toán.' },
               { icon: ShieldCheck, title: 'Chính Hãng 100%', desc: 'Cam kết mọi sản phẩm đều chính hãng IKA. Hoàn tiền 200% nếu phát hiện hàng giả.' },
               { icon: RefreshCcw, title: 'Đổi Trả Dễ Dàng', desc: 'Đổi trả miễn phí trong 7 ngày. Không cần lý do, chỉ cần sản phẩm còn nguyên tem.' },
               { icon: Headphones, title: 'Hỗ Trợ Tận Tâm', desc: 'Đội ngũ CSKH sẵn sàng hỗ trợ qua chat, điện thoại và email.' },

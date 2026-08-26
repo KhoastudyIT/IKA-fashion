@@ -3,9 +3,16 @@ import { AppError } from '../../middleware/errorHandler.js';
 import { activeFlashJoin, effectivePriceSQL } from '../../utils/price.js';
 
 // Khóa định danh 1 dòng giỏ hàng = product + size + color (giữ nguyên format cho FE)
+//
+// Khoá sai định dạng thì productId thành NaN và câu truy vấn vỡ ở tầng Postgres,
+// trả về 500 dù đây rõ ràng là lỗi dữ liệu người gọi gửi lên. Chặn ngay tại đây.
 const parseKey = (key) => {
   const [productId, size, color] = String(key).split('|');
-  return { productId: Number(productId), size, color };
+  const pid = Number(productId);
+  if (!Number.isInteger(pid) || pid <= 0 || !size || !color) {
+    throw new AppError('Khóa sản phẩm trong giỏ không hợp lệ', 400);
+  }
+  return { productId: pid, size, color };
 };
 
 async function present(userId) {
@@ -58,12 +65,66 @@ export async function getCart(userId) {
   return present(userId);
 }
 
+/**
+ * Tồn kho của ĐÚNG biến thể (size + màu), kèm số lượng đang có trong giỏ.
+ *
+ * Từ khi có bảng product_variants, mỗi cặp size–màu có kho riêng, nên không còn
+ * phải cộng mọi dòng của cùng sản phẩm nữa: dòng nào ăn kho của biến thể đó.
+ *
+ * variant_stock = NULL nghĩa là sản phẩm chưa khai biến thể này (sản phẩm không
+ * có size/màu, hoặc admin vừa thêm size mới) — khi đó lùi về tồn kho tổng ở
+ * products để không chặn oan.
+ */
+async function stockAndCart(userId, productId, size, color) {
+  const res = await db.query(
+    `SELECT p.name, p.stock AS product_stock, p.sizes, p.colors,
+            v.stock AS variant_stock,
+            COALESCE((SELECT SUM(ci.quantity) FROM cart_items ci
+                      WHERE ci.user_id = $2 AND ci.product_id = p.id
+                        AND ci.size = $3 AND ci.color = $4), 0)::int AS in_cart
+     FROM products p
+     LEFT JOIN product_variants v
+            ON v.product_id = p.id AND v.size = $3 AND v.color = $4
+     WHERE p.id = $1`,
+    [productId, userId, size, color],
+  );
+  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  const row = res.rows[0];
+  row.stock = row.variant_stock ?? row.product_stock;
+  row.theo_bien_the = row.variant_stock != null;
+  return row;
+}
+
+/**
+ * Chặn sớm khi số lượng vượt tồn kho của biến thể.
+ *
+ * Đây CHỈ là lớp báo sớm cho khách. Lớp chặn thật vẫn nằm ở createOrder, vì tồn
+ * kho có thể đổi trong khoảng thời gian giữa lúc bỏ vào giỏ và lúc bấm đặt hàng.
+ */
+function assertEnoughStock(p, wanted, { size, color }) {
+  if (wanted <= p.stock) return;
+
+  const ten = p.theo_bien_the
+    ? `Sản phẩm "${p.name}" size ${size} màu ${color}`
+    : `Sản phẩm "${p.name}"`;
+  throw new AppError(
+    p.stock > 0
+      ? `${ten} chỉ còn ${p.stock} sản phẩm, không đủ cho ${wanted} bạn đang chọn.`
+      : `${ten} đã hết hàng.`,
+    400,
+  );
+}
+
 export async function addItem(userId, { productId, size, color, quantity }) {
   const pid = Number(productId);
-  const p = await db.query('SELECT sizes, colors FROM products WHERE id = $1', [pid]);
-  if (!p.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
-  if (!p.rows[0].sizes.includes(size)) throw new AppError('Size không hợp lệ', 400);
-  if (!p.rows[0].colors.includes(color)) throw new AppError('Màu không hợp lệ', 400);
+  const p = await stockAndCart(userId, pid, size, color);
+  if (!p.sizes.includes(size)) throw new AppError('Size không hợp lệ', 400);
+  if (!p.colors.includes(color)) throw new AppError('Màu không hợp lệ', 400);
+
+  // Câu INSERT dưới đây CỘNG DỒN vào dòng cũ (ON CONFLICT DO UPDATE), nên số
+  // phải kiểm là phần đang có của chính biến thể này cộng thêm phần vừa bấm.
+  assertEnoughStock(p, p.in_cart + quantity, { size, color });
 
   await db.query(
     `INSERT INTO cart_items (user_id, product_id, size, color, quantity)
@@ -77,6 +138,12 @@ export async function addItem(userId, { productId, size, color, quantity }) {
 
 export async function updateItem(userId, key, quantity) {
   const { productId, size, color } = parseKey(key);
+
+  // Sửa số lượng là THAY THẾ dòng hiện tại. Vì mỗi biến thể chỉ có đúng một
+  // dòng giỏ hàng nên số cần kiểm chính là số lượng mới.
+  const p = await stockAndCart(userId, productId, size, color);
+  assertEnoughStock(p, quantity, { size, color });
+
   const res = await db.query(
     `UPDATE cart_items SET quantity = $5
      WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4

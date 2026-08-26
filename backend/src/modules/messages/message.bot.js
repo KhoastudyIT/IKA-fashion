@@ -7,6 +7,7 @@ import db from '../../db/index.js';
 import { dbCache } from '../../db/store.js';
 import { activeFlashWhere, discountPercent } from '../../utils/price.js';
 import { CUSTOMER_CANCELLABLE } from '../orders/order.service.js';
+import { SHIPPING_METHODS } from '../orders/shipping.js';
 
 /**
  * Teencode → chữ đủ. Khách gõ trên điện thoại rất hay viết tắt ("bn tiền v",
@@ -58,6 +59,9 @@ export function normalize(text) {
 }
 
 const vnd = (n) => Number(n || 0).toLocaleString('vi-VN');
+
+/** Phí ship dạng chữ: 0 đồng thì nói "miễn phí" chứ không in "0 đ". */
+const feeText = (fee) => (fee > 0 ? `${vnd(fee)} đ` : 'miễn phí');
 
 /**
  * Quét theo thứ tự và lấy cái khớp ĐẦU TIÊN, nên trật tự ở đây chính là mức độ
@@ -531,19 +535,36 @@ function isBottom(product) {
 // ── Câu trả lời chính sách (bám theo nội dung các trang chính sách của web) ───
 
 const POLICY_ANSWERS = {
-  // Bảng phí lấy từ đúng các tuỳ chọn ở bước thanh toán — đó là con số khách
-  // thật sự bị tính, nên bot phải nói theo nó.
-  shipping: 'IKA Fashion có 3 hình thức giao hàng, anh/chị chọn ngay ở bước thanh toán ạ:\n' +
-    '• **Giao hàng tiêu chuẩn — miễn phí**, nhận sau 3–5 ngày làm việc\n' +
-    '• **Giao hàng nhanh — 30.000 đ**, nhận sau 1–2 ngày làm việc\n' +
-    '• **Giao hoả tốc — 60.000 đ**, nhận trong ngày (áp dụng nội thành)\n' +
-    'Đơn từ **500.000 đ** được miễn phí giao hàng ở mọi hình thức. Chi tiết ở trang *Chính sách giao hàng* ạ.',
-  payment: 'Shop hỗ trợ các hình thức:\n• **Thanh toán khi nhận hàng (COD)**\n• **Chuyển khoản ngân hàng**\n• **Ví MoMo / VNPay / thẻ nội địa, quốc tế**\nAnh/chị chọn hình thức ngay ở bước thanh toán, hoặc cần em hướng dẫn chi tiết hình thức nào ạ?',
+  // Bảng phí sinh thẳng từ SHIPPING_METHODS — đúng cái bảng server dùng để tính
+  // tiền. Viết tay lần nữa ở đây thì sớm muộn hai nơi cũng lệch, mà bot báo sai
+  // giá là khách có bằng chứng shop hứa sai.
+  //
+  // ĐÃ BỎ câu "đơn từ 500.000 đ được miễn phí giao hàng": không có luật nào như
+  // vậy ở bất kỳ đâu trong mã nguồn.
+  shipping: 'IKA Fashion có 3 hình thức giao hàng, anh/chị chọn ngay ở bước thanh toán ạ:\n'
+    + `• **Giao hàng tiêu chuẩn — ${feeText(SHIPPING_METHODS.standard.fee)}**, nhận sau 3–5 ngày làm việc\n`
+    + `• **Giao hàng nhanh — ${feeText(SHIPPING_METHODS.fast.fee)}**, nhận sau 1–2 ngày làm việc\n`
+    + `• **Giao hoả tốc — ${feeText(SHIPPING_METHODS.express.fee)}**, nhận trong ngày `
+    + `(chỉ áp dụng cho địa chỉ tại ${SHIPPING_METHODS.express.cityOnly})\n`
+    + 'Phí này được cộng vào tổng đơn ở bước cuối. Chi tiết ở trang *Chính sách giao hàng* ạ.',
+
+  // Chỉ COD. Trước đây bot liệt kê thêm chuyển khoản, MoMo, VNPay và thẻ —
+  // không hình thức nào có luồng xử lý thật.
+  payment: 'Hiện shop **chỉ nhận thanh toán khi nhận hàng (COD)** ạ: anh/chị nhận hàng từ '
+    + 'shipper rồi trả tiền mặt, không phải chuyển khoản hay đặt cọc trước.\n'
+    + 'Shop chưa hỗ trợ ví điện tử và thẻ ngân hàng. Nếu anh/chị cần hình thức khác, '
+    + 'gõ **"gặp nhân viên"** để em nhờ shop hỗ trợ thêm ạ.',
   returns: 'Chính sách đổi trả của IKA Fashion:\n• **Đổi/trả trong 7 ngày** kể từ ngày nhận hàng, sản phẩm còn nguyên tem mác, chưa qua sử dụng và chưa giặt\n• **Đổi size miễn phí** nếu size không vừa (áp dụng khi còn hàng)\n• QC kiểm tra trong **1–2 ngày làm việc**, hoàn tiền hoặc đổi mẫu mới trong **3–5 ngày làm việc**\nAnh/chị gửi yêu cầu ngay tại *Đơn hàng của tôi → Yêu cầu đổi/trả*. Cần em kiểm tra đơn nào ạ?',
   care: 'Hướng dẫn bảo quản để áo quần bền màu ạ:\n• Giặt máy ở **nước lạnh dưới 30°C**, lộn trái sản phẩm trước khi giặt\n• **Không dùng thuốc tẩy**, không ngâm quá 30 phút\n• Phơi nơi thoáng mát, tránh nắng gắt trực tiếp\n• Ủi ở nhiệt độ thấp–trung bình, tránh ủi trực tiếp lên hình in\nSản phẩm của IKA dùng vải không phai màu nên chỉ cần giặt đúng cách là dùng được rất lâu ạ.',
   warranty: 'Sản phẩm thời trang của IKA không có chế độ bảo hành như đồ điện tử, nhưng nếu hàng **lỗi từ nhà sản xuất** (đường may bung, vải lỗi, sai mô tả) thì shop **đổi mới hoặc hoàn tiền 100%** trong **7 ngày** kể từ ngày nhận hàng, shop chịu phí vận chuyển hai chiều ạ.\nAnh/chị chụp giúp em ảnh lỗi và gửi yêu cầu tại *Đơn hàng của tôi → Yêu cầu đổi/trả* nhé.',
   how_to_order: 'Cách đặt hàng tại IKA Fashion ạ:\n1. Chọn sản phẩm → chọn **màu và size** → bấm **Thêm vào giỏ**\n2. Mở **Giỏ hàng** → kiểm tra số lượng → bấm **Thanh toán**\n3. Điền **họ tên, số điện thoại, địa chỉ**, chọn hình thức giao hàng và thanh toán\n4. Nhập **mã giảm giá** (nếu có) rồi bấm **Đặt hàng**\nSau khi đặt, anh/chị theo dõi đơn tại *Đơn hàng của tôi* ạ.',
-  account: 'Về tài khoản ạ:\n• **Quên mật khẩu**: vào trang Đăng nhập → *Quên mật khẩu* để đặt lại qua email\n• **Chưa có tài khoản**: bấm **Đăng ký**, chỉ cần email và mật khẩu\n• **Đổi mật khẩu / thông tin cá nhân**: vào *Tài khoản của tôi → Hồ sơ*\nNếu anh/chị vẫn không vào được, gõ **"gặp nhân viên"** để em nhờ kỹ thuật kiểm tra giúp ạ.',
+  // ĐÃ BỎ hướng dẫn "Quên mật khẩu → đặt lại qua email": hệ thống không có
+  // luồng đó. auth chỉ có PUT /password, tức đổi mật khẩu KHI ĐÃ đăng nhập.
+  account: 'Về tài khoản ạ:\n'
+    + '• **Chưa có tài khoản**: bấm **Đăng ký**, chỉ cần email và mật khẩu\n'
+    + '• **Đổi mật khẩu / thông tin cá nhân**: đăng nhập rồi vào *Tài khoản của tôi → Hồ sơ*\n'
+    + '• **Quên mật khẩu**: website chưa có chức năng tự đặt lại, anh/chị gõ '
+    + '**"gặp nhân viên"** để shop hỗ trợ đặt lại giúp ạ.',
   shipping_intl: 'Hiện IKA Fashion **chỉ giao hàng trong lãnh thổ Việt Nam**, chưa hỗ trợ giao quốc tế ạ.\nNếu anh/chị có địa chỉ nhận trong nước (người thân, văn phòng chuyển tiếp) thì shop vẫn giao bình thường. Cần trao đổi thêm, anh/chị gõ **"gặp nhân viên"** nhé.',
 };
 

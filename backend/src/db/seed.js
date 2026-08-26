@@ -1,9 +1,33 @@
 import bcrypt from 'bcryptjs';
 import db from './index.js';
+import config from '../config/index.js';
 import { NEWS_SEED } from './seed-data/news.js';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@ika.vn';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123';
+
+// Cảnh báo theo GIÁ TRỊ chứ không theo việc biến có được đặt hay không: đặt
+// tường minh ADMIN_PASSWORD=admin123 vẫn là mật khẩu ai cũng đoán ra.
+const WEAK_PASSWORDS = ['admin123', 'admin', '123456', 'password', 'admin@123'];
+const PASSWORD_IS_WEAK = WEAK_PASSWORDS.includes(ADMIN_PASSWORD.toLowerCase())
+  || ADMIN_PASSWORD.length < 10;
+
+/**
+ * In thông tin đăng nhập admin ra log.
+ *
+ * Chỉ in mật khẩu ở máy dev. Log của production thường được gom về nơi khác và
+ * nhiều người đọc được, in mật khẩu ở đó là để lộ tài khoản quản trị.
+ */
+function logAdminCredentials() {
+  if (config.isProduction) {
+    console.log(`  Admin    : ${ADMIN_EMAIL}`);
+    if (PASSWORD_IS_WEAK) {
+      console.warn('  CẢNH BÁO : mật khẩu admin quá yếu — đổi trong khu quản trị hoặc đặt lại ADMIN_PASSWORD.');
+    }
+    return;
+  }
+  console.log(`  Admin    : ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+}
 
 /**
  * Seed tài khoản admin mặc định để vào được khu quản trị.
@@ -13,7 +37,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'admin123';
 export async function seedAdmin() {
   const check = await db.query('SELECT id FROM users WHERE email = $1', [ADMIN_EMAIL]);
   if (check.rows.length > 0) {
-    console.log(`  Admin    : ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+    logAdminCredentials();
     return;
   }
 
@@ -23,7 +47,7 @@ export async function seedAdmin() {
     ['Quản trị viên', ADMIN_EMAIL, hashed],
   );
 
-  console.log(`  Admin    : ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+  logAdminCredentials();
 }
 
 /**

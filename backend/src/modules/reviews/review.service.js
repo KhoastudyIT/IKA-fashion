@@ -74,15 +74,24 @@ export async function createReview({ productId, userId, userName, rating, commen
     throw new AppError('Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua và nhận hàng thành công', 403);
   }
 
-  const res = await db.query(
-    `INSERT INTO reviews (product_id, user_id, user_name, rating, comment)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, product_id AS "productId", user_name AS "userName",
-               rating, comment, approved, reply,
-               to_char(created_at, 'YYYY-MM-DD') AS "createdAt"`,
-    [Number(productId), userId, userName, rating, comment ?? ''],
-  );
-  return res.rows[0];
+  try {
+    const res = await db.query(
+      `INSERT INTO reviews (product_id, user_id, user_name, rating, comment)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, product_id AS "productId", user_name AS "userName",
+                 rating, comment, approved, reply,
+                 to_char(created_at, 'YYYY-MM-DD') AS "createdAt"`,
+      [Number(productId), userId, userName, rating, comment ?? ''],
+    );
+    return res.rows[0];
+  } catch (err) {
+    // Chỉ số idx_reviews_one_per_user chặn đánh giá thứ hai của cùng một khách
+    // cho cùng một sản phẩm. Bắt ở đây để trả lỗi tiếng Việt thay vì 500.
+    if (err.code === '23505') {
+      throw new AppError('Bạn đã đánh giá sản phẩm này rồi', 409);
+    }
+    throw err;
+  }
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────────

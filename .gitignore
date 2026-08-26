@@ -6,7 +6,8 @@ __v0_jsx-dev-runtime.ts
 .v0-trash/
 .vercel/
 
-# Environment variables
+# Environment variables — .env chứa JWT_SECRET và mật khẩu admin thật
+.env
 .env*.local
 
 # Common ignores

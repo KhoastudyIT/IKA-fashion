@@ -12,8 +12,8 @@ export default function ShippingPolicyPageContent() {
                     <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border">
                         {[
                             { icon: Truck, title: 'Giao Toàn Quốc', desc: '63 tỉnh thành' },
-                            { icon: Clock, title: '1-5 Ngày', desc: 'Tùy khu vực' },
-                            { icon: Package, title: 'Miễn Phí Ship', desc: 'Đơn từ 500.000đ' },
+                            { icon: Clock, title: 'Trong Ngày – 5 Ngày', desc: 'Tùy hình thức giao' },
+                            { icon: Package, title: 'Giao Tiêu Chuẩn', desc: 'Miễn phí toàn quốc' },
                             { icon: ShieldCheck, title: 'Kiểm Tra Hàng', desc: 'Trước khi thanh toán' },
                         ].map((item) => (
                             <div key={item.title} className="flex items-center gap-4 py-6 px-6 sm:justify-center">
@@ -43,19 +43,21 @@ export default function ShippingPolicyPageContent() {
                                     <table className="w-full text-sm border-collapse">
                                         <thead>
                                             <tr className="bg-secondary">
-                                                <th className="text-left px-4 py-3 font-semibold text-foreground border border-border">Khu vực</th>
+                                                <th className="text-left px-4 py-3 font-semibold text-foreground border border-border">Hình thức giao</th>
                                                 <th className="text-left px-4 py-3 font-semibold text-foreground border border-border">Thời gian dự kiến</th>
                                                 <th className="text-left px-4 py-3 font-semibold text-foreground border border-border">Phí ship</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            {/* Bảng này phải khớp SHIPPING_METHODS ở
+                                                backend/src/modules/orders/shipping.js — đó mới là nơi
+                                                tính tiền thật. Trước đây bảng chia theo KHU VỰC và
+                                                kèm luật "miễn phí đơn ≥ 500K" vốn không tồn tại
+                                                trong mã nguồn. */}
                                             {[
-                                                { area: 'Nội thành Hà Nội', time: '1-2 ngày làm việc', fee: 'Miễn phí (đơn ≥ 500K)' },
-                                                { area: 'Nội thành TP.HCM', time: '1-2 ngày làm việc', fee: 'Miễn phí (đơn ≥ 500K)' },
-                                                { area: 'Ngoại thành HN/HCM', time: '2-3 ngày làm việc', fee: 'Miễn phí (đơn ≥ 500K)' },
-                                                { area: 'Miền Bắc / Miền Trung', time: '3-4 ngày làm việc', fee: '30.000đ (đơn < 500K)' },
-                                                { area: 'Miền Nam / Tây Nguyên', time: '3-5 ngày làm việc', fee: '30.000đ (đơn < 500K)' },
-                                                { area: 'Hải đảo / vùng sâu', time: '5-7 ngày làm việc', fee: '50.000đ' },
+                                                { area: 'Giao hàng tiêu chuẩn', time: '3–5 ngày làm việc', fee: 'Miễn phí' },
+                                                { area: 'Giao hàng nhanh', time: '1–2 ngày làm việc', fee: '30.000đ' },
+                                                { area: 'Giao hỏa tốc (chỉ TP. Hồ Chí Minh)', time: 'Nhận trong ngày', fee: '60.000đ' },
                                             ].map((row, i) => (
                                                 <tr key={i} className={i % 2 === 0 ? 'bg-background' : 'bg-secondary/50'}>
                                                     <td className="px-4 py-3 border border-border text-foreground font-medium">{row.area}</td>
@@ -74,16 +76,24 @@ export default function ShippingPolicyPageContent() {
                                     <span className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center text-accent text-sm font-bold">2</span>
                                     Chi Tiết Phí Vận Chuyển
                                 </h2>
-                                <div className="grid sm:grid-cols-2 gap-4">
+                                {/* Phí KHÔNG phụ thuộc giá trị đơn mà phụ thuộc hình thức
+                                    giao khách chọn ở bước thanh toán. Ba mức dưới đây khớp
+                                    SHIPPING_METHODS ở backend/src/modules/orders/shipping.js. */}
+                                <div className="grid sm:grid-cols-3 gap-4">
                                     <div className="bg-accent/5 border border-accent/20 rounded-xl p-6 text-center">
                                         <p className="text-3xl font-heading font-bold text-accent mb-1">MIỄN PHÍ</p>
-                                        <p className="text-sm text-muted-foreground">Đơn hàng từ <strong className="text-foreground">500.000đ</strong></p>
-                                        <p className="text-xs text-muted-foreground mt-2">Áp dụng toàn quốc (trừ hải đảo)</p>
+                                        <p className="text-sm text-muted-foreground">Giao hàng <strong className="text-foreground">tiêu chuẩn</strong></p>
+                                        <p className="text-xs text-muted-foreground mt-2">Nhận sau 3–5 ngày làm việc, áp dụng toàn quốc</p>
                                     </div>
                                     <div className="bg-secondary rounded-xl p-6 text-center">
                                         <p className="text-3xl font-heading font-bold text-foreground mb-1">30.000đ</p>
-                                        <p className="text-sm text-muted-foreground">Đơn hàng dưới <strong className="text-foreground">500.000đ</strong></p>
-                                        <p className="text-xs text-muted-foreground mt-2">Phí đồng giá toàn quốc</p>
+                                        <p className="text-sm text-muted-foreground">Giao hàng <strong className="text-foreground">nhanh</strong></p>
+                                        <p className="text-xs text-muted-foreground mt-2">Nhận sau 1–2 ngày làm việc, áp dụng toàn quốc</p>
+                                    </div>
+                                    <div className="bg-secondary rounded-xl p-6 text-center">
+                                        <p className="text-3xl font-heading font-bold text-foreground mb-1">60.000đ</p>
+                                        <p className="text-sm text-muted-foreground">Giao <strong className="text-foreground">hỏa tốc</strong></p>
+                                        <p className="text-xs text-muted-foreground mt-2">Nhận trong ngày, chỉ áp dụng tại TP. Hồ Chí Minh</p>
                                     </div>
                                 </div>
                             </div>

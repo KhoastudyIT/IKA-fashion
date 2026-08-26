@@ -89,7 +89,7 @@ export default function Footer() {
       <div style={{ borderBottom: '1px solid rgba(212,175,55,0.2)', padding: '20px 24px' }}>
         <div style={{ maxWidth: 'var(--site-max)', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {[
-            { icon: '🚚', title: 'Miễn phí vận chuyển', sub: 'Đơn hàng từ 500.000đ' },
+            { icon: '🚚', title: 'Giao tiêu chuẩn miễn phí', sub: 'Nhận sau 3–5 ngày làm việc' },
             { icon: '🔄', title: 'Đổi trả dễ dàng', sub: 'Trong vòng 7 ngày' },
             { icon: '🛡️', title: 'Bảo hành chất lượng', sub: 'Cam kết chính hãng 100%' },
             { icon: '📞', title: 'Hỗ trợ 24/7', sub: `Hotline: ${storeSettings.hotline}` },

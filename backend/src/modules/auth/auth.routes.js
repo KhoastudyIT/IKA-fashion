@@ -3,12 +3,13 @@ import * as authController from './auth.controller.js';
 import { authenticate } from '../../middleware/authenticate.js';
 import { authorize, readOnly } from '../../middleware/authorize.js';
 import { validate, validateQuery } from '../../middleware/validate.js';
+import { loginLimiter, registerLimiter } from '../../middleware/rateLimit.js';
 import { registerSchema, loginSchema, updateProfileSchema, changePasswordSchema, updateUserRoleSchema, createUserSchema, listUsersQuerySchema } from './auth.schema.js';
 
 // Public / tài khoản cá nhân — mount tại /api/v1/auth
 export const authRouter = Router();
-authRouter.post('/register', validate(registerSchema), authController.register);
-authRouter.post('/login', validate(loginSchema), authController.login);
+authRouter.post('/register', registerLimiter, validate(registerSchema), authController.register);
+authRouter.post('/login', loginLimiter, validate(loginSchema), authController.login);
 authRouter.get('/me', authenticate, authController.getMe);
 authRouter.put('/me', authenticate, validate(updateProfileSchema), authController.updateProfile);
 authRouter.put('/password', authenticate, validate(changePasswordSchema), authController.changePassword);

@@ -66,10 +66,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })
         })
         setNotifications(list.sort((a, b) => b.date.getTime() - a.date.getTime()))
-      }).catch(() => {})
+      }).catch(() => { })
 
       // Load unread message count
-      getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => {})
+      getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => { })
     }
   }, [allowed])
 
@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!allowed) return
     const interval = setInterval(() => {
-      getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => {})
+      getUnreadMessageCount().then(d => setUnreadMessages(d.count)).catch(() => { })
     }, 15000)
     return () => clearInterval(interval)
   }, [allowed])
@@ -141,16 +141,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFBF7] flex flex-col md:flex-row">
+    <div className="min-h-screen md:h-screen md:overflow-hidden bg-[#FFFBF7] flex flex-col md:flex-row print:h-auto print:overflow-visible">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#2C2C2C] text-white border-r border-[#E5DFD8] print:hidden">
-        <div className="h-16 flex items-center px-6 border-b border-[#3D3D3D]">
+      <aside className="hidden md:flex flex-col w-64 shrink-0 h-full bg-[#2C2C2C] text-white border-r border-[#E5DFD8] print:hidden">
+        <div className="h-16 shrink-0 flex items-center px-6 border-b border-[#3D3D3D]">
           <Link href="/dashboard/admin">
             <img src="/icon.svg" alt="IKA Fashion" className="h-10 w-auto object-contain" />
           </Link>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        {/* Danh sách mục cuộn riêng khi màn thấp, để nút Đăng Xuất luôn nằm đáy */}
+        <nav className="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -159,11 +160,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors ${
-                  isActive
+                className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors ${isActive
                     ? 'bg-[#D4AF37] text-[#2C2C2C]'
                     : 'text-gray-300 hover:bg-[#3D3D3D] hover:text-white'
-                }`}
+                  }`}
               >
                 <Icon className="w-5 h-5 shrink-0" />
                 <span className="flex-1">{item.name}</span>
@@ -177,7 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="p-4 border-t border-[#3D3D3D]">
+        <div className="p-4 shrink-0 border-t border-[#3D3D3D]">
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-4 py-3 rounded text-sm font-medium text-gray-300 hover:bg-destructive/20 hover:text-destructive-foreground transition-colors cursor-pointer"
@@ -222,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
 
-            <nav className="flex-1 px-4 py-6 space-y-1">
+            <nav className="flex-1 min-h-0 overflow-y-auto px-4 py-6 space-y-1">
               {navItems.map((item) => {
                 const isActive = pathname === item.href
                 const Icon = item.icon
@@ -232,11 +232,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     key={item.name}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors ${
-                      isActive
+                    className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors ${isActive
                         ? 'bg-[#D4AF37] text-[#2C2C2C]'
                         : 'text-gray-300 hover:bg-[#3D3D3D] hover:text-white'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-5 h-5 shrink-0" />
                     <span className="flex-1">{item.name}</span>
@@ -250,7 +249,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               })}
             </nav>
 
-            <div className="p-4 border-t border-[#3D3D3D]">
+            <div className="p-4 shrink-0 border-t border-[#3D3D3D]">
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 w-full px-4 py-3 rounded text-sm font-medium text-gray-300 hover:bg-destructive/20 hover:text-destructive-foreground transition-colors cursor-pointer"
@@ -264,7 +263,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      {/* Vùng nội dung — nơi DUY NHẤT cuộn ở desktop */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 md:h-full md:overflow-y-auto print:h-auto print:overflow-visible">
         {/* Top Header - Desktop */}
         <header className="hidden md:flex h-16 bg-white border-b border-[#E5DFD8] justify-between items-center px-8 sticky top-0 z-30 print:hidden">
           <div className="flex items-center">

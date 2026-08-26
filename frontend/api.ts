@@ -141,6 +141,10 @@ export interface Order {
   shippingAddress: string
   phone: string
   notes: string
+  /** Phí vận chuyển. `totalPrice` ĐÃ gồm khoản này; tiền hàng = totalPrice - shippingFee. */
+  shippingFee: number
+  shippingMethod: 'standard' | 'fast' | 'express'
+  paymentMethod: 'cod' | 'momo' | 'vnpay'
   /** Lý do khách ghi khi tự hủy đơn — rỗng nếu đơn không bị khách hủy. */
   cancelReason: string
   createdAt: string
@@ -352,7 +356,17 @@ export function removeWishlist(productId: number): Promise<ApiProduct[]> {
 
 // ---------- Orders (khách hàng) ----------
 
-export function createOrder(body: { shippingAddress: string; phone: string; notes?: string; couponCode?: string }): Promise<Order> {
+// Chỉ gửi MÃ phương thức — phí ship do server tra bảng, client không gửi số tiền.
+export function createOrder(body: {
+  shippingAddress: string
+  phone: string
+  notes?: string
+  couponCode?: string
+  /** Tỉnh/thành — server dùng để kiểm tra điều kiện giao hỏa tốc. */
+  city?: string
+  shippingMethod?: 'standard' | 'fast' | 'express'
+  paymentMethod?: 'cod'
+}): Promise<Order> {
   return getData('/customer/orders', { method: 'POST', body, auth: true })
 }
 export function getMyOrders(): Promise<Order[]> {

@@ -299,10 +299,12 @@ export function buildInvoicePdf(order, settings = {}) {
 
   const t = itemTotals(items);
   const discount = Number(order.discount ?? 0);
-  // orders.total_price đã trừ mã giảm giá, nên tạm tính phải cộng ngược lại —
-  // như vậy ba dòng "tạm tính − giảm giá = tổng" mới khớp nhau.
+  const shippingFee = Number(order.shippingFee ?? 0);
+  // orders.total_price = tiền hàng − mã giảm giá + phí ship, nên muốn ra tạm
+  // tính phải cộng lại phần giảm và gỡ phí ship ra. Có vậy các dòng
+  // "tạm tính + phí ship − giảm giá = tổng" mới khớp nhau.
   const finalTotal = Number(order.totalPrice ?? 0);
-  const subtotal = finalTotal + discount;
+  const subtotal = finalTotal + discount - shippingFee;
 
   // Chỉ hiện hai dòng giá niêm yết / tiết kiệm khi thực sự có hàng được giảm,
   // để hoá đơn thường không bị rối.
@@ -311,7 +313,13 @@ export function buildInvoicePdf(order, settings = {}) {
     sumRow('Tiết kiệm khuyến mãi', `− ${vnd(t.saved)} đ`, { color: COLOR.sale });
   }
   sumRow('Tạm tính', `${vnd(subtotal)} đ`);
-  sumRow('Phí vận chuyển', 'Miễn phí');
+  // Trước đây dòng này in cứng "Miễn phí" nên hóa đơn của đơn giao nhanh vẫn
+  // hiện miễn phí trong khi khách đã trả 30.000 đ.
+  //
+  // Không kèm tên hình thức giao hàng vào nhãn: cột nhãn chỉ rộng 55% khối tổng
+  // kết nên "Phí vận chuyển (Giao hàng nhanh)" bị ngắt xuống hai dòng, lệch hẳn
+  // so với các dòng còn lại.
+  sumRow('Phí vận chuyển', shippingFee > 0 ? `${vnd(shippingFee)} đ` : 'Miễn phí');
   if (discount > 0) {
     sumRow(
       order.couponCode ? `Giảm giá (${order.couponCode})` : 'Giảm giá',

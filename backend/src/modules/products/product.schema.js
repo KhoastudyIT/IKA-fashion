@@ -31,3 +31,10 @@ export const productQuerySchema = z.object({
   sizes:      z.string().optional(),   // CSV: "M,L"
   isSale:     z.enum(['true', 'false']).optional(), // "true" → lọc discount > 0
 });
+
+// Tồn kho theo biến thể: { "S|Trắng": 12, "M|Trắng": 8 }
+// Khóa là "size|màu" — đúng khuôn getProductById trả ra, để form quản trị đọc
+// sao thì ghi lại y vậy.
+export const setVariantStockSchema = z.object({
+  variantStock: z.record(z.string(), z.coerce.number().int().nonnegative()),
+});

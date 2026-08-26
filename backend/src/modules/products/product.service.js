@@ -48,17 +48,24 @@ export async function listProducts({
     params.push(`%${search.toLowerCase()}%`);
     where.push(`(LOWER(p.name) LIKE $${params.length} OR LOWER(p.type) LIKE $${params.length})`);
   }
+  // Lọc theo GIÁ HIỆU LỰC, không phải giá niêm yết.
+  //
+  // Trước đây lọc chạy trên p.price còn sắp xếp chạy trên effective_price: áo
+  // niêm yết 500k đang flash sale còn 200k KHÔNG hiện ra khi khách lọc "dưới
+  // 300k" — đúng những món rẻ nhất lại bị giấu đi.
   if (priceMin != null) {
     params.push(priceMin);
-    where.push(`p.price >= $${params.length}`);
+    where.push(`${effectivePriceSQL('p')} >= $${params.length}`);
   }
   if (priceMax != null) {
     params.push(priceMax);
-    where.push(`p.price <= $${params.length}`);
+    where.push(`${effectivePriceSQL('p')} <= $${params.length}`);
   }
-  // Lọc Ưu Đãi: discount > 0
+  // Lọc Ưu Đãi: đang giảm giá theo sản phẩm HOẶC đang có suất flash sale.
+  // Chỉ xét p.discount thì sản phẩm đang flash sale mà giá gốc không giảm sẽ
+  // vắng mặt khỏi đúng mục Ưu Đãi.
   if (isSale === 'true') {
-    where.push(`p.discount > 0`);
+    where.push(`(p.discount > 0 OR active_flash.id IS NOT NULL)`);
   }
   // Facet đa lựa chọn trên JSONB: '?|' = mảng chứa BẤT KỲ phần tử nào
   const fColors = csv(colors);
@@ -85,8 +92,10 @@ export async function listProducts({
   };
   const orderSql = `ORDER BY ${sortMap[sort] ?? sortMap.newest}`;
 
-  // Đếm không cần join flash: bộ lọc chỉ đụng tới cột của products.
-  const countRes = await db.query(`SELECT COUNT(*)::int AS total FROM products p ${whereSql}`, params);
+  // Đếm PHẢI dùng cùng FROM với truy vấn lấy dữ liệu: bộ lọc giá và bộ lọc Ưu
+  // Đãi đều tham chiếu active_flash, bỏ join là câu đếm lỗi ngay — và nếu đếm
+  // theo điều kiện khác thì số trang sẽ không khớp số sản phẩm thật.
+  const countRes = await db.query(`SELECT COUNT(*)::int AS total ${PRODUCT_FROM} ${whereSql}`, params);
   const total = countRes.rows[0].total;
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -103,16 +112,117 @@ export async function listProducts({
   return { data: res.rows, pagination: { page, limit, total, totalPages } };
 }
 
+/**
+ * Tồn kho từng biến thể của một sản phẩm, dạng { "S|Trắng": 6, ... }.
+ *
+ * Chỉ gắn vào TRANG CHI TIẾT, không gắn vào danh sách: danh sách hiển thị 12–24
+ * sản phẩm một trang, kéo theo cả bảng biến thể sẽ nặng mà giao diện không dùng.
+ */
+async function variantStockOf(productId) {
+  const res = await db.query(
+    'SELECT size, color, stock FROM product_variants WHERE product_id = $1',
+    [productId],
+  );
+  return Object.fromEntries(res.rows.map(r => [`${r.size}|${r.color}`, r.stock]));
+}
+
 export async function getProductById(id) {
   const res = await db.query(`SELECT ${PRODUCT_COLS} ${PRODUCT_FROM} WHERE p.id = $1`, [Number(id)]);
   if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
-  return res.rows[0];
+  const row = res.rows[0];
+  row.variantStock = await variantStockOf(row.id);
+  return row;
 }
 
 export async function getProductByHandle(handle) {
   const res = await db.query(`SELECT ${PRODUCT_COLS} ${PRODUCT_FROM} WHERE p.handle = $1`, [handle]);
   if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
-  return res.rows[0];
+  const row = res.rows[0];
+  row.variantStock = await variantStockOf(row.id);
+  return row;
+}
+
+/**
+ * Đồng bộ bảng biến thể sau khi admin thêm hoặc sửa sản phẩm.
+ *
+ * Quy tắc:
+ *   - size/màu mới xuất hiện  → thêm biến thể, tồn kho 0 (admin tự nhập sau);
+ *   - size/màu bị bỏ đi       → xoá biến thể tương ứng;
+ *   - biến thể đang có        → GIỮ NGUYÊN tồn kho, không đụng vào.
+ *
+ * Rồi cập nhật products.stock = tổng các biến thể, để mọi truy vấn cũ đang đọc
+ * cột đó vẫn ra số đúng.
+ *
+ * Sản phẩm không khai size hoặc màu thì không sinh biến thể nào — tồn kho của
+ * nó tiếp tục nằm ở products.stock như trước.
+ */
+async function syncVariants(productId, { sizes, colors }) {
+  const list = (sizes ?? []).flatMap(s => (colors ?? []).map(c => ({ size: s, color: c })));
+
+  if (!list.length) {
+    await db.query('DELETE FROM product_variants WHERE product_id = $1', [productId]);
+    return;
+  }
+
+  await db.query(
+    `DELETE FROM product_variants
+     WHERE product_id = $1
+       AND (size, color) NOT IN (SELECT * FROM UNNEST($2::text[], $3::text[]))`,
+    [productId, list.map(v => v.size), list.map(v => v.color)],
+  );
+
+  await db.query(
+    `INSERT INTO product_variants (product_id, size, color, stock)
+     SELECT $1, s, c, 0 FROM UNNEST($2::text[], $3::text[]) AS t(s, c)
+     ON CONFLICT (product_id, size, color) DO NOTHING`,
+    [productId, list.map(v => v.size), list.map(v => v.color)],
+  );
+
+  await db.query(
+    `UPDATE products p
+     SET stock = COALESCE((SELECT SUM(v.stock) FROM product_variants v
+                           WHERE v.product_id = p.id), 0)
+     WHERE p.id = $1`,
+    [productId],
+  );
+}
+
+/**
+ * Admin đặt tồn kho cho từng biến thể.
+ *
+ * Nhận { "S|Trắng": 12, ... } — đúng khuôn mà getProductById trả ra, để form
+ * quản trị đọc sao thì ghi lại y vậy.
+ */
+export async function setVariantStock(id, variantStock) {
+  const productId = Number(id);
+  const entries = Object.entries(variantStock ?? {});
+
+  for (const [key, stock] of entries) {
+    const [size, color] = String(key).split('|');
+    if (!size || !color) throw new AppError(`Khóa biến thể không hợp lệ: ${key}`, 400);
+    const n = Number(stock);
+    if (!Number.isInteger(n) || n < 0) {
+      throw new AppError(`Tồn kho của "${key}" phải là số nguyên không âm`, 400);
+    }
+    const res = await db.query(
+      `UPDATE product_variants SET stock = $4, updated_at = NOW()
+       WHERE product_id = $1 AND size = $2 AND color = $3 RETURNING id`,
+      [productId, size, color, n],
+    );
+    if (!res.rows.length) {
+      throw new AppError(`Sản phẩm không có biến thể size ${size} màu ${color}`, 404);
+    }
+  }
+
+  await db.query(
+    `UPDATE products p
+     SET stock = COALESCE((SELECT SUM(v.stock) FROM product_variants v
+                           WHERE v.product_id = p.id), 0),
+         updated_at = NOW()
+     WHERE p.id = $1`,
+    [productId],
+  );
+  return getProductById(productId);
 }
 
 export async function createProduct(data) {
@@ -137,7 +247,13 @@ export async function createProduct(data) {
       data.stock ?? 0, data.description ?? '',
     ],
   );
-  return res.rows[0];
+  const row = res.rows[0];
+
+  // Sản phẩm mới: sinh biến thể theo bảng size x màu vừa khai, tồn kho 0. Con
+  // số admin gõ ở ô "tồn kho" chỉ là tổng ban đầu — muốn chia theo size thì
+  // dùng màn hình sửa tồn kho biến thể.
+  await syncVariants(row.id, { sizes: data.sizes ?? [], colors: data.colors ?? [] });
+  return getProductById(row.id);
 }
 
 export async function updateProduct(id, data) {
@@ -164,6 +280,14 @@ export async function updateProduct(id, data) {
     params,
   );
   if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm', 404);
+
+  // Chỉ đồng bộ khi admin thực sự đổi bảng size hoặc màu. Sửa tên hay giá thì
+  // không đụng tới kho.
+  if (data.sizes !== undefined || data.colors !== undefined) {
+    const cur = res.rows[0];
+    await syncVariants(cur.id, { sizes: cur.sizes, colors: cur.colors });
+    return getProductById(cur.id);
+  }
   return res.rows[0];
 }
 

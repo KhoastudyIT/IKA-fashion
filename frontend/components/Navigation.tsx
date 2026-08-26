@@ -23,7 +23,7 @@ function CountBadge({ count }: { count: number }) {
 
 // Dòng hotline lấy từ cấu hình cửa hàng nên phải dựng lại mỗi khi settings đổi.
 const buildAnnouncements = (hotline: string, workingHours: string) => [
-  '🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ',
+  '🚚 Giao hàng tiêu chuẩn MIỄN PHÍ toàn quốc — nhận sau 3–5 ngày làm việc',
   '🔥 Flash Sale — Giảm đến 40% toàn bộ sản phẩm hôm nay!',
   '📦 Đổi trả miễn phí trong 7 ngày — Cam kết chính hãng 100%',
   `📞 Hotline hỗ trợ: ${hotline}${workingHours ? ` · ${workingHours}` : ''}`,

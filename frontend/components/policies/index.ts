@@ -34,7 +34,7 @@ export const POLICIES: Policy[] = [
   {
     slug: 'chinh-sach-giao-hang',
     title: 'Chính Sách Giao Hàng',
-    desc: 'Giao hàng nhanh chóng, an toàn trên toàn quốc. Miễn phí vận chuyển cho đơn từ 500.000đ.',
+    desc: 'Giao hàng nhanh chóng, an toàn trên toàn quốc. Giao tiêu chuẩn miễn phí, giao nhanh và hỏa tốc tính phí theo hình thức bạn chọn.',
     Content: GiaoHang,
   },
   {
