@@ -13,6 +13,7 @@ import {
 import { useShop } from '@/components/context/ShopContext'
 import { ArrowLeft, Package, MapPin, Phone, Clock, RotateCcw, Undo2, X, ImagePlus, Ban } from 'lucide-react'
 
+import { useUI } from '@/components/context/UIDialogContext'
 // Khớp với ràng buộc ở backend (return.schema.js).
 const MIN_RETURN_IMAGES = 2
 const MAX_RETURN_IMAGES = 5
@@ -43,6 +44,7 @@ const TIMELINE = [
 ]
 
 export default function OrderDetailPage() {
+  const { toast } = useUI()
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const { data: session, isPending } = useSession()
@@ -59,7 +61,7 @@ export default function OrderDetailPage() {
     try {
       await openOrderInvoice(order.id)
     } catch (error: any) {
-      alert(error.message || 'Không mở được hóa đơn')
+      toast(error.message || 'Không mở được hóa đơn', 'error')
     } finally {
       setInvoicing(false)
     }
@@ -81,7 +83,7 @@ export default function OrderDetailPage() {
       router.push('/dashboard/customer/cart')
     } catch (error: any) {
       console.error('Lỗi khi mua lại:', error)
-      alert(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng')
+      toast(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng', 'error')
       setBuyingAgain(false)
     }
   }

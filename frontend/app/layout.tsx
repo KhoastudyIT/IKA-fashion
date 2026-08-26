@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, Inter } from 'next/font/google'
 import './globals.css'
+import { UIProvider } from '@/components/context/UIDialogContext'
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'],
@@ -50,7 +51,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${inter.variable} bg-background`}>
       <body className="font-sans antialiased text-foreground">
-        {children}
+        {/* Bọc ở layout GỐC để cả khu khách và khu quản trị cùng dùng được
+            thông báo / hộp thoại của website, thay cho alert-confirm-prompt
+            của trình duyệt. */}
+        <UIProvider>
+          {children}
+        </UIProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

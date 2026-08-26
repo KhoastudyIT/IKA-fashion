@@ -13,6 +13,7 @@ import {
 } from '@/api'
 import AdminPagination from '@/components/ui/AdminPagination'
 
+import { useUI } from '@/components/context/UIDialogContext'
 type StatusFilter = ContactStatus | 'all'
 
 const STATUS_STYLE: Record<ContactStatus, string> = {
@@ -24,6 +25,7 @@ const STATUS_STYLE: Record<ContactStatus, string> = {
 const emptyStats = { total: 0, new: 0, processing: 0, resolved: 0 }
 
 export default function AdminContactsPage() {
+  const { confirm } = useUI()
   const [items, setItems] = useState<ContactRequest[]>([])
   const [stats, setStats] = useState(emptyStats)
   const [status, setStatus] = useState<StatusFilter>('all')
@@ -98,7 +100,7 @@ export default function AdminContactsPage() {
   }
 
   const handleDelete = async (c: ContactRequest) => {
-    if (!window.confirm(`Xóa yêu cầu liên hệ của "${c.name}"? Thao tác này không hoàn tác được.`)) return
+    if (!(await confirm({ title: `Xóa yêu cầu liên hệ của "${c.name}"? Thao tác này không hoàn tác được.`, danger: true }))) return
     setBusyId(c.id)
     try {
       await deleteContact(c.id)

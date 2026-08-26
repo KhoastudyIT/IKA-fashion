@@ -10,6 +10,7 @@ import ImageListField from '@/components/ImageListField'
 import { useAdminRole } from '@/lib/permissions'
 import AdminPagination from '@/components/ui/AdminPagination'
 
+import { useUI } from '@/components/context/UIDialogContext'
 const csvToArr = (s: string) => s.split(',').map((v) => v.trim()).filter(Boolean)
 
 type FormState = {
@@ -27,6 +28,7 @@ const emptyForm: FormState = {
 }
 
 export default function AdminProductsPage() {
+  const { confirm } = useUI()
   const { canWrite } = useAdminRole()
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
@@ -163,7 +165,7 @@ export default function AdminProductsPage() {
   }
 
   const handleDelete = async (p: ApiProduct) => {
-    if (!confirm(`Xóa sản phẩm "${p.name}"?`)) return
+    if (!(await confirm({ title: `Xóa sản phẩm "${p.name}"?`, danger: true }))) return
     try {
       await deleteProduct(p.id)
       load()

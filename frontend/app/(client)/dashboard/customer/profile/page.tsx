@@ -6,7 +6,9 @@ import { updateProfile } from '@/api'
 import { useRouter } from 'next/navigation'
 import { VN_CITIES, isValidPhone } from '@/lib/validation'
 
+import { useUI } from '@/components/context/UIDialogContext'
 export default function CustomerProfilePage() {
+  const { toast } = useUI()
   const { data: session, isPending } = useSession()
   const router = useRouter()
 
@@ -70,10 +72,10 @@ export default function CustomerProfilePage() {
       updateSessionUser({ name: saved.name, phone: saved.phone, address: saved.address, city: saved.city })
       // Update the local saved snapshot so Cancel resets to the NEWLY saved data
       setSavedData({ name: saved.name ?? '', phone: saved.phone ?? '', address: saved.address ?? '', city: saved.city ?? '' })
-      window.alert('Cập nhật thành công')
+      toast('Cập nhật thành công')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Cập nhật thất bại'
-      window.alert(`Lỗi: ${msg}`)
+      toast(`Lỗi: ${msg}`, 'error')
     } finally {
       setLoading(false)
     }

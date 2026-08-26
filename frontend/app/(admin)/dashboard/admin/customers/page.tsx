@@ -7,7 +7,9 @@ import { useAdminRole } from '@/lib/permissions'
 import AdminPagination from '@/components/ui/AdminPagination'
 import { useSearchParams } from 'next/navigation'
 
+import { useUI } from '@/components/context/UIDialogContext'
 export default function AdminCustomersPage() {
+  const { toast, confirm } = useUI()
   const { canWrite } = useAdminRole()
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
@@ -39,19 +41,19 @@ export default function AdminCustomersPage() {
   }, [currentPage])
 
   const handleDeleteCustomer = async (userId: string, name: string) => {
-    if (!confirm(`Bạn chắc chắn muốn xóa tài khoản "${name}"? Thao tác này không thể hoàn tác.`)) return
+    if (!(await confirm({ title: `Bạn chắc chắn muốn xóa tài khoản "${name}"? Thao tác này không thể hoàn tác.`, danger: true }))) return
     try {
       await deleteCustomer(userId)
       // Tải lại để trang hiện tại được lấp đầy và tổng số cập nhật theo.
       await loadCustomers(currentPage)
     } catch (err: any) {
-      alert(err.message || 'Lỗi xóa tài khoản')
+      toast(err.message || 'Lỗi xóa tài khoản', 'error')
     }
   }
 
   const handleToggleLock = async (userId: string, name: string, isLocked: boolean) => {
     const action = isLocked ? 'mở khóa' : 'khóa'
-    if (!confirm(`Bạn chắc chắn muốn ${action} tài khoản "${name}"?`)) return
+    if (!(await confirm({ title: `Bạn chắc chắn muốn ${action} tài khoản "${name}"?` }))) return
     try {
       const updated = await toggleLockCustomer(userId)
       setCustomers((prev) => prev.map((u) => (u.id === userId ? updated : u)))
@@ -60,7 +62,7 @@ export default function AdminCustomersPage() {
       const delta = updated.isLocked ? 1 : -1
       setStats((s) => ({ ...s, active: s.active - delta, locked: s.locked + delta }))
     } catch (err: any) {
-      alert(err.message || `Lỗi ${action} tài khoản`)
+      toast(err.message || `Lỗi ${action} tài khoản`, 'error')
     }
   }
 

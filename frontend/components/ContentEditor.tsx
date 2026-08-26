@@ -5,6 +5,7 @@ import { Bold, Italic, List, ListOrdered, Quote, Link2, Image as ImageIcon, Eye,
 import { uploadImage, validateImageFile, UploadType } from '@/api'
 import ArticleContent from './ArticleContent'
 
+import { useUI } from '@/components/context/UIDialogContext'
 /**
  * Trình soạn nội dung bài viết: thanh công cụ chèn cú pháp vào textarea, kèm
  * khung xem trước dùng chính bộ render của trang công khai.
@@ -23,6 +24,7 @@ export default function ContentEditor({
   imageType?: UploadType
   rows?: number
 }) {
+  const { promptText } = useUI()
   const taRef = useRef<HTMLTextAreaElement>(null)
   const [preview, setPreview] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -89,12 +91,21 @@ export default function ContentEditor({
     splice(start, end, `${lead}${text}${tail}`, start + lead.length + text.length)
   }
 
-  const addLink = () => {
+  const addLink = async () => {
     const { start, end } = getSel()
     const selected = value.slice(start, end)
-    const url = window.prompt('Đường dẫn (https://... hoặc /duong-dan)', 'https://')
+    const url = await promptText({
+      title: 'Chèn liên kết',
+      label: 'Đường dẫn',
+      defaultValue: 'https://',
+      placeholder: 'https://... hoặc /duong-dan',
+    })
     if (!url) return
-    const label = selected || window.prompt('Chữ hiển thị', 'xem thêm') || url
+    const label = selected || (await promptText({
+      title: 'Chữ hiển thị',
+      label: 'Chữ người đọc nhìn thấy',
+      defaultValue: 'xem thêm',
+    })) || url
     const text = `[${label}](${url.trim()})`
     splice(start, end, text, start + text.length)
   }
@@ -114,7 +125,11 @@ export default function ContentEditor({
       setUploading(true)
       try {
         const url = await uploadImage(file, imageType)
-        const caption = window.prompt('Chú thích ảnh (để trống nếu không cần)', '') || ''
+        const caption = (await promptText({
+          title: 'Chú thích ảnh',
+          label: 'Chú thích',
+          placeholder: 'Để trống nếu không cần',
+        })) || ''
         insertBlock(`![${caption}](${url})`)
       } catch (err: any) {
         setError(err.message || 'Tải ảnh thất bại')

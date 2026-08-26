@@ -6,7 +6,9 @@ import { getAdminOrders, updateOrderStatus, openOrderInvoice, AdminOrderSummary,
 import { Receipt, Search, Eye, RefreshCw, X, Printer } from 'lucide-react'
 import AdminPagination from '@/components/ui/AdminPagination'
 
+import { useUI } from '@/components/context/UIDialogContext'
 export default function AdminOrdersPage() {
+  const { toast } = useUI()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -94,7 +96,7 @@ export default function AdminOrdersPage() {
         setSelectedOrder(updated)
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi cập nhật đơn hàng')
+      toast(err.message || 'Lỗi cập nhật đơn hàng', 'error')
     } finally {
       setUpdatingId(null)
     }

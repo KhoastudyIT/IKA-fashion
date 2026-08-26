@@ -13,6 +13,7 @@ import {
   Clock, CheckCircle2, Truck, PackageCheck, XCircle, Undo2,
   FileText, RotateCcw, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Ban, X,
 } from 'lucide-react'
+import { useUI } from '@/components/context/UIDialogContext'
 const PAGE_SIZE = 5
 const ITEMS_PREVIEW = 3
 
@@ -56,6 +57,7 @@ const FILTERS = ['all', 'pending', 'confirmed', 'shipped', 'completed', 'cancell
 type Filter = (typeof FILTERS)[number]
 
 export default function CustomerOrdersPage() {
+  const { toast } = useUI()
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
@@ -101,7 +103,7 @@ export default function CustomerOrdersPage() {
     try {
       await openOrderInvoice(orderId)
     } catch (error: any) {
-      alert(error.message || 'Không mở được hóa đơn')
+      toast(error.message || 'Không mở được hóa đơn', 'error')
     } finally {
       setInvoicingId(null)
     }
@@ -122,7 +124,7 @@ export default function CustomerOrdersPage() {
       router.push('/dashboard/customer/cart')
     } catch (error: any) {
       console.error('Lỗi khi mua lại:', error)
-      alert(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng')
+      toast(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng', 'error')
       setBuyingAgain(null)
     }
   }

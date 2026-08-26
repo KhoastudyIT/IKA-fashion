@@ -10,7 +10,9 @@ import { useAdminRole } from '@/lib/permissions'
 import AdminPagination from '@/components/ui/AdminPagination'
 import { useSearchParams } from 'next/navigation'
 
+import { useUI } from '@/components/context/UIDialogContext'
 export default function AdminPromotionsPage() {
+  const { confirm } = useUI()
   const { canWrite } = useAdminRole()
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
@@ -101,7 +103,7 @@ export default function AdminPromotionsPage() {
   }
 
   const handleDelete = async (id: number, code: string) => {
-    if (!confirm(`Xóa mã giảm giá "${code}"?`)) return
+    if (!(await confirm({ title: `Xóa mã giảm giá "${code}"?`, danger: true }))) return
     try {
       await deleteCoupon(id)
       load(currentPage)

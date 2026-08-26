@@ -11,6 +11,7 @@ import ImageField from '@/components/ImageField'
 import ContentEditor from '@/components/ContentEditor'
 import AdminPagination from '@/components/ui/AdminPagination'
 
+import { useUI } from '@/components/context/UIDialogContext'
 type FormState = {
   title: string
   slug: string
@@ -59,6 +60,7 @@ const STATUS_LABEL: Record<string, string> = {
 const LIMIT = 10
 
 export default function AdminNewsPage() {
+  const { toast, confirm } = useUI()
   const [articles, setArticles] = useState<Article[]>([])
   const [categories, setCategories] = useState<NewsCategory[]>([])
   const [totalPages, setTotalPages] = useState(1)
@@ -182,17 +184,17 @@ export default function AdminNewsPage() {
       const updated = await updateArticleStatus(article.id, next)
       setArticles(prev => prev.map(a => (a.id === article.id ? { ...a, status: updated.status } : a)))
     } catch (err: any) {
-      alert(err.message || 'Đổi trạng thái thất bại')
+      toast(err.message || 'Đổi trạng thái thất bại', 'error')
     }
   }
 
   const handleDelete = async (article: Article) => {
-    if (!confirm(`Xóa bài viết "${article.title}"? Thao tác này không hoàn tác được.`)) return
+    if (!(await confirm({ title: `Xóa bài viết "${article.title}"? Thao tác này không hoàn tác được.`, danger: true }))) return
     try {
       await deleteArticle(article.id)
       loadArticles()
     } catch (err: any) {
-      alert(err.message || 'Xóa thất bại')
+      toast(err.message || 'Xóa thất bại', 'error')
     }
   }
 

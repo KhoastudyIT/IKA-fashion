@@ -17,6 +17,7 @@ import {
 import { useAdminRole } from '@/lib/permissions'
 import { Zap, Plus, X, RefreshCw } from 'lucide-react'
 
+import { useUI } from '@/components/context/UIDialogContext'
 const FILTERS: { tone: FlashTone | 'all'; label: string }[] = [
   { tone: 'live', label: 'Đang chạy' },
   { tone: 'pending', label: 'Chưa bắt đầu' },
@@ -57,6 +58,7 @@ const vnd = (n: number) => Number(n).toLocaleString('vi-VN') + ' đ'
 const flashCode = (id: number) => `FS-${String(id).padStart(4, '0')}`
 
 export default function AdminFlashSalesPage() {
+  const { toast, confirm } = useUI()
   const { canWrite } = useAdminRole()
   const [sales, setSales] = useState<FlashSale[]>([])
   const [products, setProducts] = useState<ApiProduct[]>([])
@@ -191,26 +193,33 @@ export default function AdminFlashSalesPage() {
   }
 
   const handleToggle = async (fs: FlashSale) => {
-    if (fs.active && !confirm(`Tạm ngưng chương trình cho "${fs.name}"? Giá sẽ trở về niêm yết ngay.`)) return
+    if (fs.active && !(await confirm({
+      title: `Tạm ngưng chương trình cho "${fs.name}"?`,
+      message: 'Giá sản phẩm sẽ trở về giá niêm yết ngay lập tức.',
+      confirmLabel: 'Tạm ngưng',
+      danger: true,
+    }))) return
     try {
       await toggleFlashSale(fs.id)
       await load()
     } catch (err: any) {
-      alert(err.message || 'Không đổi được trạng thái')
+      toast(err.message || 'Không đổi được trạng thái', 'error')
     }
   }
 
   const handleEnd = async (fs: FlashSale) => {
-    if (!confirm(
-      `Kết thúc hẳn chương trình cho "${fs.name}"?\n\n`
-      + `Giá trở về niêm yết ngay và sau đó chương trình KHÔNG SỬA ĐƯỢC NỮA. `
-      + `Nếu chỉ muốn dừng tạm thì chọn "Tạm ngưng".`,
-    )) return
+    if (!(await confirm({
+      title: `Kết thúc hẳn chương trình cho "${fs.name}"?`,
+      message: 'Giá trở về niêm yết ngay và sau đó chương trình KHÔNG SỬA ĐƯỢC NỮA. '
+        + 'Nếu chỉ muốn dừng tạm thì chọn "Tạm ngưng".',
+      confirmLabel: 'Kết thúc hẳn',
+      danger: true,
+    }))) return
     try {
       await endFlashSale(fs.id)
       await load()
     } catch (err: any) {
-      alert(err.message || 'Không kết thúc được chương trình')
+      toast(err.message || 'Không kết thúc được chương trình', 'error')
     }
   }
 

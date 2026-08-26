@@ -26,9 +26,11 @@ import {
   Mail,
 } from 'lucide-react'
 
+import { useUI } from '@/components/context/UIDialogContext'
 type Notification = { id: string; text: string; type: 'warning' | 'info'; date: Date }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { confirm } = useUI()
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const pathname = usePathname()
@@ -134,7 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const handleLogout = async () => {
-    if (confirm('Bạn chắc chắn muốn đăng xuất?')) {
+    if ((await confirm({ title: 'Bạn chắc chắn muốn đăng xuất?' }))) {
       await signOut()
       router.push('/auth/login')
     }

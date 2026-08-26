@@ -30,6 +30,7 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 
+import { useUI } from '@/components/context/UIDialogContext'
 const STAFF_QUICK = [
   { label: 'Chào hỏi', text: 'Dạ em chào anh/chị, em là tư vấn viên của IKA Fashion. Em có thể hỗ trợ gì cho mình ạ?' },
   { label: 'Xin số điện thoại', text: 'Anh/chị để lại giúp em số điện thoại và khung giờ tiện nghe máy, em sẽ gọi tư vấn chi tiết hơn ạ.' },
@@ -62,6 +63,7 @@ function formatFullTime(iso: string) {
 }
 
 export default function AdminMessagesPage() {
+  const { confirm } = useUI()
   const { data: session } = useSession()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selected, setSelected] = useState<Conversation | null>(null)
@@ -177,7 +179,7 @@ export default function AdminMessagesPage() {
   }
 
   const handleDelete = async (msgId: string) => {
-    if (!confirm('Xóa tin nhắn này?')) return
+    if (!(await confirm({ title: 'Xóa tin nhắn này?', danger: true }))) return
     try {
       await deleteMessage(msgId)
       setMessages(prev => prev.filter(m => m.id !== msgId))

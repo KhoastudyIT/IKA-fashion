@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Receipt, ShoppingBag, Heart, MessageSquare, User, Settings, FileText, LogOut, Menu, X,
 } from 'lucide-react'
 
+import { useUI } from '@/components/context/UIDialogContext'
 // `count` là khoá tra số lượng từ ShopContext, chỉ 2 mục giỏ/yêu thích mới có
 const NAV_ITEMS = [
   { name: 'Tổng Quan', href: '/dashboard/customer', icon: LayoutDashboard },
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
 ]
 
 export default function CustomerDashboardLayout({ children }: { children: React.ReactNode }) {
+  const { confirm } = useUI()
   const pathname = usePathname()
   const router = useRouter()
   const { data: session, isPending } = useSession()
@@ -33,7 +35,7 @@ export default function CustomerDashboardLayout({ children }: { children: React.
   }, [session, isPending, router])
 
   const handleLogout = async () => {
-    if (confirm('Bạn chắc chắn muốn đăng xuất?')) {
+    if ((await confirm({ title: 'Bạn chắc chắn muốn đăng xuất?' }))) {
       await signOut()
       router.push('/')
     }

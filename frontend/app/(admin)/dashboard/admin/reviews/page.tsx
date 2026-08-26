@@ -9,7 +9,9 @@ import {
 import AdminPagination from '@/components/ui/AdminPagination'
 import { useSearchParams } from 'next/navigation'
 
+import { useUI } from '@/components/context/UIDialogContext'
 export default function AdminReviewsPage() {
+  const { confirm } = useUI()
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
   const [totalPages, setTotalPages] = useState(1)
@@ -48,7 +50,7 @@ export default function AdminReviewsPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn chắc chắn muốn xóa đánh giá này?')) return
+    if (!(await confirm({ title: 'Bạn chắc chắn muốn xóa đánh giá này?', danger: true }))) return
     try {
       await deleteReview(id)
       setReviews((rs) => rs.filter((r) => r.id !== id))

@@ -8,6 +8,7 @@ import { useAdminRole } from '@/lib/permissions'
 import AdminPagination from '@/components/ui/AdminPagination'
 import { useSearchParams } from 'next/navigation'
 
+import { useUI } from '@/components/context/UIDialogContext'
 type FormState = {
   name: string
   slug: string
@@ -21,6 +22,7 @@ const emptyForm: FormState = {
 }
 
 export default function AdminCollectionsPage() {
+  const { toast, confirm } = useUI()
   const { canWrite } = useAdminRole()
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
@@ -95,12 +97,12 @@ export default function AdminCollectionsPage() {
   }
 
   const handleDelete = async (c: Collection) => {
-    if (!confirm(`Xóa danh mục "${c.name}"? Thao tác này có thể ảnh hưởng đến sản phẩm hiển thị.`)) return
+    if (!(await confirm({ title: `Xóa danh mục "${c.name}"? Thao tác này có thể ảnh hưởng đến sản phẩm hiển thị.`, danger: true }))) return
     try {
       await deleteCollection(c.id)
       setCollections((prev) => prev.filter((x) => x.id !== c.id))
     } catch (err: any) {
-      alert(err.message || 'Xóa thất bại')
+      toast(err.message || 'Xóa thất bại', 'error')
     }
   }
 

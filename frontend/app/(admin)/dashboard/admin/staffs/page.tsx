@@ -9,6 +9,7 @@ import AdminPagination from '@/components/ui/AdminPagination'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from '@/auth-client'
 
+import { useUI } from '@/components/context/UIDialogContext'
 const PAGE_SIZE = 10
 
 type NewAccount = {
@@ -28,6 +29,7 @@ const emptyAccount: NewAccount = {
 }
 
 export default function AdminStaffPage() {
+  const { toast, confirm } = useUI()
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const currentPage = Number(searchParams.get('page')) || 1
@@ -132,22 +134,22 @@ export default function AdminStaffPage() {
 
   const handleToggleLock = async (user: ApiUser) => {
     const action = user.isLocked ? 'mở khóa' : 'khóa'
-    if (!confirm(`Bạn chắc chắn muốn ${action} tài khoản "${user.name}"?`)) return
+    if (!(await confirm({ title: `Bạn chắc chắn muốn ${action} tài khoản "${user.name}"?` }))) return
     try {
       const updated = await toggleLockCustomer(user.id)
       setUsersList((prev) => prev.map((u) => (u.id === user.id ? updated : u)))
     } catch (err: any) {
-      alert(err.message || `Lỗi ${action} tài khoản`)
+      toast(err.message || `Lỗi ${action} tài khoản`, 'error')
     }
   }
 
   const handleDelete = async (user: ApiUser) => {
-    if (!confirm(`Xóa tài khoản "${user.name}"? Thao tác này không thể hoàn tác.`)) return
+    if (!(await confirm({ title: `Xóa tài khoản "${user.name}"? Thao tác này không thể hoàn tác.`, danger: true }))) return
     try {
       await deleteCustomer(user.id)
       await loadUsers(currentPage)
     } catch (err: any) {
-      alert(err.message || 'Lỗi xóa tài khoản')
+      toast(err.message || 'Lỗi xóa tài khoản', 'error')
     }
   }
 
