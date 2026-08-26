@@ -188,6 +188,39 @@ async function syncVariants(productId, { sizes, colors }) {
 }
 
 /**
+ * Chia đều một tổng tồn kho cho các biến thể, phần dư dồn vào biến thể đầu.
+ *
+ * Dùng khi TẠO sản phẩm mới: admin gõ một con số tổng ở form, chưa có màn hình
+ * nhập từng size. Không có bước này thì syncVariants tạo mọi biến thể với tồn
+ * kho 0 rồi tính lại tổng = 0, tức con số admin vừa gõ biến mất.
+ *
+ * Cùng công thức với lần sinh biến thể đầu tiên trong migrate.js.
+ */
+async function distributeStock(productId, total) {
+  const n = Number(total) || 0;
+  if (n <= 0) return;
+
+  const vs = await db.query(
+    'SELECT id FROM product_variants WHERE product_id = $1 ORDER BY id',
+    [productId],
+  );
+  if (!vs.rows.length) return;
+
+  const moi = Math.floor(n / vs.rows.length);
+  const du = n % vs.rows.length;
+  for (const [i, v] of vs.rows.entries()) {
+    await db.query('UPDATE product_variants SET stock = $2 WHERE id = $1',
+      [v.id, moi + (i === 0 ? du : 0)]);
+  }
+  await db.query(
+    `UPDATE products p SET stock = COALESCE(
+       (SELECT SUM(v.stock) FROM product_variants v WHERE v.product_id = p.id), 0)
+     WHERE p.id = $1`,
+    [productId],
+  );
+}
+
+/**
  * Admin đặt tồn kho cho từng biến thể.
  *
  * Nhận { "S|Trắng": 12, ... } — đúng khuôn mà getProductById trả ra, để form
@@ -249,10 +282,11 @@ export async function createProduct(data) {
   );
   const row = res.rows[0];
 
-  // Sản phẩm mới: sinh biến thể theo bảng size x màu vừa khai, tồn kho 0. Con
-  // số admin gõ ở ô "tồn kho" chỉ là tổng ban đầu — muốn chia theo size thì
-  // dùng màn hình sửa tồn kho biến thể.
+  // Sản phẩm mới: sinh biến thể theo bảng size x màu vừa khai, rồi chia đều
+  // tổng tồn kho admin gõ cho các biến thể đó. Admin chỉnh lại từng size sau
+  // bằng màn hình sửa tồn kho theo biến thể.
   await syncVariants(row.id, { sizes: data.sizes ?? [], colors: data.colors ?? [] });
+  await distributeStock(row.id, data.stock ?? 0);
   return getProductById(row.id);
 }
 

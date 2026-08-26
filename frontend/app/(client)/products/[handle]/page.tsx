@@ -27,6 +27,28 @@ export default function ProductDetailPage() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
+  /**
+   * Tồn kho của một cặp size–màu. Trả về null khi sản phẩm không khai biến thể
+   * (không có size hoặc màu) — khi đó lùi về tồn kho tổng như trước.
+   */
+  const tonKhoCua = (size: string, color: string): number | null => {
+    const bang = product?.variantStock
+    if (!bang || !size || !color) return null
+    return bang[`${size}|${color}`] ?? 0
+  }
+
+  // Tồn kho của đúng biến thể khách đang chọn; chưa chọn đủ thì hiện tổng.
+  const tonKhoDangChon = tonKhoCua(selectedSize, selectedColor) ?? product?.stock ?? 0
+  const daChonDuBienThe = tonKhoCua(selectedSize, selectedColor) !== null
+
+  // Chỉ chặn khi đã chọn đủ size + màu và biến thể đó thật sự hết.
+  const hetHang = daChonDuBienThe && tonKhoDangChon === 0
+
+  // Không cho bấm + vượt quá số thật sự còn — server cũng chặn, đây là chặn sớm.
+  useEffect(() => {
+    if (tonKhoDangChon > 0 && quantity > tonKhoDangChon) setQuantity(tonKhoDangChon)
+  }, [tonKhoDangChon, quantity])
+
   useEffect(() => {
     if (!params?.handle) return
     setLoading(true)
@@ -139,8 +161,14 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Images */}
             <div className="space-y-4">
-              <div className="bg-secondary rounded-lg overflow-hidden h-96 md:h-[600px] flex items-center justify-center relative">
-                <img src={product.img} alt={product.name} className="w-full h-full object-cover" />
+              {/* Ảnh sản phẩm đều vuông 1024x1024.
+                  Trước đây khung cao cố định (cao hơn rộng) + object-COVER nên
+                  ảnh bị cắt mất hai bên tay áo. Nay khung để vuông theo bề rộng
+                  cột và dùng object-CONTAIN: ảnh vuông lấp đúng khít khung
+                  vuông — thấy trọn ảnh mà không thừa dải trống nào.
+                  Khung cũng tự cao lên theo màn hình rộng thay vì chốt cứng. */}
+              <div className="bg-secondary rounded-lg overflow-hidden aspect-square flex items-center justify-center relative">
+                <img src={product.img} alt={product.name} className="w-full h-full object-contain" />
                 {/* Badge giảm giá — lấy từ dữ liệu product */}
                 {product.discount > 0 && (
                   <div style={{
@@ -154,13 +182,21 @@ export default function ProductDetailPage() {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, idx) => (
-                  <div key={idx} className="bg-secondary rounded-lg overflow-hidden h-24 cursor-pointer hover:opacity-70">
-                    <img src={image} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
+              {/* Dải ảnh nhỏ chỉ hiện khi sản phẩm có nhiều hơn một ảnh.
+                  `img` luôn là phần tử đầu của `images` (form admin gán
+                  img = imgList[0], images = imgList), nên sản phẩm một ảnh sẽ
+                  hiện đúng tấm đó hai lần: một lớn, một nhỏ.
+                  Bỏ luôn cursor-pointer và hover: dải này chưa bấm đổi ảnh
+                  được, để con trỏ thành bàn tay là hứa một tương tác không có. */}
+              {product.images.length > 1 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {product.images.map((image, idx) => (
+                    <div key={idx} className="bg-secondary rounded-lg overflow-hidden h-24">
+                      <img src={image} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-contain" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Info */}
@@ -203,7 +239,19 @@ export default function ProductDetailPage() {
                   <p className="text-3xl font-semibold text-accent mb-2">{product.price.toLocaleString('vi-VN')} đ</p>
                 )}
 
-                <p className="text-sm text-muted-foreground mb-4">★ {product.rating} · Đã bán {product.sold} · Còn {product.stock} sản phẩm</p>
+                {/* Tồn kho ở đây là của ĐÚNG size + màu đang chọn, không phải tổng
+                    của cả sản phẩm — bán được size M trong khi chỉ còn size XL
+                    chính là lỗi L10 đã sửa ở tầng dữ liệu. */}
+                <p className="text-sm text-muted-foreground mb-4">
+                  ★ {product.rating} · Đã bán {product.sold} ·{' '}
+                  {daChonDuBienThe ? (
+                    tonKhoDangChon > 0
+                      ? <>Size {selectedSize} màu {selectedColor} còn <strong className="text-foreground">{tonKhoDangChon}</strong> sản phẩm</>
+                      : <span className="text-destructive font-medium">Size {selectedSize} màu {selectedColor} đã hết hàng</span>
+                  ) : (
+                    <>Còn {product.stock} sản phẩm</>
+                  )}
+                </p>
                 <p className="text-muted-foreground">{product.description}</p>
               </div>
 
@@ -236,12 +284,31 @@ export default function ProductDetailPage() {
                 {product.sizes.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-3">Kích Cỡ</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {product.sizes.map((size) => (
-                        <button key={size} onClick={() => setSelectedSize(size)} className={`py-2 rounded border-2 text-sm font-medium transition-colors ${selectedSize === size ? 'border-accent text-accent' : 'border-border text-foreground hover:border-accent'}`}>
-                          {size}
-                        </button>
-                      ))}
+                    {/* Số cột chạy theo số size thật, không chốt cứng 4 — sản
+                        phẩm 5 size (S M L XL XXL) sẽ bị rớt XXL xuống hàng hai.
+                        Chặn trần 6 cột để sản phẩm nhiều size không bị bóp quá hẹp. */}
+                    <div
+                      className="grid gap-2"
+                      style={{ gridTemplateColumns: `repeat(${Math.min(product.sizes.length, 6)}, minmax(0, 1fr))` }}
+                    >
+                      {product.sizes.map((size) => {
+                        // Hết hàng thì vẫn cho bấm, chỉ làm mờ và gạch ngang: khách
+                        // cần thấy shop CÓ size đó nhưng đang hết, chứ không phải
+                        // tưởng shop không bán.
+                        const het = selectedColor !== '' && tonKhoCua(size, selectedColor) === 0
+                        return (
+                          <button
+                            key={size}
+                            onClick={() => setSelectedSize(size)}
+                            title={het ? `Size ${size} màu ${selectedColor} đang hết hàng` : undefined}
+                            className={`py-2 rounded border-2 text-sm font-medium transition-colors ${
+                              selectedSize === size ? 'border-accent text-accent' : 'border-border text-foreground hover:border-accent'
+                            } ${het ? 'line-through opacity-40' : ''}`}
+                          >
+                            {size}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
@@ -250,20 +317,32 @@ export default function ProductDetailPage() {
                   <label className="block text-sm font-medium text-foreground mb-3">Số Lượng</label>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="px-4 py-2 border border-border rounded text-foreground hover:bg-secondary">−</button>
-                    <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-16 px-3 py-2 text-center bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-2 focus:ring-accent" />
-                    <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-2 border border-border rounded text-foreground hover:bg-secondary">+</button>
+                    {/* Trần là tồn kho của biến thể đang chọn, không phải tổng. */}
+                    <input
+                      type="number" min="1" max={tonKhoDangChon || 1} value={quantity}
+                      onChange={(e) => setQuantity(Math.min(tonKhoDangChon || 1, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="w-16 px-3 py-2 text-center bg-secondary border border-border rounded text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+                    />
+                    <button
+                      onClick={() => setQuantity(Math.min(tonKhoDangChon || 1, quantity + 1))}
+                      disabled={quantity >= tonKhoDangChon}
+                      className="px-4 py-2 border border-border rounded text-foreground hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+                    >+</button>
                   </div>
+                  {daChonDuBienThe && tonKhoDangChon > 0 && quantity >= tonKhoDangChon && (
+                    <p className="text-xs text-muted-foreground mt-2">Đã chọn hết số lượng còn lại của size này.</p>
+                  )}
                 </div>
               </div>
 
               {message && <p className="text-sm font-medium text-accent">{message}</p>}
 
               <div className="flex gap-4 pt-4">
-                <button onClick={handleAddToCart} disabled={busy} className="flex-1 px-6 py-4 bg-foreground text-primary-foreground font-semibold rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50">
+                <button onClick={handleAddToCart} disabled={busy || hetHang} className="flex-1 px-6 py-4 bg-foreground text-primary-foreground font-semibold rounded flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50">
                   <ShoppingBag size={20} />
-                  Thêm Vào Giỏ
+                  {hetHang ? 'Hết Hàng' : 'Thêm Vào Giỏ'}
                 </button>
-                <button onClick={handleBuyNow} disabled={busy} className="flex-1 px-6 py-4 border-2 border-foreground text-foreground font-semibold rounded hover:bg-foreground hover:text-primary-foreground transition-colors disabled:opacity-50">
+                <button onClick={handleBuyNow} disabled={busy || hetHang} className="flex-1 px-6 py-4 border-2 border-foreground text-foreground font-semibold rounded hover:bg-foreground hover:text-primary-foreground transition-colors disabled:opacity-50">
                   Mua Ngay
                 </button>
               </div>

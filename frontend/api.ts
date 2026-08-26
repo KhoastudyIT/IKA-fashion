@@ -77,8 +77,16 @@ export interface ApiProduct {
   sizes: string[]
   features: string[]
   rating: number
-  sold: number
+  /** Tổng tồn kho của mọi biến thể. Tồn kho theo từng size/màu nằm ở `variantStock`. */
   stock: number
+  sold: number
+  /**
+   * Tồn kho theo biến thể, khóa là "size|màu" — ví dụ { "S|Trắng": 6 }.
+   *
+   * Chỉ endpoint CHI TIẾT sản phẩm trả về trường này; danh sách sản phẩm không
+   * có để khỏi kéo theo cả bảng biến thể cho 12–24 sản phẩm mỗi trang.
+   */
+  variantStock?: Record<string, number>
   description: string
   // alias để tương thích UI cũ
   title: string
@@ -285,6 +293,14 @@ export async function getProductByHandle(handle: string): Promise<ApiProduct> {
   return mapProduct(await getData(`/products/handle/${encodeURIComponent(handle)}`))
 }
 
+/**
+ * Chi tiết một sản phẩm theo id. Khác `getProducts`, endpoint này có kèm
+ * `variantStock` — tồn kho từng size + màu.
+ */
+export async function getProductById(id: number): Promise<ApiProduct> {
+  return mapProduct(await getData(`/products/${id}`))
+}
+
 export async function getCollections(query: CustomerQuery = {}): Promise<{ items: Collection[]; pagination: any }> {
   const qs = new URLSearchParams()
   Object.entries(query).forEach(([k, v]) => {
@@ -319,6 +335,20 @@ export async function createProduct(body: ProductInput): Promise<ApiProduct> {
 }
 export async function updateProduct(id: number, body: Partial<ProductInput>): Promise<ApiProduct> {
   return mapProduct(await getData(`/admin/products/${id}`, { method: 'PUT', body, auth: true }))
+}
+/**
+ * Đặt tồn kho cho từng size + màu.
+ *
+ * Khóa là "size|màu", đúng khuôn `variantStock` mà API chi tiết sản phẩm trả
+ * về — đọc sao thì ghi lại y vậy. Server tự tính lại `stock` tổng của sản phẩm.
+ */
+export async function setVariantStock(
+  id: number,
+  variantStock: Record<string, number>,
+): Promise<ApiProduct> {
+  return mapProduct(await getData(`/admin/products/${id}/variant-stock`, {
+    method: 'PUT', body: { variantStock }, auth: true,
+  }))
 }
 export async function deleteProduct(id: number): Promise<void> {
   await request(`/admin/products/${id}`, { method: 'DELETE', auth: true })

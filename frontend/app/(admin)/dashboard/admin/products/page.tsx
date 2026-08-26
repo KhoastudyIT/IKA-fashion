@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  getProducts, getCollections, createProduct, updateProduct, deleteProduct,
+  getProducts, getProductById, getCollections, createProduct, updateProduct, deleteProduct, setVariantStock,
   ApiProduct, Collection, ProductInput,
 } from '@/api'
 import ImageListField from '@/components/ImageListField'
@@ -37,6 +37,10 @@ export default function AdminProductsPage() {
   const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
 
+  // Tồn kho từng size + màu của sản phẩm đang sửa, khóa "size|màu".
+  // Rỗng = sản phẩm mới (chưa có biến thể) hoặc sản phẩm không khai size/màu.
+  const [variantStock, setVariantStockForm] = useState<Record<string, number>>({})
+
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
@@ -69,6 +73,7 @@ export default function AdminProductsPage() {
   }, [currentPage, searchTerm, selectedCollection])
 
   const openCreate = () => {
+    setVariantStockForm({})
     setEditingId(null)
     setForm(emptyForm)
     setError('')
@@ -86,9 +91,21 @@ export default function AdminProductsPage() {
       stock: String(p.stock), description: p.description,
       colors: p.colors.join(', '), sizes: p.sizes.join(', '), features: p.features.join(', '),
     })
+    // Danh sách sản phẩm không trả variantStock (chỉ endpoint chi tiết mới có),
+    // nên phải gọi riêng để lấy tồn kho từng size.
+    setVariantStockForm({})
+    getProductById(p.id).then((full) => setVariantStockForm(full.variantStock ?? {})).catch(() => {})
     setError('')
     setShowForm(true)
   }
+
+  // Có lưới biến thể khi ĐANG SỬA một sản phẩm đã khai cả size lẫn màu.
+  // Tạo mới thì chưa có dòng biến thể nào trong CSDL để nhập.
+  const coBienThe = editingId != null
+    && csvToArr(form.sizes).length > 0
+    && csvToArr(form.colors).length > 0
+
+  const tongBienThe = Object.values(variantStock).reduce((a, b) => a + b, 0)
 
   // Tự động tính giá bán khi thay đổi giá gốc hoặc % giảm
   const recalcPrice = useCallback((op: string, dc: string, currentPrice: string) => {
@@ -125,8 +142,17 @@ export default function AdminProductsPage() {
       features: csvToArr(form.features),
     }
     try {
-      if (editingId) await updateProduct(editingId, payload)
-      else await createProduct(payload)
+      if (editingId) {
+        await updateProduct(editingId, payload)
+        // Lưu tồn kho từng biến thể SAU khi lưu sản phẩm: updateProduct có thể
+        // vừa thêm/bớt size, màu nên danh sách biến thể phải chốt xong đã.
+        // Chỉ gửi những ô đang thật sự tồn tại trong bảng biến thể.
+        if (coBienThe && Object.keys(variantStock).length) {
+          await setVariantStock(editingId, variantStock)
+        }
+      } else {
+        await createProduct(payload)
+      }
       setShowForm(false)
       load()
     } catch (err: any) {
@@ -396,8 +422,26 @@ export default function AdminProductsPage() {
                       {parseInt(form.discount, 10) > 0 ? '⚡ Tự động tính từ Giá gốc × (1 − %). Có thể chỉnh thủ công.' : 'Giá hiển thị cho khách hàng.'}
                     </p>
                   </Field>
-                  <Field label="Số lượng tồn kho">
-                    <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputCls} />
+                  <Field label={coBienThe ? 'Tổng tồn kho (tự tính)' : 'Số lượng tồn kho'}>
+                    {coBienThe ? (
+                      <>
+                        <input
+                          type="number" value={tongBienThe} readOnly disabled
+                          className={`${inputCls} bg-[#F0EBE5] text-muted-foreground cursor-not-allowed`}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Cộng từ bảng tồn kho theo size bên dưới.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputCls} />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {editingId ? 'Sản phẩm chưa khai size/màu nên dùng một con số chung.'
+                            : 'Sẽ được chia đều cho các size × màu sau khi tạo.'}
+                        </p>
+                      </>
+                    )}
                   </Field>
                 </div>
               </div>
@@ -414,6 +458,59 @@ export default function AdminProductsPage() {
               <Field label="Kích cỡ (phân cách bằng dấu phẩy)">
                 <input value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} placeholder="S, M, L, XL" className={inputCls} />
               </Field>
+              {/* Tồn kho theo từng size + màu.
+                  Chỉ hiện khi SỬA sản phẩm đã có biến thể: lúc tạo mới chưa có
+                  dòng biến thể nào trong CSDL để mà nhập. */}
+              {coBienThe && (
+                <div>
+                  <label className="block text-sm font-medium text-[#2C2C2C] mb-2">
+                    Tồn kho theo size và màu
+                  </label>
+                  <div className="border border-[#E5DFD8] rounded overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-[#F9F5F0]">
+                          <th className="text-left px-3 py-2 font-semibold text-[#2C2C2C] whitespace-nowrap">Màu \ Size</th>
+                          {csvToArr(form.sizes).map((sz) => (
+                            <th key={sz} className="px-3 py-2 font-semibold text-[#2C2C2C] whitespace-nowrap">{sz}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {csvToArr(form.colors).map((mau) => (
+                          <tr key={mau} className="border-t border-[#E5DFD8]">
+                            <td className="px-3 py-2 font-medium text-[#2C2C2C] whitespace-nowrap">{mau}</td>
+                            {csvToArr(form.sizes).map((sz) => {
+                              const key = `${sz}|${mau}`
+                              const chuaCo = variantStock[key] === undefined
+                              return (
+                                <td key={key} className="px-2 py-1.5">
+                                  <input
+                                    type="number" min="0"
+                                    value={variantStock[key] ?? 0}
+                                    disabled={chuaCo}
+                                    title={chuaCo ? 'Lưu sản phẩm trước để tạo biến thể này' : undefined}
+                                    onChange={(e) => setVariantStockForm({
+                                      ...variantStock,
+                                      [key]: Math.max(0, parseInt(e.target.value, 10) || 0),
+                                    })}
+                                    className={`w-20 px-2 py-1.5 border border-[#E5DFD8] rounded text-sm text-center text-[#2C2C2C] focus:outline-none focus:ring-1 focus:ring-[#D4AF37] ${chuaCo ? 'bg-[#F0EBE5] cursor-not-allowed' : 'bg-white'}`}
+                                  />
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tổng: <strong className="text-[#2C2C2C]">{tongBienThe}</strong> sản phẩm.
+                    Thêm size hoặc màu mới thì lưu một lần để tạo ô nhập, rồi nhập số vào.
+                  </p>
+                </div>
+              )}
+
               <Field label="Đặc điểm (phân cách bằng dấu phẩy)">
                 <input value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} placeholder="Vải Premium, Thoáng Khí" className={inputCls} />
               </Field>
