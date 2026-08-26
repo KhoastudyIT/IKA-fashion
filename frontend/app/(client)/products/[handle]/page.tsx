@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle, HelpCircle } from 'lucide-react'
+import { Heart, ShoppingBag, Star, ThumbsUp, MessageCircle } from 'lucide-react'
 import { useSession } from '@/auth-client'
 import { getProductByHandle, getProducts, addToCart, addWishlist, removeWishlist, getProductReviews, getMyProductReviews, createReview, canReviewProduct, ApiProduct, Review } from '@/api'
 import { useChat } from '@/components/ChatContext'
@@ -405,133 +405,32 @@ function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   )
 }
 
+/**
+ * Phần cuối trang chi tiết sản phẩm.
+ *
+ * Trước đây là hai tab Đánh Giá / Hỏi Đáp. Tab Hỏi Đáp đã gỡ: nó chạy trên dữ
+ * liệu câu hỏi viết cứng trong mã nguồn, không có bảng, không có API, và khách
+ * gửi câu hỏi thì cũng không ai nhận được. Muốn hỏi thì đã có nút "Hỏi Tư Vấn
+ * Về Sản Phẩm Này" ở trên, nút đó mở khung chat thật.
+ *
+ * Còn một mục nên không cần tab nữa — để thẳng tiêu đề.
+ */
 function InteractiveTabs({ productId, productRating, productSold }: { productId: number; productRating: number; productSold: number }) {
-  const [activeTab, setActiveTab] = useState<'reviews' | 'qa'>('reviews')
-
   return (
     <div style={{ marginTop: '80px', borderTop: '1px solid #E5DFD8', paddingTop: '64px' }}>
-      <div style={{ display: 'flex', gap: '32px', borderBottom: '1px solid #E5DFD8', marginBottom: '40px' }}>
-        <button
-          onClick={() => setActiveTab('reviews')}
+      <div style={{ borderBottom: '1px solid #E5DFD8', marginBottom: '40px' }}>
+        <h2
           style={{
-            background: 'none', border: 'none', padding: '0 0 16px 0', cursor: 'pointer',
+            margin: 0, padding: '0 0 16px 0',
             fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 600,
-            color: activeTab === 'reviews' ? '#D4AF37' : '#9A9A9A',
-            borderBottom: activeTab === 'reviews' ? '2px solid #D4AF37' : '2px solid transparent',
-            transition: 'all 0.3s'
+            color: '#2C2C2C', borderBottom: '2px solid #D4AF37', display: 'inline-block',
           }}
         >
           Đánh Giá Khách Hàng
-        </button>
-        <button
-          onClick={() => setActiveTab('qa')}
-          style={{
-            background: 'none', border: 'none', padding: '0 0 16px 0', cursor: 'pointer',
-            fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 600,
-            color: activeTab === 'qa' ? '#D4AF37' : '#9A9A9A',
-            borderBottom: activeTab === 'qa' ? '2px solid #D4AF37' : '2px solid transparent',
-            transition: 'all 0.3s'
-          }}
-        >
-          Hỏi Đáp (Q&A)
-        </button>
+        </h2>
       </div>
 
-      {activeTab === 'reviews' ? (
-        <ReviewsSection productId={productId} productRating={productRating} productSold={productSold} />
-      ) : (
-        <QASection />
-      )}
-    </div>
-  )
-}
-
-function QASection() {
-  const { data: session } = useSession()
-  const [questions, setQuestions] = useState([
-    {
-      id: 1, user: 'Ngọc Lan', date: '21/06/2026', content: 'Sản phẩm này có giặt máy được không ạ?',
-      answer: 'Chào bạn, sản phẩm hoàn toàn có thể giặt máy. Tuy nhiên, để áo giữ form tốt nhất, bạn nên cho vào túi giặt và chọn chế độ giặt nhẹ nhé. Cảm ơn bạn!'
-    },
-    {
-      id: 2, user: 'Hoàng Quân', date: '19/06/2026', content: 'Mình cao 1m75 nặng 65kg thì mặc size gì vừa shop?',
-      answer: 'Chào Quân, với chiều cao và cân nặng của bạn, size L sẽ mặc vừa vặn, thoải mái nhé.'
-    }
-  ])
-  const [newQuestion, setNewQuestion] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newQuestion.trim()) return
-    setQuestions(prev => [{
-      id: Date.now(), user: session?.user.name ?? 'Khách hàng',
-      date: new Date().toLocaleDateString('vi-VN'), content: newQuestion, answer: ''
-    }, ...prev])
-    setSubmitted(true)
-    setNewQuestion('')
-  }
-
-  return (
-    <div>
-      <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E5DFD8', marginBottom: '40px' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '24px' }}>
-          Đặt Câu Hỏi
-        </h3>
-        {!session ? (
-          <div style={{ background: '#F9F5F0', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <p style={{ color: '#7A7A7A', marginBottom: '12px', fontSize: '0.875rem' }}>Đăng nhập để đặt câu hỏi</p>
-            <Link href="/auth/login" style={{ padding: '10px 24px', background: '#D4AF37', color: '#1a1a1a', borderRadius: '6px', textDecoration: 'none', fontSize: '0.875rem', fontWeight: 600 }}>Đăng nhập</Link>
-          </div>
-        ) : submitted ? (
-          <div style={{ background: '#d1fae5', borderRadius: '8px', padding: '20px', textAlign: 'center' }}>
-            <p style={{ color: '#065f46', fontWeight: 600 }}>✓ Cảm ơn bạn! Câu hỏi đã được gửi và đang chờ duyệt/trả lời.</p>
-            <button onClick={() => setSubmitted(false)} style={{ marginTop: '8px', background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', textDecoration: 'underline', fontSize: '0.8125rem' }}>Đặt thêm câu hỏi</button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '20px' }}>
-              <textarea value={newQuestion} onChange={e => setNewQuestion(e.target.value)} required rows={3}
-                placeholder="Ví dụ: Sản phẩm này khi nào restock màu đen?"
-                style={{ width: '100%', padding: '12px 14px', border: '1.5px solid #E5DFD8', borderRadius: '8px', fontSize: '0.875rem', resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}
-                onFocus={e => e.target.style.borderColor = '#D4AF37'}
-                onBlur={e => e.target.style.borderColor = '#E5DFD8'}
-              />
-            </div>
-            <button type="submit" disabled={!newQuestion.trim()}
-              style={{ padding: '12px 32px', background: '#D4AF37', color: '#1a1a1a', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', opacity: (!newQuestion.trim()) ? 0.5 : 1 }}>
-              Gửi Câu Hỏi
-            </button>
-          </form>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {questions.map(q => (
-          <div key={q.id} style={{ borderBottom: '1px solid #F0EBE5', paddingBottom: '24px' }}>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <HelpCircle size={20} style={{ color: '#9A9A9A', marginTop: '2px', flexShrink: 0 }} />
-              <div>
-                <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#2C2C2C', fontSize: '0.9375rem' }}>{q.content}</p>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#9A9A9A' }}>Bởi <span style={{ color: '#7A7A7A' }}>{q.user}</span> vào {q.date}</p>
-              </div>
-            </div>
-            {q.answer ? (
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginLeft: '32px', background: '#F9F5F0', padding: '16px', borderRadius: '8px' }}>
-                <MessageCircle size={18} style={{ color: '#D4AF37', marginTop: '2px', flexShrink: 0 }} />
-                <div>
-                  <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#2C2C2C', fontSize: '0.8125rem' }}>IKA Fashion (Admin)</p>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: '#4A4A4A', lineHeight: 1.6 }}>{q.answer}</p>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginLeft: '32px', fontSize: '0.8125rem', color: '#9A9A9A', fontStyle: 'italic' }}>
-                Đang chờ quản trị viên trả lời...
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <ReviewsSection productId={productId} productRating={productRating} productSold={productSold} />
     </div>
   )
 }
