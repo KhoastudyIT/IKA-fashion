@@ -208,9 +208,8 @@ export default function ProductDetailPage() {
                     onClick={handleWishlist}
                     aria-pressed={wishlisted}
                     aria-label={wishlisted ? 'Bỏ yêu thích' : 'Yêu thích'}
-                    className={`p-2 rounded-full bg-secondary transition-colors ${
-                      wishlisted ? 'text-red-600' : 'text-foreground hover:text-red-600'
-                    }`}
+                    className={`p-2 rounded-full bg-secondary transition-colors ${wishlisted ? 'text-red-600' : 'text-foreground hover:text-red-600'
+                      }`}
                   >
                     <Heart size={24} fill={wishlisted ? 'currentColor' : 'none'} />
                   </button>
@@ -301,9 +300,8 @@ export default function ProductDetailPage() {
                             key={size}
                             onClick={() => setSelectedSize(size)}
                             title={het ? `Size ${size} màu ${selectedColor} đang hết hàng` : undefined}
-                            className={`py-2 rounded border-2 text-sm font-medium transition-colors ${
-                              selectedSize === size ? 'border-accent text-accent' : 'border-border text-foreground hover:border-accent'
-                            } ${het ? 'line-through opacity-40' : ''}`}
+                            className={`py-2 rounded border-2 text-sm font-medium transition-colors ${selectedSize === size ? 'border-accent text-accent' : 'border-border text-foreground hover:border-accent'
+                              } ${het ? 'line-through opacity-40' : ''}`}
                           >
                             {size}
                           </button>
@@ -372,8 +370,8 @@ export default function ProductDetailPage() {
                 {related.map((rp) => (
                   <Link key={rp.handle} href={`/products/${rp.handle}`}>
                     <div className="group cursor-pointer">
-                      <div className="bg-secondary rounded-lg overflow-hidden mb-3 h-64 flex items-center justify-center">
-                        <img src={rp.img} alt={rp.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <div className="bg-secondary rounded-lg overflow-hidden mb-3 aspect-square flex items-center justify-center">
+                        <img src={rp.img} alt={rp.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
                       </div>
                       <h3 className="font-semibold text-foreground mb-1 group-hover:text-accent transition-colors">{rp.name}</h3>
                       <p className="text-accent font-semibold">{rp.price.toLocaleString()} đ</p>
@@ -398,7 +396,7 @@ const AVATAR_COLORS = ['#D4AF37', '#22c55e', '#3b82f6', '#ec4899', '#8b5cf6', '#
 function StarRow({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div style={{ display: 'flex', gap: '2px' }}>
-      {[1,2,3,4,5].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <Star key={i} size={size} style={{ color: i <= rating ? '#D4AF37' : '#E5DFD8', fill: i <= rating ? '#D4AF37' : 'none' }} />
       ))}
     </div>
@@ -462,7 +460,7 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
     if (!session) { setCanReview(false); setMyReviews([]); return }
     canReviewProduct(productId).then(r => setCanReview(r.canReview)).catch(() => setCanReview(false))
     loadMyReviews()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId, session])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -483,7 +481,7 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
     }
   }
 
-  const ratingDist = [5,4,3,2,1].map(star => ({
+  const ratingDist = [5, 4, 3, 2, 1].map(star => ({
     star,
     count: reviews.filter(r => r.rating === star).length,
     pct: reviews.length ? Math.round((reviews.filter(r => r.rating === star).length / reviews.length) * 100) : 0,
@@ -609,7 +607,7 @@ function ReviewsSection({ productId, productRating, productSold }: { productId: 
             <div style={{ marginBottom: '20px' }}>
               <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#2C2C2C', marginBottom: '10px' }}>Đánh giá của bạn *</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {[1,2,3,4,5].map(i => (
+                {[1, 2, 3, 4, 5].map(i => (
                   <button key={i} type="button"
                     onMouseEnter={() => setHoverRating(i)}
                     onMouseLeave={() => setHoverRating(0)}

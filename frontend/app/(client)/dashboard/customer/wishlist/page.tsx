@@ -75,23 +75,23 @@ export default function CustomerWishlistPage() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {items.map((p) => (
             <div key={p.id} className="group bg-card border border-border rounded-lg overflow-hidden">
               <Link href={`/products/${p.handle}`}>
-                <div className="bg-secondary overflow-hidden h-56 flex items-center justify-center">
-                  <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <div className="bg-secondary overflow-hidden aspect-square flex items-center justify-center">
+                  <img src={p.img} alt={p.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
                 </div>
               </Link>
-              <div className="p-4">
-                <h3 className="font-heading font-semibold text-foreground mb-1 truncate">{p.name}</h3>
-                <p className="text-accent font-semibold mb-3">{p.price.toLocaleString()} đ</p>
-                <div className="flex gap-2">
-                  <button onClick={() => handleAddToCart(p)} className="flex-1 px-3 py-2 bg-foreground text-primary-foreground text-sm font-medium rounded hover:opacity-90 transition-opacity">
+              <div className="p-3">
+                <h3 className="font-heading font-semibold text-sm text-foreground mb-0.5 truncate">{p.name}</h3>
+                <p className="text-accent font-semibold text-sm mb-2.5">{p.price.toLocaleString()} đ</p>
+                <div className="flex gap-1.5">
+                  <button onClick={() => handleAddToCart(p)} className="flex-1 px-2 py-1.5 bg-foreground text-primary-foreground text-xs font-medium rounded hover:opacity-90 transition-opacity">
                     Thêm Vào Giỏ
                   </button>
-                  <button onClick={() => handleRemove(p.id)} className="px-3 py-2 border border-border text-destructive rounded hover:bg-secondary transition-colors" aria-label="Xóa">
-                    <Trash2 size={18} />
+                  <button onClick={() => handleRemove(p.id)} className="px-2 py-1.5 border border-border text-destructive rounded hover:bg-secondary transition-colors" aria-label="Xóa khỏi yêu thích">
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>
