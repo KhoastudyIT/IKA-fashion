@@ -56,13 +56,19 @@ export const cartPaths = {
   '/api/v1/customer/cart/items/{key}': {
     put: {
       tags: ['Tài khoản - Giỏ hàng'],
-      summary: 'Cập nhật số lượng một dòng giỏ hàng',
-      description: 'Đặt số lượng tuyệt đối, không cộng dồn. Muốn bỏ hẳn thì dùng DELETE.',
+      summary: 'Cập nhật một dòng giỏ hàng (số lượng / size / màu)',
+      description:
+        'Đặt số lượng tuyệt đối, không cộng dồn. Muốn bỏ hẳn thì dùng DELETE. '
+        + 'Gửi kèm `size`/`color` để đổi biến thể ngay trong giỏ mà không phải xóa rồi thêm lại.',
       security: bearer,
       parameters: [itemKey],
       requestBody: jsonBody('CartUpdateItemBody'),
       responses: {
         200: okData('Giỏ hàng sau khi cập nhật', 'Cart'),
+        400: {
+          description: 'Size/màu không hợp lệ, hoặc biến thể mới không đủ tồn kho',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' }, example: { success: false, message: 'Sản phẩm "Áo thun cotton basic" size L màu Đen đã hết hàng.' } } },
+        },
         401: unauthorized,
         403: forbidden,
         404: notFound,

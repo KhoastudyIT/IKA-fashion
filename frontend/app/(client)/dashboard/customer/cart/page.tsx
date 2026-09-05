@@ -5,16 +5,20 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronRight } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { getCart, updateCartItem, removeCartItem, clearCart, lineKey, Cart } from '@/api'
+import { getCart, updateCartItem, removeCartItem, clearCart, lineKey, Cart, CartLine } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
+import { useUI } from '@/components/context/UIDialogContext'
 
 export default function CustomerCartPage() {
   const router = useRouter()
   const { data: session, isPending } = useSession()
   const { syncCart } = useShop()
+  const { toast } = useUI()
   const [cart, setCart] = useState<Cart | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Khóa dòng đang đổi size — đổi size là một lượt đi server, chặn bấm chồng.
+  const [sizeBusyKey, setSizeBusyKey] = useState<string | null>(null)
 
   useEffect(() => {
     if (isPending) return
@@ -37,10 +41,38 @@ export default function CustomerCartPage() {
   const handleUpdate = async (key: string, quantity: number) => {
     if (quantity < 1) return handleRemove(key)
     try {
-      applyCart(await updateCartItem(key, quantity))
+      applyCart(await updateCartItem(key, { quantity }))
     } catch (e: any) {
       setError(e.message)
     }
+  }
+
+  /**
+   * Đổi size ngay trong giỏ, không phải xóa rồi thêm lại.
+   *
+   * Server chuyển dòng sang biến thể mới (và gộp nếu size đó đã có trong giỏ);
+   * nó cũng là nơi chốt tồn kho, nên lỗi trả về đọc thẳng cho khách xem.
+   */
+  const handleChangeSize = async (item: CartLine, size: string) => {
+    const key = lineKey(item)
+    if (size === item.size) return
+    setSizeBusyKey(key)
+    setError('')
+    try {
+      applyCart(await updateCartItem(key, { size }))
+      toast(`Đã đổi ${item.name} sang size ${size}`)
+    } catch (e: any) {
+      toast(e.message || 'Không đổi được size', 'error')
+    } finally {
+      setSizeBusyKey(null)
+    }
+  }
+
+  /** Size đã hết kho cho đúng màu của dòng này thì không cho chọn. */
+  const conHang = (item: CartLine, size: string) => {
+    const kho = item.variantStock
+    if (!kho || Object.keys(kho).length === 0) return true
+    return (kho[`${size}|${item.color}`] ?? 0) > 0
   }
 
   const handleRemove = async (key: string) => {
@@ -113,7 +145,36 @@ export default function CustomerCartPage() {
                             </span>
                           )}
                         </h3>
-                        <p className="text-sm text-muted-foreground mb-1">Màu: {item.color} · Size: {item.size}</p>
+                        <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground mb-2">
+                          <span>Màu: {item.color}</span>
+                          <span aria-hidden>·</span>
+                          {/* Chọn nhầm size là lý do trả hàng phổ biến nhất; sửa
+                              được ngay ở đây thì khách không phải xóa dòng rồi
+                              vào lại trang sản phẩm để thêm lại từ đầu. */}
+                          {(item.sizes?.length ?? 0) > 1 ? (
+                            <label className="flex items-center gap-1.5">
+                              <span>Size:</span>
+                              <select
+                                value={item.size}
+                                disabled={sizeBusyKey === key}
+                                onChange={(e) => handleChangeSize(item, e.target.value)}
+                                aria-label={`Đổi size cho ${item.name}`}
+                                className="px-2 py-1 bg-background border border-border rounded text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent cursor-pointer disabled:opacity-50"
+                              >
+                                {item.sizes.map((size) => {
+                                  const co = conHang(item, size)
+                                  return (
+                                    <option key={size} value={size} disabled={!co && size !== item.size}>
+                                      {size}{co ? '' : ' — hết hàng'}
+                                    </option>
+                                  )
+                                })}
+                              </select>
+                            </label>
+                          ) : (
+                            <span>Size: {item.size}</span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-sm font-medium text-foreground">{item.price.toLocaleString()} đ</span>
                           {item.originalPrice != null && item.originalPrice > item.price && (

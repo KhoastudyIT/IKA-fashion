@@ -11,7 +11,7 @@ export async function addItem(req, res) {
 }
 
 export async function updateItem(req, res) {
-  const cart = await cartService.updateItem(req.user.id, req.params.key, req.body.quantity);
+  const cart = await cartService.updateItem(req.user.id, req.params.key, req.body);
   ok(res, cart, 'Đã cập nhật giỏ hàng');
 }
 

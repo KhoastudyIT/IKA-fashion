@@ -1,7 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, Zap } from 'lucide-react'
+import { Heart, Zap, ShoppingBag } from 'lucide-react'
+
+/** Dưới ngưỡng này thì tồn kho hiện màu cảnh báo thay vì màu chữ phụ. */
+const NGUONG_SAP_HET = 10
 
 export interface ProductCardProps {
   product: any
@@ -9,6 +12,9 @@ export interface ProductCardProps {
   wished?: boolean
   wishlistBusy?: boolean
   onWishlistToggle?: (product: any) => void
+  /** Có truyền thì thẻ hiện nút "Mua ngay"; không truyền thì thẻ giữ nguyên như cũ. */
+  onBuyNow?: (product: any) => void
+  buyNowBusy?: boolean
 }
 
 export default function ProductCard({
@@ -17,6 +23,8 @@ export default function ProductCard({
   wished = false,
   wishlistBusy = false,
   onWishlistToggle,
+  onBuyNow,
+  buyNowBusy = false,
 }: ProductCardProps) {
   const listPrice = product.price ?? product.newPrice ?? 0
   // Đang có flash sale thì giá hiển thị phải là giá flash, đúng bằng giá lúc
@@ -33,6 +41,10 @@ export default function ProductCard({
   const sold = product.sold ?? product.soldCount ?? 0
   const handle = product.handle ?? product.href?.replace('/products/', '') ?? ''
   const href = `/products/${handle}`
+  // Nguồn dữ liệu khác nhau (danh sách sản phẩm, dòng flash sale dựng lại) không
+  // phải lúc nào cũng có tồn kho — thiếu thì im lặng bỏ qua chứ đừng hiện "còn 0".
+  const stock: number | null = typeof product.stock === 'number' ? product.stock : null
+  const hetHang = stock !== null && stock <= 0
 
   return (
     <Link href={href} className="block h-full">
@@ -47,9 +59,8 @@ export default function ProductCard({
             disabled={wishlistBusy}
             aria-pressed={wished}
             aria-label={`${wished ? 'Bỏ yêu thích' : 'Yêu thích'} ${product.name}`}
-            className={`absolute top-2 right-2 z-10 p-2 rounded-full bg-background/85 shadow-sm transition-colors disabled:opacity-50 ${
-              wished ? 'text-red-600' : 'text-foreground hover:text-red-600'
-            }`}
+            className={`absolute top-2 right-2 z-10 p-2 rounded-full bg-background/85 shadow-sm transition-colors disabled:opacity-50 ${wished ? 'text-red-600' : 'text-foreground hover:text-red-600'
+              }`}
           >
             <Heart size={16} fill={wished ? 'currentColor' : 'none'} />
           </button>
@@ -83,18 +94,20 @@ export default function ProductCard({
                 {product.emoji}
               </div>
             ) : null}
-            {product.stock <= 0 && product.stock !== undefined && (
-              <div className="absolute top-2 right-2 bg-destructive text-white px-2 py-0.5 text-[0.625rem] font-semibold rounded pointer-events-none">
-                Hết hàng
+            {hetHang && (
+              <div className="absolute inset-0 bg-background/55 flex items-center justify-center pointer-events-none">
+                <span className="bg-destructive text-white px-3 py-1 text-xs font-semibold rounded">
+                  Hết hàng
+                </span>
               </div>
             )}
           </div>
-          
+
           <div className="flex flex-col flex-grow p-3">
             <h3 className="text-sm font-heading font-semibold text-foreground mb-1 line-clamp-2 min-h-[2.5rem] group-hover:text-accent transition-colors">
               {product.name}
             </h3>
-            
+
             {product.description && (
               <p className="text-xs text-muted-foreground mb-2 line-clamp-1">{product.description}</p>
             )}
@@ -119,6 +132,41 @@ export default function ProductCard({
                 <span className="text-accent">★ {product.rating}</span>
                 <span>· Đã bán {sold.toLocaleString('vi-VN')}</span>
               </div>
+              {/* Tồn kho: hết thì nói hết, sắp hết thì gọi tên con số để khách
+                  biết mình đang tranh nhau mấy cái cuối. */}
+              {stock !== null && (
+                <p
+                  className={`text-[0.625rem] font-medium ${hetHang
+                      ? 'text-destructive'
+                      : stock <= NGUONG_SAP_HET
+                        ? 'text-orange-600'
+                        : 'text-muted-foreground'
+                    }`}
+                >
+                  {hetHang
+                    ? 'Hết hàng'
+                    : stock <= NGUONG_SAP_HET
+                      ? `Sắp hết - chỉ còn ${stock.toLocaleString('vi-VN')} sản phẩm`
+                      : `Còn ${stock.toLocaleString('vi-VN')} sản phẩm`}
+                </p>
+              )}
+
+              {onBuyNow && (
+                <button
+                  onClick={(e) => {
+                    // Cả thẻ nằm trong <Link>; không chặn thì bấm nút là điều
+                    // hướng sang trang chi tiết chứ không mua được gì.
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onBuyNow(product)
+                  }}
+                  disabled={buyNowBusy || hetHang}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded bg-foreground text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ShoppingBag size={13} />
+                  {buyNowBusy ? 'Đang thêm...' : hetHang ? 'Hết hàng' : 'Mua ngay'}
+                </button>
+              )}
             </div>
           </div>
         </div>

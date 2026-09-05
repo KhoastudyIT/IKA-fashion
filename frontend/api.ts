@@ -127,6 +127,11 @@ export interface CartLine {
   lineTotal: number         // price × quantity
   originalLineTotal: number // originalPrice (hoặc price) × quantity
   isFlashSale?: boolean
+  /** Mọi size/màu của sản phẩm — giỏ hàng dùng để dựng ô đổi size tại chỗ */
+  sizes: string[]
+  colors: string[]
+  /** Tồn kho từng biến thể, khóa "size|màu" — để chặn chọn size đã hết */
+  variantStock: Record<string, number>
 }
 export interface Cart {
   items: CartLine[]
@@ -362,8 +367,13 @@ export function getCart(): Promise<Cart> {
 export function addToCart(item: { productId: number; size: string; color: string; quantity?: number }): Promise<Cart> {
   return getData('/customer/cart/items', { method: 'POST', body: item, auth: true })
 }
-export function updateCartItem(key: string, quantity: number): Promise<Cart> {
-  return getData(`/customer/cart/items/${encodeURIComponent(key)}`, { method: 'PUT', body: { quantity }, auth: true })
+// Sửa một dòng giỏ hàng: truyền trường nào sửa trường đó (số lượng, size, màu).
+// Đổi size/màu sang biến thể đã có sẵn trong giỏ thì backend gộp hai dòng lại.
+export function updateCartItem(
+  key: string,
+  patch: { quantity?: number; size?: string; color?: string },
+): Promise<Cart> {
+  return getData(`/customer/cart/items/${encodeURIComponent(key)}`, { method: 'PUT', body: patch, auth: true })
 }
 export function removeCartItem(key: string): Promise<Cart> {
   return getData(`/customer/cart/items/${encodeURIComponent(key)}`, { method: 'DELETE', auth: true })

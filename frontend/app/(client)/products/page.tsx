@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronDown, X } from 'lucide-react'
 import { useSession } from '@/auth-client'
-import { getProducts, getCollections, addWishlist, removeWishlist, ApiProduct, Collection, ProductQuery } from '@/api'
+import { getProducts, getCollections, getProductByHandle, addToCart, addWishlist, removeWishlist, ApiProduct, Collection, ProductQuery } from '@/api'
 import { useShop } from '@/components/context/ShopContext'
+import { useUI } from '@/components/context/UIDialogContext'
 import ProductCard from '@/components/ProductCard'
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'rating'
@@ -15,8 +16,10 @@ export default function ProductsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const { syncWishlist, isWishlisted } = useShop()
+  const { syncCart, syncWishlist, isWishlisted } = useShop()
+  const { toast } = useUI()
   const [wishlistBusyId, setWishlistBusyId] = useState<number | null>(null)
+  const [buyNowBusyId, setBuyNowBusyId] = useState<number | null>(null)
 
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [maxPrice, setMaxPrice] = useState(1000000)
@@ -72,6 +75,49 @@ export default function ProductsPage() {
       .catch((e) => setError(e.message || 'Không tải được sản phẩm'))
       .finally(() => setLoading(false))
   }, [sortBy, maxPrice, selectedCollection])
+
+  /**
+   * Biến thể mặc định khi mua nhanh: cặp size–màu ĐẦU TIÊN còn hàng.
+   *
+   * Cứ lấy cứng sizes[0]/colors[0] thì sản phẩm còn hàng nhưng hết đúng size đầu
+   * sẽ báo lỗi ngay khi bấm, dù kho vẫn còn size khác. Bảng tồn kho biến thể chỉ
+   * có ở endpoint chi tiết nên phải lấy thêm — đổi lại nút bấm là ăn chắc.
+   */
+  const bienTheMuaNhanh = (p: ApiProduct) => {
+    const sizes = p.sizes ?? []
+    const colors = p.colors ?? []
+    const kho = p.variantStock
+    if (kho) {
+      for (const size of sizes) {
+        for (const color of colors) {
+          if ((kho[`${size}|${color}`] ?? 0) > 0) return { size, color }
+        }
+      }
+    }
+    return { size: sizes[0] ?? '', color: colors[0] ?? '' }
+  }
+
+  // Mua nhanh từ thẻ sản phẩm: bỏ vào giỏ với biến thể còn hàng rồi sang giỏ
+  // hàng — ở đó khách đổi lại size được nếu muốn.
+  const handleBuyNow = async (product: ApiProduct) => {
+    if (!session) {
+      router.push('/auth/login')
+      return
+    }
+    setBuyNowBusyId(product.id)
+    setError('')
+    try {
+      const chiTiet = await getProductByHandle(product.handle)
+      const { size, color } = bienTheMuaNhanh(chiTiet)
+      if (!size || !color) throw new Error('Sản phẩm chưa khai size/màu để mua nhanh')
+      syncCart(await addToCart({ productId: product.id, size, color, quantity: 1 }))
+      toast(`Đã thêm ${product.name} (size ${size} · ${color}) - đổi size ngay trong giỏ nếu cần`)
+      router.push('/dashboard/customer/cart')
+    } catch (e: any) {
+      toast(e.message || 'Không thêm được vào giỏ', 'error')
+      setBuyNowBusyId(null)
+    }
+  }
 
   // Bấm lần nữa thì bỏ yêu thích
   const handleWishlist = async (product: ApiProduct) => {
@@ -215,6 +261,8 @@ export default function ProductsPage() {
                         wished={isWishlisted(product.id)}
                         wishlistBusy={wishlistBusyId === product.id}
                         onWishlistToggle={handleWishlist}
+                        onBuyNow={handleBuyNow}
+                        buyNowBusy={buyNowBusyId === product.id}
                       />
                     ))}
                   </div>

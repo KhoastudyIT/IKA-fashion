@@ -167,6 +167,14 @@ export const components = {
         color: { type: 'string', example: 'Trắng' },
         quantity: { type: 'integer', example: 2 },
         lineTotal: { type: 'integer', description: 'price × quantity', example: 398000 },
+        sizes: { type: 'array', items: { type: 'string' }, description: 'Mọi size của sản phẩm — để giỏ hàng cho đổi size tại chỗ', example: ['S', 'M', 'L'] },
+        colors: { type: 'array', items: { type: 'string' }, example: ['Trắng', 'Đen'] },
+        variantStock: {
+          type: 'object',
+          additionalProperties: { type: 'integer' },
+          description: 'Tồn kho từng biến thể, khóa là "size|màu"',
+          example: { 'S|Trắng': 6, 'M|Trắng': 0 },
+        },
       },
     },
     Cart: {
@@ -595,9 +603,13 @@ export const components = {
     },
     CartUpdateItemBody: {
       type: 'object',
-      required: ['quantity'],
+      description:
+        'Gửi trường nào sửa trường đó, cần ít nhất một trường. Đổi `size`/`color` là chuyển dòng '
+        + 'sang biến thể khác; nếu biến thể đó đã có trong giỏ thì hai dòng gộp làm một.',
       properties: {
         quantity: { type: 'integer', minimum: 1, maximum: 99, example: 3 },
+        size: { type: 'string', minLength: 1, example: 'L' },
+        color: { type: 'string', minLength: 1, example: 'Đen' },
       },
     },
 

@@ -15,6 +15,27 @@ const parseKey = (key) => {
   return { productId: pid, size, color };
 };
 
+/**
+ * Tồn kho từng biến thể của nhiều sản phẩm cùng lúc, dạng
+ * { [productId]: { "S|Trắng": 6 } }.
+ *
+ * Gom trong MỘT truy vấn thay vì mỗi dòng giỏ hàng một lượt: giỏ 10 món vẫn chỉ
+ * tốn một lần đi DB.
+ */
+async function variantStockOf(productIds) {
+  if (!productIds.length) return new Map();
+  const res = await db.query(
+    'SELECT product_id, size, color, stock FROM product_variants WHERE product_id = ANY($1)',
+    [productIds],
+  );
+  const bang = new Map();
+  for (const v of res.rows) {
+    if (!bang.has(v.product_id)) bang.set(v.product_id, {});
+    bang.get(v.product_id)[`${v.size}|${v.color}`] = v.stock;
+  }
+  return bang;
+}
+
 async function present(userId) {
   // Giá flash lấy bằng LATERAL join trong chính truy vấn này. Trước đây mỗi dòng
   // giỏ hàng gọi thêm một query kiểm tra flash sale — giỏ 10 món là 11 lượt đi DB.
@@ -23,6 +44,7 @@ async function present(userId) {
             p.name, p.handle, p.img,
             p.price                   AS "listPrice",
             ${effectivePriceSQL('p')} AS price,
+            p.sizes, p.colors,
             active_flash.id           AS "flashSaleId",
             active_flash.remaining    AS "flashRemaining",
             ci.size, ci.color, ci.quantity
@@ -33,6 +55,11 @@ async function present(userId) {
      ORDER BY ci.created_at`,
     [userId],
   );
+
+  // Giỏ hàng cho phép đổi size ngay tại chỗ, nên mỗi dòng phải mang theo danh
+  // sách size/màu của sản phẩm và tồn kho từng biến thể — không có thì giao
+  // diện chỉ còn cách đoán, hoặc bắt khách bấm thử rồi nhận lỗi.
+  const khoBienThe = await variantStockOf([...new Set(res.rows.map((r) => r.productId))]);
 
   const items = res.rows.map((r) => {
     const price = Number(r.price);
@@ -52,6 +79,9 @@ async function present(userId) {
       originalLineTotal: listPrice * r.quantity,
       isFlashSale: r.flashSaleId != null,
       flashRemaining: r.flashRemaining ?? null,
+      sizes: r.sizes ?? [],
+      colors: r.colors ?? [],
+      variantStock: khoBienThe.get(r.productId) ?? {},
     };
   });
 
@@ -136,21 +166,79 @@ export async function addItem(userId, { productId, size, color, quantity }) {
   return present(userId);
 }
 
-export async function updateItem(userId, key, quantity) {
-  const { productId, size, color } = parseKey(key);
+/**
+ * Sửa một dòng giỏ hàng: số lượng, size, màu — hoặc kết hợp.
+ *
+ * Trường nào không gửi thì giữ nguyên. Đổi size/màu là ĐỔI BIẾN THỂ, tức là dòng
+ * này chuyển sang ăn kho của biến thể mới; nếu biến thể mới đã có sẵn trong giỏ
+ * thì hai dòng nhập làm một chứ không để giỏ có hai dòng trùng nhau.
+ */
+export async function updateItem(userId, key, { quantity, size, color }) {
+  const cu = parseKey(key);
 
-  // Sửa số lượng là THAY THẾ dòng hiện tại. Vì mỗi biến thể chỉ có đúng một
-  // dòng giỏ hàng nên số cần kiểm chính là số lượng mới.
-  const p = await stockAndCart(userId, productId, size, color);
-  assertEnoughStock(p, quantity, { size, color });
-
-  const res = await db.query(
-    `UPDATE cart_items SET quantity = $5
-     WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4
-     RETURNING id`,
-    [userId, productId, size, color, quantity],
+  const dongHienTai = await db.query(
+    `SELECT quantity FROM cart_items
+     WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4`,
+    [userId, cu.productId, cu.size, cu.color],
   );
-  if (!res.rows.length) throw new AppError('Không tìm thấy sản phẩm trong giỏ', 404);
+  if (!dongHienTai.rows.length) throw new AppError('Không tìm thấy sản phẩm trong giỏ', 404);
+
+  const soLuong = quantity ?? dongHienTai.rows[0].quantity;
+  const sizeMoi = size ?? cu.size;
+  const mauMoi = color ?? cu.color;
+  const doiBienThe = sizeMoi !== cu.size || mauMoi !== cu.color;
+
+  const p = await stockAndCart(userId, cu.productId, sizeMoi, mauMoi);
+  if (!p.sizes.includes(sizeMoi)) throw new AppError('Size không hợp lệ', 400);
+  if (!p.colors.includes(mauMoi)) throw new AppError('Màu không hợp lệ', 400);
+
+  // Giữ nguyên biến thể: sửa số lượng là THAY THẾ, nên số cần kiểm chính là số
+  // lượng mới. Đổi biến thể: phải cộng thêm phần đang có sẵn của biến thể đích,
+  // vì hai dòng sắp gộp lại thành một.
+  assertEnoughStock(p, doiBienThe ? p.in_cart + soLuong : soLuong, { size: sizeMoi, color: mauMoi });
+
+  if (!doiBienThe) {
+    await db.query(
+      `UPDATE cart_items SET quantity = $5
+       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4`,
+      [userId, cu.productId, cu.size, cu.color, soLuong],
+    );
+    return present(userId);
+  }
+
+  // Biến thể đích chưa có trong giỏ → đổi tại chỗ, dòng giữ nguyên vị trí
+  // (present() sắp theo created_at) nên khách không thấy món vừa sửa nhảy xuống cuối.
+  if (p.in_cart === 0) {
+    await db.query(
+      `UPDATE cart_items SET size = $5, color = $6, quantity = $7
+       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4`,
+      [userId, cu.productId, cu.size, cu.color, sizeMoi, mauMoi, soLuong],
+    );
+    return present(userId);
+  }
+
+  // Phải gộp hai dòng: xóa dòng cũ rồi cộng dồn vào dòng đích. Bọc transaction để
+  // giỏ không bao giờ dừng lại ở trạng thái đã xóa mà chưa cộng.
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `DELETE FROM cart_items
+       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4`,
+      [userId, cu.productId, cu.size, cu.color],
+    );
+    await client.query(
+      `UPDATE cart_items SET quantity = quantity + $5
+       WHERE user_id = $1 AND product_id = $2 AND size = $3 AND color = $4`,
+      [userId, cu.productId, sizeMoi, mauMoi, soLuong],
+    );
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
   return present(userId);
 }
 
